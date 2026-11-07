@@ -5,7 +5,7 @@ Ticket: [016](../planning/tickets/016-repo-layout-and-modules.md). Agreed with J
 ## 1. Repository
 
 - GitHub: **`joswalt/tidy-my-mac`**, public since 2026-11-07, created empty by John (no README, license or .gitignore) at https://github.com/new. Local clone: `~/Dev/tidy-my-mac`.
-- MIT licence (John, 2026-11-07), in `LICENSE`. Rule sets reused from MIT/Apache cleaners keep their credit in `Rules/CREDITS.md`).
+- MIT licence (John, 2026-11-07), in `LICENSE`. Rule sets reused from MIT/Apache cleaners keep their credit in `Rules/CREDITS.md`.
 - The plan moves into the repo at ticket 018. Until then the wayfinder files stay in the project folder and nothing is pushed.
 - Changes land through pull requests on `main`; rule changes always need John's approval (spec 006 §6).
 
