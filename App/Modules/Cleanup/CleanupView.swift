@@ -92,8 +92,9 @@ struct CategoryRow: View {
             if result.rule.risk == .risky || result.candidates.isEmpty {
                 Image(systemName: result.rule.risk == .risky ? "hand.raised" : "square").foregroundStyle(.tertiary)
                     .help(result.rule.risk == .risky ? "Risky items are ticked one by one" : "Nothing found")
+                    .accessibilityLabel(result.rule.risk == .risky ? "Risky items are ticked one by one" : "Nothing to tick")
             } else {
-                TriStateBox(state: session.selection.state(of: result.candidates)) {
+                TriStateBox(state: session.selection.state(of: result.candidates), name: result.rule.title) {
                     session.selection.setGroup(result.candidates, session.selection.state(of: result.candidates) != .all)
                 }
             }
@@ -131,7 +132,7 @@ struct RuleDetail: View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text(rule.title).font(.title2)
+                    Text(rule.title).font(.title2).accessibilityAddTraits(.isHeader)
                     RiskBadge(risk: rule.risk)
                     if rule.status == .experimental {
                         Text("New rule: items start unticked").font(.caption).foregroundStyle(.secondary)
@@ -186,6 +187,7 @@ struct RuleDetail: View {
 
 struct ScanningView: View {
     let session: ScanSession
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let done = session.progress.values.filter { $0 }.count
@@ -197,10 +199,13 @@ struct ScanningView: View {
                     Circle().trim(from: 0, to: Double(done) / Double(total))
                         .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 10, lineCap: .round))
                         .rotationEffect(.degrees(-90))
-                        .animation(.easeInOut(duration: 0.3), value: done)
+                        .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: done)
                     Text("\(done) of \(total)").font(.callout.monospacedDigit()).foregroundStyle(.secondary)
                 }
                 .frame(width: 120, height: 120)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Scan progress")
+                .accessibilityValue("\(done) of \(total) areas checked")
                 Text("Found \(sizeString(session.foundSoFar + session.foundInCurrent)) so far")
                     .font(.system(size: 22, weight: .semibold, design: .rounded)).monospacedDigit()
                     .contentTransition(.numericText())
@@ -223,6 +228,9 @@ struct ScanningView: View {
                         Text(area.title).foregroundStyle(finished || current ? .primary : .secondary)
                     }
                     .font(.callout)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(area.title)
+                    .accessibilityValue(finished ? "Done" : (current ? "Checking" : "Waiting"))
                 }
             }
             .frame(minWidth: 220, alignment: .leading)
@@ -247,12 +255,14 @@ struct IgnoreListView: View {
                 List(app.ignoreList.entries, id: \.self) { e in
                     HStack {
                         Image(systemName: e.kind == .path ? "doc" : "square.stack")
+                            .accessibilityLabel(e.kind == .path ? "Item" : "Category")
                         Text(e.kind == .ruleID ? (app.context?.rules.cleanRule(e.value)?.title ?? e.value) : e.value)
                             .lineLimit(1).truncationMode(.middle)
                         Spacer()
                         Text(e.added).foregroundStyle(.secondary)
                         Button { app.unignore(e) } label: { Image(systemName: "minus.circle") }
                             .buttonStyle(.plain).help("Stop ignoring")
+                            .accessibilityLabel("Stop ignoring \(e.kind == .ruleID ? (app.context?.rules.cleanRule(e.value)?.title ?? e.value) : (e.value as NSString).lastPathComponent)")
                     }
                 }
             }

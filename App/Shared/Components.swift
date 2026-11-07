@@ -34,9 +34,11 @@ struct DestinationLabel: View {
     }
 }
 
-/// A checkbox that can show a mixed state for groups.
+/// A checkbox that can show a mixed state for groups. `name` says which group it ticks, so
+/// VoiceOver reads "Tick all in User Caches" rather than a bare "Tick all".
 struct TriStateBox: View {
     let state: Selection.GroupState
+    var name: String? = nil
     let action: () -> Void
 
     var symbol: String {
@@ -54,7 +56,29 @@ struct TriStateBox: View {
             .font(.body)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(state == .all ? "Untick all" : "Tick all")
+        .accessibilityLabel(label)
+        .accessibilityValue(state == .all ? "All ticked" : (state == .some ? "Some ticked" : "None ticked"))
+        .help(label)
+    }
+
+    private var label: String {
+        let verb = state == .all ? "Untick all" : "Tick all"
+        return name.map { "\(verb) in \($0)" } ?? verb
+    }
+}
+
+/// The admin badge (spec 007 §4): a lock on anything that goes through the helper, with words for
+/// VoiceOver and the tooltip, since the symbol alone says nothing.
+struct AdminBadge: View {
+    var help = "Needs your administrator password"
+    var font: Font = .caption
+
+    var body: some View {
+        Image(systemName: "lock.fill")
+            .font(font)
+            .foregroundStyle(.secondary)
+            .help(help)
+            .accessibilityLabel(help)
     }
 }
 
@@ -93,9 +117,10 @@ struct ItemTable: View {
     @Bindable var session: ScanSession
     let items: [Candidate]
     @Environment(AppModel.self) private var app
+    @State private var highlighted: Set<Candidate.ID> = []
 
     var body: some View {
-        Table(items) {
+        Table(items, selection: $highlighted) {
             TableColumn("") { c in
                 Toggle("", isOn: Binding(get: { session.selection.contains(c) }, set: { session.selection.set(c, $0) }))
                     .labelsHidden()
@@ -114,8 +139,23 @@ struct ItemTable: View {
         .contextMenu(forSelectionType: Candidate.ID.self) { ids in
             if let c = items.first(where: { ids.contains($0.id) }) {
                 Button("Show in Finder") { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: c.path)]) }
+                Button("Quick Look") { QuickLook.show(c.path) }
+                Divider()
                 Button("Ignore") { app.ignore(.init(kind: .path, value: c.path)) }
             }
+        }
+        .onKeyPress(.space) {
+            if let c = items.first(where: { highlighted.contains($0.id) }) { QuickLook.show(c.path) }
+            return .handled
+        }
+        .onKeyPress(keys: [.delete]) { press in
+            // ⌘⌫ ticks the highlighted rows for the review (build spec §6.12); it never removes anything.
+            guard press.modifiers.contains(.command) else { return .ignored }
+            // Risky items are ticked one by one (spec 007 §3), so only a single highlighted row ticks them.
+            for c in items where highlighted.contains(c.id) && (c.risk != .risky || highlighted.count == 1) {
+                session.selection.set(c, true)
+            }
+            return .handled
         }
     }
 }
@@ -123,6 +163,8 @@ struct ItemTable: View {
 /// Short-lived confirmation message (spec 007 §4 toasts).
 struct ToastOverlay: ViewModifier {
     let message: String?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func body(content: Content) -> some View {
         content.overlay(alignment: .bottom) {
             if let message {
@@ -133,7 +175,11 @@ struct ToastOverlay: ViewModifier {
                     .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: message)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: message)
+        .onChange(of: message) { _, new in
+            // VoiceOver users don't see the toast, so it is read out too.
+            if let new { AccessibilityNotification.Announcement(new).post() }
+        }
     }
 }
 
@@ -195,6 +241,7 @@ struct RunResultView: View {
             Image(systemName: dryRun ? "doc.text.magnifyingglass" : "checkmark.circle.fill")
                 .font(.system(size: 48))
                 .foregroundStyle(dryRun ? Color.secondary : Color.green)
+                .accessibilityHidden(true)
             Text(dryRun ? "Dry run: nothing was changed" : "Freed \(sizeString(total))")
                 .font(.system(size: 28, weight: .semibold, design: .rounded))
             Text(dryRun

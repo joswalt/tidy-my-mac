@@ -40,6 +40,7 @@ struct TidyUpView: View {
     var idle: some View {
         VStack(spacing: 18) {
             Image(nsImage: NSApplication.shared.applicationIconImage).resizable().frame(width: 96, height: 96)
+                .accessibilityHidden(true)
             Text("Checks caches, logs and leftover junk in one scan. Nothing is removed until you review it.")
                 .foregroundStyle(.secondary).multilineTextAlignment(.center).frame(maxWidth: 420)
             Button("Scan") { session.scan() }
@@ -50,6 +51,8 @@ struct TidyUpView: View {
                         .background(.quaternary, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 }
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Checks Cleanup, Trash, Applications, Maintenance, Declutter and Protection")
             if let last = app.lastTidyUp {
                 Text("Last run \(last.header.start.formatted(.relative(presentation: .named)))").font(.callout).foregroundStyle(.secondary)
             }
@@ -70,6 +73,8 @@ struct TidyUpView: View {
                          : "selected to clean")
                         .foregroundStyle(.secondary)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isHeader)
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 12)], spacing: 12) {
                     CleanupCard(session: session) { showReview = true }
                     TrashCard(session: session)
@@ -100,7 +105,7 @@ struct CleanupCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     if !all.isEmpty {
-                        TriStateBox(state: session.selection.state(of: all)) {
+                        TriStateBox(state: session.selection.state(of: all), name: "Cleanup") {
                             session.selection.setGroup(all, session.selection.state(of: all) != .all)
                         }
                     }
@@ -206,7 +211,7 @@ struct TrashCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
                     if !items.isEmpty {
-                        TriStateBox(state: session.selection.state(of: items)) {
+                        TriStateBox(state: session.selection.state(of: items), name: "Trash") {
                             session.selection.setGroup(items, session.selection.state(of: items) != .all)
                         }
                     }
@@ -277,7 +282,7 @@ struct ReminderPrompt: View {
         if !answered {
             GroupBox {
                 HStack {
-                    Image(systemName: "bell.badge").font(.title2).foregroundStyle(.tint)
+                    Image(systemName: "bell.badge").font(.title2).foregroundStyle(.tint).accessibilityHidden(true)
                     Text("Remind me to run Tidy Up \(app.status.reminderInterval.title.lowercased())?")
                     Spacer()
                     Button("No Thanks") { app.status.remindersOn = false; answered = true }

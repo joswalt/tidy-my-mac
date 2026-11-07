@@ -109,7 +109,7 @@ struct MaintenanceView: View {
                 HStack {
                     Label(title, systemImage: symbol).font(.headline)
                     Spacer()
-                    Image(systemName: "lock.fill").foregroundStyle(.secondary).help("Runs through the admin helper")
+                    AdminBadge(help: "Runs through the admin helper", font: .body)
                 }
                 Text(detail).font(.callout).foregroundStyle(.secondary)
                 actions()

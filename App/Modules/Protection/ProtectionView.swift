@@ -40,6 +40,7 @@ struct ProtectionView: View {
                         GroupBox {
                             HStack(alignment: .top, spacing: 12) {
                                 Image(systemName: area.symbol).font(.title2).foregroundStyle(.tint).frame(width: 30)
+                                    .accessibilityHidden(true)
                                 VStack(alignment: .leading, spacing: 6) {
                                     Text(area.title).font(.headline)
                                     Text(area.detail).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)

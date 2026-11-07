@@ -103,16 +103,21 @@ struct SidebarFooter: View {
                 }
                 .buttonStyle(.plain)
                 .help("Open Health")
+                .accessibilityLabel("\(sizeString(s.freeBytes)) free\(app.status.lowDiskActive ? ", low disk space" : "")")
+                .accessibilityHint("Opens Health")
             }
             Button { app.showSetup = true } label: {
                 HStack(alignment: .top, spacing: 6) {
                     Circle().fill(app.isSetUp ? Color.green : Color.orange).frame(width: 8, height: 8).padding(.top, 4)
+                        .accessibilityHidden(true)
                     Text(app.setupLine).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
                     Spacer(minLength: 0)
                 }
             }
             .buttonStyle(.plain)
             .help("Open setup")
+            .accessibilityLabel(app.setupLine)
+            .accessibilityHint("Opens setup")
         }
         .padding(12)
     }

@@ -161,7 +161,7 @@ struct AppRow: View {
                 Text("Open").font(.caption).foregroundStyle(.orange).help("\(app.name) is running")
             }
             if app.needsHelper(userID: model.context?.home.userID ?? 0) {
-                Image(systemName: "lock.fill").font(.caption).foregroundStyle(.secondary).help("Needs your administrator password")
+                AdminBadge()
             }
             Text(sizeString(model.plans[app.path]?.totalBytes ?? app.allocatedBytes)).monospacedDigit().foregroundStyle(.secondary)
         }
@@ -228,6 +228,7 @@ struct PlanTable: View {
             TableColumn("") { c in
                 if c.ruleID == RelatedFileFinder.appRuleID {
                     Image(systemName: "checkmark.square.fill").foregroundStyle(.secondary).help("The app itself is always included")
+                        .accessibilityLabel("The app itself is always included")
                 } else {
                     Toggle("", isOn: Binding(get: { !model.unticked.contains(c.id) },
                                              set: { on in if on { model.unticked.remove(c.id) } else { model.unticked.insert(c.id) } }))
@@ -239,7 +240,7 @@ struct PlanTable: View {
             TableColumn("Name") { c in
                 HStack(spacing: 4) {
                     Text(c.name).lineLimit(1).help(c.name)
-                    if c.viaHelper { Image(systemName: "lock.fill").font(.caption2).foregroundStyle(.secondary).help("Needs your administrator password") }
+                    if c.viaHelper { AdminBadge(font: .caption2) }
                 }
             }
             .width(min: 160, ideal: 240)
@@ -441,7 +442,7 @@ struct LeftoverGroupRow: View {
                     VStack(alignment: .leading, spacing: 1) {
                         HStack(spacing: 4) {
                             Text(c.name).lineLimit(1)
-                            if c.viaHelper { Image(systemName: "lock.fill").font(.caption2).foregroundStyle(.secondary) }
+                            if c.viaHelper { AdminBadge(font: .caption2) }
                         }
                         PathText(path: (c.path as NSString).deletingLastPathComponent)
                     }
@@ -578,6 +579,7 @@ struct UpdateRow: View {
                         Text("Update with").foregroundStyle(.secondary)
                         Text(command).font(.callout.monospaced()).textSelection(.enabled)
                         Button { model.copy(command) } label: { Image(systemName: "doc.on.doc") }
+                            .accessibilityLabel("Copy command")
                             .buttonStyle(.borderless).help("Copy the command. TidyMyMac never runs it.")
                     }
                     .font(.callout)
@@ -605,7 +607,7 @@ struct MacOSRow: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: "apple.logo").font(.title2).frame(width: 28)
+            Image(systemName: "apple.logo").font(.title2).frame(width: 28).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text("macOS and Apple software")
                 Text(line).font(.callout).foregroundStyle(.secondary)

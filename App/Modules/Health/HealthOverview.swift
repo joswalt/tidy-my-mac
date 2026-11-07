@@ -29,7 +29,7 @@ struct HealthOverview: View {
                         if app.applications.updateCount > 0 {
                             Divider()
                             HStack {
-                                Image(systemName: "arrow.down.app").foregroundStyle(.secondary).frame(width: 12)
+                                Image(systemName: "arrow.down.app").foregroundStyle(.secondary).frame(width: 12).accessibilityHidden(true)
                                 Text("App updates")
                                 Spacer()
                                 let n = app.applications.updateCount
@@ -73,7 +73,7 @@ struct HealthOverview: View {
                 .overlay(Image(systemName: level == .good ? "checkmark" : "exclamationmark").font(.system(size: 14, weight: .bold)).foregroundStyle(.white))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(level.title).font(.title.weight(.semibold))
+                Text(level.title).font(.title.weight(.semibold)).accessibilityAddTraits(.isHeader)
                 if let checked {
                     Text("Checked \(checked.formatted(date: .omitted, time: .shortened))").font(.callout).foregroundStyle(.secondary)
                 }
@@ -234,9 +234,9 @@ struct SetupCard: View {
         GroupBox {
             VStack(alignment: .leading, spacing: 8) {
                 Label("Setup", systemImage: "lock.shield").font(.headline)
-                HStack { Circle().fill(app.fullDiskAccess == .granted ? .green : .orange).frame(width: 8, height: 8)
+                HStack { Circle().fill(app.fullDiskAccess == .granted ? .green : .orange).frame(width: 8, height: 8).accessibilityHidden(true)
                     Text(app.fullDiskAccess == .granted ? "Full Disk Access on" : (app.fullDiskAccess == .missing ? "Full Disk Access off" : "Full Disk Access: can't tell")) }
-                HStack { Circle().fill(app.helper.state.isReady ? .green : .orange).frame(width: 8, height: 8)
+                HStack { Circle().fill(app.helper.state.isReady ? .green : .orange).frame(width: 8, height: 8).accessibilityHidden(true)
                     Text(app.helper.state.summary) }
                 Button("Open Setup") { app.showSetup = true }
             }
