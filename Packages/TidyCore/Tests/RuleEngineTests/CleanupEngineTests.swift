@@ -35,7 +35,9 @@ struct CleanupEngineTests {
         let engine = CleanupEngine(context: context(t))
         let report = engine.scan(engine.context.cleanupRules, ignore: IgnoreList())
         let all = report.candidates
-        #expect(Selection.defaults(for: all).ids.isEmpty, "experimental rules start unticked")
+        let defaults = Selection.defaults(for: all).selected(from: all)
+        #expect(defaults.allSatisfy { $0.selectedByDefault && $0.risk != .risky }, "only safe, verified items start ticked")
+        #expect(defaults.contains { $0.path.hasSuffix("com.example.A") }, "a verified safe cache starts ticked")
         var sel = Selection()
         sel.setGroup(all, true)
         #expect(sel.selected(from: all).allSatisfy { $0.risk != .risky }, "select-all skips risky items")

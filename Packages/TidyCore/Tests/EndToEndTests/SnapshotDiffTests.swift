@@ -142,17 +142,19 @@ struct SnapshotDiffTests {
 
     // MARK: Tests
 
-    @Test func defaultSelectionRemovesNothingWhileRulesAreExperimental() throws {
+    @Test func defaultSelectionRemovesOnlySafeVerifiedItems() throws {
         let t = try TestHome("e2e-default")
         defer { t.cleanUp() }
         try Self.build(t)
         let s = Self.scanner(t)
         let report = s.scan(Self.rules.cleanRules)
         let selection = report.candidates.filter(\.selectedByDefault)
-        #expect(selection.isEmpty)
+        #expect(!selection.isEmpty)
+        #expect(selection.allSatisfy { $0.risk == .safe && $0.status == .verified })
         let before = Snapshot(of: t.home.root.path)
         let (outcome, record) = try Self.run(t, selection, scanner: s)
-        Self.assertProperty(t, before: before, after: Snapshot(of: t.home.root.path), removed: [], outcome: outcome, record: record)
+        #expect(outcome.skipped.isEmpty && outcome.failed.isEmpty, "\(outcome.skipped + outcome.failed)")
+        Self.assertProperty(t, before: before, after: Snapshot(of: t.home.root.path), removed: selection, outcome: outcome, record: record)
     }
 
     @Test func everythingSelected() throws {
