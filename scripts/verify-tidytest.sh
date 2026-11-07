@@ -55,7 +55,10 @@ for line in snap.read_text().splitlines():
         report(False, f"missing (not selected): {p}"); continue
     st = os.lstat(p)
     if str(st.st_ino) != inode:
-        report(False, f"replaced: {p}"); continue
+        # macOS rewrites some of its own files atomically (new inode), e.g. the services cache.
+        if tripwire == "yes": report(False, f"tripwire replaced: {p}")
+        else: print(f"WARN replaced (not seeded by us, may be the system): {p}")
+        continue
     if extra.startswith("link:"):
         if os.readlink(p) != extra[5:]: report(False, f"link changed: {p}")
     elif extra != "dir" and stat.S_ISREG(st.st_mode) and sha(p) != extra:
