@@ -97,7 +97,7 @@ struct SidebarFooter: View {
                 Button { app.healthTab = .overview; app.selectedModule = .health } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "internaldrive").font(.caption).foregroundStyle(app.status.lowDiskActive ? .orange : .secondary)
-                        Text("\(sizeString(s.availableBytes)) free").font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                        Text("\(sizeString(s.freeBytes)) free").font(.caption).foregroundStyle(.secondary).monospacedDigit()
                         Spacer(minLength: 0)
                     }
                 }

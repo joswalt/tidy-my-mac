@@ -143,9 +143,9 @@ struct StorageCard: View {
                 Label("Startup disk", systemImage: "internaldrive").font(.headline)
                 if let s = storage {
                     ProgressView(value: s.usedFraction).tint(s.usedFraction > 0.9 ? .orange : .accentColor)
-                    Text("\(sizeString(s.availableBytes)) available of \(sizeString(s.totalBytes))").monospacedDigit()
+                    Text("\(sizeString(s.freeBytes)) free of \(sizeString(s.totalBytes))").monospacedDigit()
                     if s.purgeableBytes > 0 {
-                        Text("Includes \(sizeString(s.purgeableBytes)) of purgeable space that macOS frees on its own when it needs room.")
+                        Text("Finder shows \(sizeString(s.finderAvailableBytes)) available, because it counts \(sizeString(s.purgeableBytes)) as purgeable space macOS may free on its own. TidyMyMac's alerts go by the free space.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 } else {

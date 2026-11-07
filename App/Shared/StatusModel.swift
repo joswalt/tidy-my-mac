@@ -121,7 +121,7 @@ final class StatusModel {
 
     // MARK: Alerts
 
-    var lowDiskActive: Bool { storage.map { lowDiskAlert.isBad($0.availableBytes, line: lowDiskLine) } ?? false }
+    var lowDiskActive: Bool { storage.map { lowDiskAlert.isBad($0.freeBytes, line: lowDiskLine) } ?? false }
     var trashActive: Bool { hasFullDiskAccess && (trashBytes.map { trashAlert.isBad($0, line: trashLine) } ?? false) }
 
     /// The menu bar dot: an alert condition whose switch is on.
@@ -129,8 +129,8 @@ final class StatusModel {
 
     private func checkAlerts() {
         let now = Date()
-        if let s = storage, lowDiskAlert.check(s.availableBytes, line: lowDiskLine, now: now), lowDiskAlertOn {
-            Notifier.post(id: "lowDisk", category: Notifier.lowDisk, body: "Your startup disk has \(MonitorFormat.bytes(s.availableBytes)) free.")
+        if let s = storage, lowDiskAlert.check(s.freeBytes, line: lowDiskLine, now: now), lowDiskAlertOn {
+            Notifier.post(id: "lowDisk", category: Notifier.lowDisk, body: "Your startup disk has \(MonitorFormat.bytes(s.freeBytes)) free.")
         }
         if hasFullDiskAccess, let t = trashBytes, trashAlert.check(t, line: trashLine, now: now), trashAlertOn {
             Notifier.post(id: "fullTrash", category: Notifier.fullTrash, body: "Your Trash holds \(MonitorFormat.bytes(t)).")
@@ -159,7 +159,7 @@ final class StatusModel {
     }
 
     var signals: [HealthSignal] {
-        let all = Health.signals(HealthInputs(now: Date(), availableBytes: storage?.availableBytes, lowDiskGB: lowDiskGB,
+        let all = Health.signals(HealthInputs(now: Date(), freeBytes: storage?.freeBytes, lowDiskGB: lowDiskGB,
                                     lastSmartCare: app?.lastSmartCare?.header.start, reminderInterval: reminderInterval,
                                     junkLeft: junkLeft, trashBytes: trashBytes, trashGB: trashGB,
                                     hasFullDiskAccess: hasFullDiskAccess, helperReady: app?.helper.state.isReady ?? false))

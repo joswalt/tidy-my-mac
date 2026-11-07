@@ -39,8 +39,11 @@ struct SamplerMathTests {
     }
 
     @Test func storage() {
-        let s = StorageSample(availableBytes: 84 * GB, freeBytes: 80 * GB, totalBytes: 494 * GB)
+        let s = StorageSample(freeBytes: 80 * GB, finderAvailableBytes: 84 * GB, totalBytes: 494 * GB)
         #expect(s.purgeableBytes == 4 * GB)
+        #expect(s.usedFraction == Double(414) / 494)  // used counts purgeable space as used
+        // The live reading: free never exceeds Finder's figure.
+        if let live = StorageSample.read(volume: URL(fileURLWithPath: "/")) { #expect(live.freeBytes <= live.finderAvailableBytes) }
         #expect(StorageSample.read(volume: URL(fileURLWithPath: "/")) != nil)  // read-only system call
     }
 
@@ -111,7 +114,7 @@ struct HealthTests {
 
     func inputs(free: Int64? = 100 * GB, lowDisk: Int = 20, last: Date?? = nil, junk: Int64? = nil, trash: Int64? = 1 * GB,
                 fda: Bool = true, helper: Bool = true) -> HealthInputs {
-        HealthInputs(now: now, availableBytes: free, lowDiskGB: lowDisk,
+        HealthInputs(now: now, freeBytes: free, lowDiskGB: lowDisk,
                      lastSmartCare: last ?? now.addingTimeInterval(-3 * 86400), reminderInterval: .twoWeeks,
                      junkLeft: junk.map { ($0, now.addingTimeInterval(-86400)) }, trashBytes: trash, trashGB: 5,
                      hasFullDiskAccess: fda, helperReady: helper)

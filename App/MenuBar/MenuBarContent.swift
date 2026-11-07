@@ -36,7 +36,7 @@ struct MenuBarContent: View {
                     }
                 }
                 MonitorRow(symbol: "internaldrive", title: "Storage",
-                           value: status.storage.map { "Free \(MonitorFormat.bytes($0.availableBytes)) of \(MonitorFormat.bytes($0.totalBytes))" } ?? "…",
+                           value: status.storage.map { "Free \(MonitorFormat.bytes($0.freeBytes)) of \(MonitorFormat.bytes($0.totalBytes))" } ?? "…",
                            help: "Open Space Lens", action: { app.open(.spaceLens) }) {
                     if let s = status.storage {
                         ProgressView(value: s.usedFraction).tint(status.lowDiskActive ? .orange : .accentColor)

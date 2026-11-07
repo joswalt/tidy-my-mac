@@ -9,7 +9,7 @@ Ticket: [012](../planning/tickets/012-health-summary-and-reminders.md). Screens:
 
 | Signal | Orange | Red | Fix button |
 |---|---|---|---|
-| Free disk space ("important usage" available capacity) | below the shared **low-disk setting** (default 20 GB; 10/20/50) | below 10 GB (fixed; Health only, no notification). If the setting is 10, it goes straight to red | Space Lens |
+| Free disk space (real free space, `volumeAvailableCapacityKey`; see spec 011 §2) | below the shared **low-disk setting** (default 20 GB; 10/20/50) | below 10 GB (fixed; Health only, no notification). If the setting is 10, it goes straight to red | Space Lens |
 | Last Smart Care | more than 2× the reminder interval ago, or never run | never | Run Smart Care |
 | Junk found last time | last scan found > 5 GB that was not cleaned | never | Smart Care |
 | Trash size (needs FDA; hidden without it) | above the shared **Trash setting** (default 5 GB; 1/5/10/20) | never | Empty Trash… (standard confirm) |

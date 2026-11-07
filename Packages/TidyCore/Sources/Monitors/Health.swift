@@ -33,8 +33,8 @@ public struct HealthSignal: Identifiable, Equatable, Sendable {
 
 public struct HealthInputs: Sendable {
     public var now: Date
-    /// Available capacity ("important usage"); nil if unreadable.
-    public var availableBytes: Int64?
+    /// Real free space (not counting purgeable); nil if unreadable.
+    public var freeBytes: Int64?
     public var lowDiskGB: Int
     public var lastSmartCare: Date?
     public var reminderInterval: ReminderInterval
@@ -46,9 +46,9 @@ public struct HealthInputs: Sendable {
     public var hasFullDiskAccess: Bool
     public var helperReady: Bool
 
-    public init(now: Date, availableBytes: Int64?, lowDiskGB: Int, lastSmartCare: Date?, reminderInterval: ReminderInterval,
+    public init(now: Date, freeBytes: Int64?, lowDiskGB: Int, lastSmartCare: Date?, reminderInterval: ReminderInterval,
                 junkLeft: (bytes: Int64, scanned: Date)?, trashBytes: Int64?, trashGB: Int, hasFullDiskAccess: Bool, helperReady: Bool) {
-        self.now = now; self.availableBytes = availableBytes; self.lowDiskGB = lowDiskGB; self.lastSmartCare = lastSmartCare
+        self.now = now; self.freeBytes = freeBytes; self.lowDiskGB = lowDiskGB; self.lastSmartCare = lastSmartCare
         self.reminderInterval = reminderInterval; self.junkLeft = junkLeft; self.trashBytes = trashBytes; self.trashGB = trashGB
         self.hasFullDiskAccess = hasFullDiskAccess; self.helperReady = helperReady
     }
@@ -67,7 +67,7 @@ public enum Health {
         let fmt = MonitorFormat.bytes
 
         // Free disk space.
-        if let free = i.availableBytes {
+        if let free = i.freeBytes {
             let orange = Int64(i.lowDiskGB) * AlertSettings.gigabyte
             let level: HealthLevel = free < redLine ? .needsAttention : (free < orange ? .worthALook : .good)
             let reason = switch level {

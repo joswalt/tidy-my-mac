@@ -120,25 +120,27 @@ public final class MemoryPressureWatcher: @unchecked Sendable {
 // MARK: - Storage
 
 public struct StorageSample: Equatable, Sendable {
-    /// "Available" as Finder shows it (important-usage capacity, includes purgeable space).
-    public var availableBytes: Int64
-    /// Free without counting purgeable space.
+    /// Really free right now. Alerts and Health use this: Finder's figure can count hundreds of
+    /// gigabytes as purgeable while the disk fills up (John's Mac: 975 GB "available", 204 GB free).
     public var freeBytes: Int64
+    /// "Available" as Finder shows it (important-usage capacity, counts purgeable space). Shown as a note only.
+    public var finderAvailableBytes: Int64
     public var totalBytes: Int64
-    public init(availableBytes: Int64, freeBytes: Int64, totalBytes: Int64) {
-        self.availableBytes = availableBytes; self.freeBytes = freeBytes; self.totalBytes = totalBytes
+    public init(freeBytes: Int64, finderAvailableBytes: Int64, totalBytes: Int64) {
+        self.freeBytes = freeBytes; self.finderAvailableBytes = finderAvailableBytes; self.totalBytes = totalBytes
     }
 
     /// Space macOS can reclaim on its own; shown read-only (build spec §3, Health).
-    public var purgeableBytes: Int64 { max(0, availableBytes - freeBytes) }
-    public var usedFraction: Double { totalBytes > 0 ? Double(totalBytes - availableBytes) / Double(totalBytes) : 0 }
+    public var purgeableBytes: Int64 { max(0, finderAvailableBytes - freeBytes) }
+    public var usedFraction: Double { totalBytes > 0 ? Double(totalBytes - freeBytes) / Double(totalBytes) : 0 }
 
     /// Reads a volume's capacities (the startup disk is `URL(fileURLWithPath: "/")`).
     public static func read(volume: URL) -> StorageSample? {
         let keys: Set<URLResourceKey> = [.volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey, .volumeTotalCapacityKey]
         guard let v = try? volume.resourceValues(forKeys: keys), let total = v.volumeTotalCapacity,
-              let important = v.volumeAvailableCapacityForImportantUsage else { return nil }
-        return StorageSample(availableBytes: important, freeBytes: Int64(v.volumeAvailableCapacity ?? Int(important)), totalBytes: Int64(total))
+              let free = v.volumeAvailableCapacity else { return nil }
+        return StorageSample(freeBytes: Int64(free), finderAvailableBytes: max(Int64(free), v.volumeAvailableCapacityForImportantUsage ?? Int64(free)),
+                             totalBytes: Int64(total))
     }
 }
 
