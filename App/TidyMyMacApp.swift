@@ -42,7 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let nc = NotificationCenter.default
         nc.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { note in
             // Delivered on the main queue; the window is only read there.
-            nonisolated(unsafe) let window = note.object as? NSWindow
+            let window = note.object as? NSWindow
             MainActor.assumeIsolated {
                 if let w = window, Self.isMain(w), NSApp.activationPolicy() != .regular {
                     NSApp.setActivationPolicy(.regular)
@@ -50,7 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         nc.addObserver(forName: NSWindow.willCloseNotification, object: nil, queue: .main) { note in
-            nonisolated(unsafe) let window = note.object as? NSWindow
+            let window = note.object as? NSWindow
             MainActor.assumeIsolated {
                 guard let w = window, Self.isMain(w),
                       UserDefaults.standard.bool(forKey: "showInMenuBar") else { return }
