@@ -15,7 +15,8 @@ swift_files() { find App Helper Packages/TidyCore/Sources Packages/TidyCore/Test
 COMPOSITION_ROOT='^App/(TidyMyMacApp|CompositionRoot)\.swift$'
 # Files that may hold literal system paths: the floor, helper zones, and their tests (helper tests
 # map zone roots into a temp fixture with FakeHelperWorld.root("/Library/...")).
-LITERAL_PATHS_OK='^Packages/TidyCore/((Sources|Tests)/(SafetyFloor|HelperCore|HelperProtocol)(Tests)?/|Tests/TestSupport/FakeHelper[^/]*\.swift$)'
+# MacOSUpdates.swift only reads the SoftwareUpdate preferences (spec 013 §5); it removes nothing.
+LITERAL_PATHS_OK='^Packages/TidyCore/((Sources|Tests)/(SafetyFloor|HelperCore|HelperProtocol)(Tests)?/|Tests/TestSupport/FakeHelper[^/]*\.swift$|Sources/AppInventory/MacOSUpdates\.swift$)'
 # Files that may remove or trash: the floor, the RuleEngine remover, HelperCore, the composition root.
 REMOVERS_OK='^Packages/TidyCore/Sources/(SafetyFloor/|HelperCore/|RuleEngine/Remover[^/]*\.swift$)|^App/(TidyMyMacApp|CompositionRoot)\.swift$'
 # TestHome builds fixture homes in the temp dir.
@@ -74,7 +75,7 @@ missing=$(/usr/bin/env python3 -I - Rules Packages/TidyCore/Tests/RuleEngineTest
 import json, pathlib, sys
 fixtures = json.loads(pathlib.Path(sys.argv[2]).read_text())
 for f in sorted(pathlib.Path(sys.argv[1]).glob("*.json")):
-    if f.name in ("schema.json", "protected.json", "leftover-locations.json", "app-overrides.json"):
+    if f.name in ("schema.json", "protected.json", "leftover-locations.json", "app-overrides.json", "update-overrides.json"):
         continue
     for r in json.loads(f.read_text()).get("rules", []):
         if r.get("action") == "operation" or r.get("privilege") == "helper":

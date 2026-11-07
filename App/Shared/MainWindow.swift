@@ -46,10 +46,18 @@ struct MainWindow: View {
         }
     }
 
+    /// Trailing figures after a scan (spec 007 §2): Applications shows its update count.
+    private func badge(_ module: SidebarModule) -> Text? {
+        guard module == .applications, app.applications.updateCount > 0 else { return nil }
+        let n = app.applications.updateCount
+        return Text(n == 1 ? "1 update" : "\(n) updates")
+    }
+
     private func rows(_ modules: [SidebarModule]) -> some View {
         ForEach(modules) { module in
             Label(module.title, systemImage: module.symbol)
                 .symbolRenderingMode(.hierarchical)
+                .badge(badge(module))
                 .tag(module)
         }
     }

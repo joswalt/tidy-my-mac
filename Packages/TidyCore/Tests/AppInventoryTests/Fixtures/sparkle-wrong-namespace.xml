@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://example.com/not-sparkle">
+  <channel>
+    <item>
+      <title>Version 9.0</title>
+      <enclosure url="https://example.com/a.zip" sparkle:version="900" length="1" type="application/octet-stream"/>
+    </item>
+  </channel>
+</rss>

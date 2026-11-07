@@ -12,12 +12,13 @@ public enum RuleLoader {
 
     /// Which kind of rule a file holds is decided by its name.
     public enum FileKind: Equatable {
-        case clean, leftoverLocations, protect, appOverrides, schema
+        case clean, leftoverLocations, protect, appOverrides, updateOverrides, schema
         public init(fileName: String) {
             switch fileName {
             case "leftover-locations.json": self = .leftoverLocations
             case "protected.json": self = .protect
             case "app-overrides.json": self = .appOverrides
+            case "update-overrides.json": self = .updateOverrides
             case "schema.json": self = .schema
             default: self = .clean
             }
@@ -67,6 +68,8 @@ public enum RuleLoader {
             for r in try decode(ProtectRule.self) { set.protectRules.append(r); set.fileOfID[r.id] = set.fileOfID[r.id] ?? name }
         case .appOverrides:
             for r in try decode(AppOverride.self) { set.appOverrides.append(r); set.fileOfID[r.id] = set.fileOfID[r.id] ?? name }
+        case .updateOverrides:
+            for r in try decode(UpdateOverride.self) { set.updateOverrides.append(r) }
         case .schema: break
         }
     }
@@ -94,6 +97,8 @@ public enum RuleLoader {
             try checkKeys(rule, allowed: keys(ProtectRule.CodingKeys.self), at: path, file: file)
         case .appOverrides:
             try checkKeys(rule, allowed: keys(AppOverride.CodingKeys.self), at: path, file: file)
+        case .updateOverrides:
+            try checkKeys(rule, allowed: keys(UpdateOverride.CodingKeys.self), at: path, file: file)
         case .schema: return
         }
         if let s = rule["source"] as? [String: Any] { try checkKeys(s, allowed: keys(RuleSource.CodingKeys.self), at: "\(path).source", file: file) }

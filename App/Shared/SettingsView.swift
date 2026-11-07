@@ -3,6 +3,7 @@ import SwiftUI
 /// Settings window (⌘,). Panes per build spec §6.11; the others arrive with later milestones.
 struct SettingsView: View {
     @Environment(AppModel.self) private var app
+    @AppStorage("checkAppUpdatesAutomatically") private var checkUpdates = true
 
     var body: some View {
         TabView {
@@ -15,13 +16,22 @@ struct SettingsView: View {
             .formStyle(.grouped)
             .tabItem { Label("General", systemImage: "gearshape") }
 
-            IgnoreListView()
-                .tabItem { Label("Cleanup", systemImage: "bubbles.and.sparkles") }
+            VStack(spacing: 0) {
+                IgnoreListView()
+                Form {
+                    Toggle("Check for app updates automatically", isOn: $checkUpdates)
+                    Text("At most once a day, when Applications › Updates or Smart Care opens. TidyMyMac never installs updates.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                .formStyle(.grouped)
+                .frame(height: 110)
+            }
+            .tabItem { Label("Cleanup", systemImage: "bubbles.and.sparkles") }
 
             HelperSettings()
                 .tabItem { Label("Helper", systemImage: "lock.shield") }
         }
-        .frame(width: 560, height: 380)
+        .frame(width: 560, height: 480)
     }
 }
 

@@ -1,0 +1,10 @@
+[
+  {"token": "tidy-dummy", "version": "2.0.0,2000", "artifacts": [{"uninstall": [{"quit": "io.github.joswalt.TidyTest.Dummy"}]}, {"app": ["TidyTestDummy.app"]}, {"zap": [{"trash": ["~/Library/Caches/x"]}]}]},
+  {"token": "by-name", "version": "3.1", "artifacts": [{"app": ["Weird Name.app", {"target": "Named.app"}]}]},
+  {"token": "by-name-plain", "version": "1.0", "artifacts": [{"app": ["Plain.app"]}]},
+  {"token": "no-version", "version": "latest", "artifacts": [{"app": ["Latest.app"]}]},
+  {"token": "font-only", "version": "1.0", "artifacts": [{"font": ["x.ttf"]}]},
+  {"token": "multi-quit", "version": "5.0", "artifacts": [{"uninstall": [{"quit": ["com.example.multi", "com.example.multi.helper"], "launchctl": "com.example.multi.agent"}]}, {"app": ["Multi.app"]}]},
+  {"token": "shared@beta", "version": "9.0", "artifacts": [{"uninstall": [{"quit": "com.example.shared"}]}, {"app": ["Shared Beta.app"]}]},
+  {"token": "shared", "version": "8.0", "artifacts": [{"uninstall": [{"quit": "com.example.shared"}]}, {"app": ["Shared.app"]}]}
+]

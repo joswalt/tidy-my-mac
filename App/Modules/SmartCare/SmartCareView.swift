@@ -69,7 +69,7 @@ struct SmartCareView: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 12)], spacing: 12) {
                     CleanupCard(session: session) { showReview = true }
                     TrashCard(session: session)
-                    LaterCard(title: "Applications", symbol: "square.grid.2x2", note: "Leftovers and updates arrive in a later build.")
+                    ApplicationsCard()
                     MaintenanceCard(flushDNS: $flushDNS)
                     LaterCard(title: "My Clutter", symbol: "doc.on.doc", note: "Large and old files arrive in a later build. Smart Care never cleans personal files.")
                     LaterCard(title: "Protection", symbol: "lock.shield", note: "Review app permissions (later build).")
@@ -111,6 +111,51 @@ struct CleanupCard: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(8)
         }
+    }
+}
+
+/// Applications card (spec 007 §3): leftovers of removed apps and the update count. Look-and-go:
+/// leftovers are `caution` items reviewed in Applications, never cleaned by Smart Care itself.
+struct ApplicationsCard: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        let model = app.applications
+        let groups = model.leftovers ?? []
+        let bytes = groups.reduce(Int64(0)) { $0 + $1.totalBytes }
+        GroupBox {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Label("Applications", systemImage: "square.grid.2x2").font(.headline)
+                    Spacer()
+                    if !groups.isEmpty { Text(sizeString(bytes)).monospacedDigit().foregroundStyle(.secondary) }
+                }
+                if model.scanningLeftovers {
+                    Text("Looking for leftovers…").font(.callout).foregroundStyle(.secondary)
+                } else {
+                    Text(groups.isEmpty ? "No leftovers of removed apps." : "Leftovers of \(groups.count) removed apps, to review one by one.")
+                        .font(.callout).foregroundStyle(.secondary)
+                }
+                HStack {
+                    Button("Review Leftovers") { open(.leftovers) }.disabled(groups.isEmpty)
+                    Button(model.checkingUpdates ? "Checking updates…" : (model.updateCount == 1 ? "1 update" : "\(model.updateCount) updates")) {
+                        open(.updates)
+                    }
+                    .buttonStyle(.link)
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
+            .padding(8)
+        }
+        .onAppear {
+            if model.leftovers == nil { model.scanLeftovers() }
+            model.checkUpdatesIfDue()
+        }
+    }
+
+    func open(_ tab: ApplicationsModel.Tab) {
+        app.applications.tab = tab
+        app.selectedModule = .applications
     }
 }
 

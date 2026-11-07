@@ -1,3 +1,4 @@
+import AppInventory
 import Darwin
 import Foundation
 import RuleEngine
@@ -40,4 +41,21 @@ enum CompositionRoot {
         return CleanupContext(home: realHome(), rules: rules, guards: SystemGuardEnvironment(), hasFullDiskAccess: false,
                               trash: SystemTrash(), unloader: SystemLaunchItemUnloader(), appVersion: appVersion)
     }
+
+    /// Real system services for the Applications module (build spec §6.5, spec 013).
+    static func makeAppServices(home: Home) -> AppServices {
+        let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        return AppServices(catalog: AppCatalog(home: home, signatures: SystemAppSignatures(), usage: SpotlightAppUsage()),
+                           signatures: SystemAppSignatures(), receipts: SystemPackageReceipts(),
+                           fetcher: URLSessionFeedFetcher(appVersion: short), cache: UpdateCache(home: home))
+    }
+}
+
+/// What the Applications module needs from the outside world, built by `CompositionRoot`.
+struct AppServices: Sendable {
+    let catalog: AppCatalog
+    let signatures: AppSignatures
+    let receipts: PackageReceipts
+    let fetcher: FeedFetcher
+    let cache: UpdateCache
 }

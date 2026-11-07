@@ -148,12 +148,22 @@ public struct AppOverride: Codable, Hashable, Sendable, Identifiable {
     }
 }
 
+/// An app whose own version comparator disagrees with Sparkle's, so the update check would
+/// report a false update (spec 013 §4, `Rules/update-overrides.json`).
+public struct UpdateOverride: Codable, Hashable, Sendable, Identifiable {
+    public let bundleId: String
+    public let reason: String
+    public var id: String { bundleId }
+    enum CodingKeys: String, CodingKey, CaseIterable { case bundleId, reason }
+}
+
 /// All rules, as loaded from the bundled `Rules/` folder.
 public struct RuleSet: Sendable {
     public var cleanRules: [CleanRule] = []
     public var leftoverLocations: [LeftoverLocation] = []
     public var protectRules: [ProtectRule] = []
     public var appOverrides: [AppOverride] = []
+    public var updateOverrides: [UpdateOverride] = []
     /// Which file each rule id came from, for lint messages.
     public var fileOfID: [String: String] = [:]
     /// The rule-set version is the app's build number (spec 006 §2).
