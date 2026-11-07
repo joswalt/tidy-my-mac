@@ -178,14 +178,44 @@ struct ScanningView: View {
     let session: ScanSession
 
     var body: some View {
-        VStack(spacing: 16) {
-            ProgressView(value: Double(session.progress.values.filter { $0 }.count), total: Double(max(session.progress.count, 1)))
-                .progressViewStyle(.circular)
-                .controlSize(.large)
-            Text("Found \(sizeString(session.foundSoFar)) so far")
-                .font(.system(size: 22, weight: .semibold, design: .rounded)).monospacedDigit()
-                .contentTransition(.numericText())
-            Button("Stop") { session.stopScan() }
+        let done = session.progress.values.filter { $0 }.count
+        let total = max(session.progress.count, 1)
+        HStack(alignment: .center, spacing: 40) {
+            VStack(spacing: 16) {
+                ZStack {
+                    Circle().stroke(.quaternary, lineWidth: 10)
+                    Circle().trim(from: 0, to: Double(done) / Double(total))
+                        .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .animation(.easeInOut(duration: 0.3), value: done)
+                    Text("\(done) of \(total)").font(.callout.monospacedDigit()).foregroundStyle(.secondary)
+                }
+                .frame(width: 120, height: 120)
+                Text("Found \(sizeString(session.foundSoFar + session.foundInCurrent)) so far")
+                    .font(.system(size: 22, weight: .semibold, design: .rounded)).monospacedDigit()
+                    .contentTransition(.numericText())
+                Text(session.currentArea.map { "Checking \($0)…" } ?? "Finishing…")
+                    .foregroundStyle(.secondary)
+                Button("Stop") { session.stopScan() }
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(session.areas, id: \.id) { area in
+                    let finished = session.progress[area.id] == true
+                    let current = !finished && session.currentArea.map { area.title.hasPrefix($0) } == true
+                    HStack(spacing: 8) {
+                        if finished {
+                            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                        } else if current {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Image(systemName: "circle").foregroundStyle(.tertiary)
+                        }
+                        Text(area.title).foregroundStyle(finished || current ? .primary : .secondary)
+                    }
+                    .font(.callout)
+                }
+            }
+            .frame(minWidth: 220, alignment: .leading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

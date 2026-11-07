@@ -116,9 +116,10 @@ public struct CleanupEngine: Sendable {
     public init(context: CleanupContext) { self.context = context }
 
     /// Scans and hides ignored items (they never reach the review screen).
-    public func scan(_ rules: [CleanRule], ignore: IgnoreList) -> ScanReport {
+    public func scan(_ rules: [CleanRule], ignore: IgnoreList, onProgress: (@Sendable (Int64) -> Void)? = nil) -> ScanReport {
         let ignoredRules = Set(ignore.entries.filter { $0.kind == .ruleID }.map(\.value))
-        let report = context.scanner.scan(rules.filter { !ignoredRules.contains($0.id) })
+        let sizer = Sizer(onProgress: onProgress)
+        let report = ScanReport(results: rules.filter { !ignoredRules.contains($0.id) }.map { context.scanner.scan($0, sizer: sizer) })
         return ScanReport(results: report.results.map { r in
             var r = r
             r.candidates = r.candidates.filter { !ignore.ignores($0) }
