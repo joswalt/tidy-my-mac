@@ -35,16 +35,48 @@ public struct AppRemovalEngine: Sendable {
 
     public func run(_ batches: [RemovalBatch], module: String = "applications", dryRun: Bool,
                     extraItems: [RunItem] = []) throws -> CleanupEngine.Run {
-        let header = RunHeader(module: module, appVersion: context.appVersion, ruleSetVersion: context.rules.version, dryRun: dryRun)
-        let log = try RunLogWriter(directory: context.home.tidyRunLogs, header: header)
+        let log = try startLog(module: module, dryRun: dryRun)
         var outcome = Remover.Outcome()
-        func record(_ item: RunItem) throws { try log.append(item); outcome.add(item) }
+        try process(batches, extraItems: extraItems, dryRun: dryRun, log: log, outcome: &outcome)
+        return try finish(log, outcome)
+    }
 
+    /// The same run, then `rootItems` is called with the owners whose app (if any) was removed,
+    /// so the app can remove their root-level files through the helper; those results go into
+    /// the same run log. An app that stayed keeps its root-level files too.
+    public func run(_ batches: [RemovalBatch], module: String = "applications", dryRun: Bool, extraItems: [RunItem] = [],
+                    rootItems: @Sendable (_ removedOwners: Set<String>) async -> [RunItem]) async throws -> CleanupEngine.Run {
+        let log = try startLog(module: module, dryRun: dryRun)
+        var outcome = Remover.Outcome()
+        let owners = try process(batches, extraItems: extraItems, dryRun: dryRun, log: log, outcome: &outcome)
+        for item in await rootItems(owners) {
+            try log.append(item)
+            outcome.add(item)
+        }
+        return try finish(log, outcome)
+    }
+
+    func startLog(module: String, dryRun: Bool) throws -> RunLogWriter {
+        let header = RunHeader(module: module, appVersion: context.appVersion, ruleSetVersion: context.rules.version, dryRun: dryRun)
+        return try RunLogWriter(directory: context.home.tidyRunLogs, header: header)
+    }
+
+    func finish(_ log: RunLogWriter, _ outcome: Remover.Outcome) throws -> CleanupEngine.Run {
+        try log.finish()
+        return CleanupEngine.Run(outcome: outcome, record: try RunLogReader.read(log.fileURL), logURL: log.fileURL)
+    }
+
+    /// Returns the owners whose batch wasn't blocked (their app, if any, is gone or would be).
+    @discardableResult
+    func process(_ batches: [RemovalBatch], extraItems: [RunItem], dryRun: Bool, log: RunLogWriter,
+                 outcome: inout Remover.Outcome) throws -> Set<String> {
+        func record(_ item: RunItem) throws { try log.append(item); outcome.add(item) }
+        var removedOwners: Set<String> = []
         for item in extraItems { try record(item) }
         for batch in batches {
             let running: Set<String>
             do { running = try context.guards.runningBundleIDs().reduce(into: []) { $0.insert(PathNormalizer.fold($1)) } } catch {
-                for c in batch.items where !c.viaHelper { try record(skip(c, "\(error)")) }
+                for c in batch.items where !c.viaHelper { try record(skip(c, "\(error)")) }  // can't check: skip (006 §3.1)
                 continue
             }
             var blocked = batch.blockedReason
@@ -59,9 +91,9 @@ public struct AppRemovalEngine: Sendable {
                     blocked = "the app itself wasn't removed (\(item.reason ?? "unknown"))"
                 }
             }
+            if blocked == nil { removedOwners.insert(batch.ownerBundleID) }
         }
-        try log.finish()
-        return CleanupEngine.Run(outcome: outcome, record: try RunLogReader.read(log.fileURL), logURL: log.fileURL)
+        return removedOwners
     }
 
     func skip(_ c: Candidate, _ reason: String) -> RunItem {

@@ -22,6 +22,7 @@ final class AppModel {
 
     let cleanup: ScanSession
     let smartCare: ScanSession
+    let applications: ApplicationsModel
 
     init() {
         var ctx: CleanupContext?
@@ -31,8 +32,11 @@ final class AppModel {
         loadError = err
         cleanup = ScanSession(module: "cleanup")
         smartCare = ScanSession(module: "smartCare")
+        applications = ApplicationsModel(services: ctx.map { CompositionRoot.makeAppServices(home: $0.home) })
         cleanup.app = self
         smartCare.app = self
+        applications.app = self
+        applications.installers.app = self
         reloadIgnoreList()
         reloadRuns()
         NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
@@ -46,6 +50,8 @@ final class AppModel {
         let defaults = UserDefaults.standard
         if let m = defaults.string(forKey: "TidyModule"), let module = SidebarModule(rawValue: m) { selectedModule = module }
         if defaults.bool(forKey: "TidyScan") { (selectedModule == .cleanup ? cleanup : smartCare).scan() }
+        // -TidyAppsTab updates|leftovers|… opens that Applications tab (read-only, like scans).
+        if let t = defaults.string(forKey: "TidyAppsTab"), let tab = ApplicationsModel.Tab(rawValue: t) { applications.tab = tab }
         #endif
     }
 
@@ -101,6 +107,14 @@ final class AppModel {
         try? context.ignoreStore.save(ignoreList)
         cleanup.applyIgnoreList()
         smartCare.applyIgnoreList()
+        applications.installers.applyIgnoreList()
+        if let groups = applications.leftovers {
+            applications.leftovers = groups.compactMap { g in
+                var g = g
+                g.items = g.items.filter { !ignoreList.ignores($0) }
+                return g.items.isEmpty ? nil : g
+            }
+        }
         show("Added to the ignore list")
     }
 
@@ -204,8 +218,16 @@ final class ScanSession {
 
     var rules: [CleanRule] {
         guard let ctx = app?.context else { return [] }
-        return module == "smartCare" ? ctx.smartCareRules : ctx.cleanupRules
+        switch module {
+        case "smartCare": return ctx.smartCareRules
+        // Applications › Installers shows the installer rule on its own (build spec §6.5).
+        case "applications": return ctx.rules.cleanRules.filter { $0.category == .installer }
+        default: return ctx.cleanupRules
+        }
     }
+
+    /// Only Cleanup and Smart Care look at the Trash bins.
+    var includesTrashBins: Bool { module != "applications" }
 
     func scan() {
         guard let engine = app?.engine, let ignore = app?.ignoreList else { return }
@@ -215,7 +237,8 @@ final class ScanSession {
         foundSoFar = 0
         let userRules = rules.filter { $0.privilege == .user }
         let helperArea = rules.contains { $0.privilege == .helper } ? [("helper", "System files (admin helper)")] : []
-        areas = userRules.map { ($0.id, $0.title) } + helperArea + [("trash", "Trash")]
+        let trashArea = includesTrashBins ? [("trash", "Trash")] : []
+        areas = userRules.map { ($0.id, $0.title) } + helperArea + trashArea
         progress = Dictionary(uniqueKeysWithValues: areas.map { ($0.id, false) })
         foundInCurrent = 0
         scanTask = Task {
@@ -249,13 +272,15 @@ final class ScanSession {
                 }
             }
             progress["helper"] = true
-            currentArea = "Trash"
-            // Trash bins (build spec §6.4).
-            let ctx = engine.context
-            let bins = await Task.detached { TrashBins.results(home: ctx.home, floor: ctx.floor, hasFullDiskAccess: ctx.hasFullDiskAccess) }.value
-            results += bins
-            foundSoFar += bins.reduce(0) { $0 + $1.totalBytes }
-            progress["trash"] = true
+            if includesTrashBins {
+                currentArea = "Trash"
+                // Trash bins (build spec §6.4).
+                let ctx = engine.context
+                let bins = await Task.detached { TrashBins.results(home: ctx.home, floor: ctx.floor, hasFullDiskAccess: ctx.hasFullDiskAccess) }.value
+                results += bins
+                foundSoFar += bins.reduce(0) { $0 + $1.totalBytes }
+                progress["trash"] = true
+            }
             currentArea = nil
             // Categories with items first, safest first, then largest.
             let order: [RuleRisk: Int] = [.safe: 0, .caution: 1, .risky: 2]

@@ -15,6 +15,6 @@ Every rule is `origin: own`: written from Apple's documentation of the Library f
 | Project | URL | Commit | Licence | What we took |
 |---|---|---|---|---|
 | Sparkle | https://github.com/sparkle-project/Sparkle | `14fdbf28dc7c` (2.x) | MIT, `ThirdPartyLicenses/Sparkle.txt` | `SUStandardVersionComparator` ported to Swift (`AppInventory/VersionComparator.swift`) with its unit tests; appcast field names and the update filters of `SUAppcastDriver` (spec 013 §3–4) |
-| Homebrew (brew) | https://github.com/Homebrew/brew | see spec 013 research | BSD-2-Clause, `ThirdPartyLicenses/Homebrew.txt` | The approach of the livecheck `Sparkle` and `ElectronBuilder` strategies (enclosure attributes before elements; `latest-mac.yml` top-level `version`). Our code is written from scratch; no Ruby was copied. The cask catalogue itself is fetched from formulae.brew.sh at run time, never bundled. |
+| Homebrew (brew) | https://github.com/Homebrew/brew | `67984c752d13` (master, 2026-11-07) | BSD-2-Clause, `ThirdPartyLicenses/Homebrew.txt` | The approach of the livecheck `Sparkle` and `ElectronBuilder` strategies (enclosure attributes before elements; `latest-mac.yml` top-level `version`). Our code is written from scratch; no Ruby was copied. The cask catalogue itself is fetched from formulae.brew.sh at run time, never bundled. |
 
 Learn-only, not copied: Latest (GPL-3.0), Pearcleaner (Apache-2.0 + Commons Clause).

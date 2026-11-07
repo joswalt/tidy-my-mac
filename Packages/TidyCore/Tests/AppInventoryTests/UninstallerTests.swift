@@ -241,6 +241,26 @@ struct UninstallerTests {
         #expect(FileStatus.lstat(t.path("Documents/\(Dummy.id)/mine.txt")) != nil)
     }
 
+    /// Root-level files go through the helper only for owners whose app was removed; their
+    /// results land in the same run log.
+    @Test func rootItemsOnlyForRemovedApps() async throws {
+        let t = try TestHome("dummy-root")
+        defer { t.cleanUp() }
+        try Dummy.build(t)
+        let listing = Dummy.catalog(t).list()
+        let dummy = try #require(listing.apps.first { $0.bundleID == Dummy.id })
+        let pro = try #require(listing.apps.first { $0.bundleID == Dummy.id + ".Pro" })
+        let ctx = Dummy.context(t, running: [pro.bundleID])
+        let finder = RelatedFileFinder(context: ctx, installedBundleIDs: listing.allBundleIDs, receipts: nil)
+        let batches = [dummy, pro].map { RemovalBatch(ownerBundleID: $0.bundleID, items: finder.plan(for: $0).allItems) }
+        let run = try await AppRemovalEngine(context: ctx, signatures: FakeSignatures()).run(batches, dryRun: false) { owners in
+            #expect(owners == [Dummy.id])
+            return [RunItem(ruleID: "leftover.system.libraryLeftovers", path: "helper-item", allocatedBytes: 1, action: .trash, result: .done)]
+        }
+        #expect(run.record.items.contains { $0.path == "helper-item" })
+        #expect(FileStatus.lstat(pro.path) != nil && FileStatus.lstat(dummy.path) == nil)
+    }
+
     @Test func appBundleMustStillBeTheSameApp() throws {
         let t = try TestHome("dummy-swap")
         defer { t.cleanUp() }
