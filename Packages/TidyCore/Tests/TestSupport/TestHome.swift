@@ -91,6 +91,13 @@ public final class TestHome: @unchecked Sendable {
 
     public func path(_ relative: String) -> String { home.root.appendingPathComponent(relative).path }
 
+    /// Removes any item inside this fixture by absolute path. Fence-checked.
+    public func remove(absolute path: String) throws {
+        try TestFence.check(path)
+        guard PathNormalizer.isInside(path, base.path) else { throw Refused(description: "\(path) is outside the fixture") }
+        try FileManager.default.removeItem(atPath: path)
+    }
+
     /// Removes a fixture item (to simulate changes between scan and run). Fence-checked.
     public func remove(_ relative: String) throws {
         try TestFence.check(path(relative))

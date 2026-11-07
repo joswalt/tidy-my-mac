@@ -1,5 +1,5 @@
-// Helper zones, handles, operations, Trash ledger and restore; testable without XPC (spec 005).
-// Empty in milestone 0; filled in by the milestone that owns it (docs/spec/README.md §7).
+// HelperCore: everything the root helper does, testable without XPC or root (spec 005).
+// Zone roots, the ledger location, system commands and authorization are injected.
 
 /// Namespace marker for the HelperCore library.
 public enum HelperCore {

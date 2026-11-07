@@ -16,8 +16,19 @@ public struct Candidate: Hashable, Sendable, Identifiable {
     public let action: RuleAction
     public let risk: RuleRisk
     public let status: RuleStatus
+    /// Set for items the admin helper found: the helper's handle (spec 005 §5.2). The app never
+    /// sends the helper a path, only this.
+    public var helperHandle: UUID?
+
+    public init(ruleID: String, path: String, root: String, identity: ItemIdentity, isDirectory: Bool, allocatedBytes: Int64,
+                newestModification: Date, action: RuleAction, risk: RuleRisk, status: RuleStatus, helperHandle: UUID? = nil) {
+        self.ruleID = ruleID; self.path = path; self.root = root; self.identity = identity; self.isDirectory = isDirectory
+        self.allocatedBytes = allocatedBytes; self.newestModification = newestModification; self.action = action
+        self.risk = risk; self.status = status; self.helperHandle = helperHandle
+    }
 
     public var id: String { ruleID + "\u{0}" + path }
+    public var viaHelper: Bool { helperHandle != nil }
     public var name: String { (path as NSString).lastPathComponent }
 
     /// Safe, verified rules are ticked; experimental rules are always unticked (spec 006 §6).
@@ -25,12 +36,17 @@ public struct Candidate: Hashable, Sendable, Identifiable {
 }
 
 public struct SkippedItem: Hashable, Sendable {
+    public init(ruleID: String, path: String, reason: String) { self.ruleID = ruleID; self.path = path; self.reason = reason }
     public let ruleID: String
     public let path: String
     public let reason: String
 }
 
 public struct RuleScanResult: Sendable {
+    public init(rule: CleanRule, state: State, candidates: [Candidate] = [], skipped: [SkippedItem] = []) {
+        self.rule = rule; self.state = state; self.candidates = candidates; self.skipped = skipped
+    }
+
     public enum State: Equatable, Sendable {
         case scanned
         /// The rule needs Full Disk Access; it is shown greyed out, never half-run.

@@ -36,6 +36,47 @@
         "license": "own"
       },
       "reviewed": "2026-11-07"
+    },
+    {
+      "id": "launch.system.broken",
+      "title": "Broken system login items",
+      "module": "cleanup",
+      "category": "launch-item",
+      "risk": "caution",
+      "removes": "Launch agents and daemons for all users whose program no longer exists.",
+      "keeps": "Items whose program is still installed, and Apple's own.",
+      "notes": "Unloaded, then moved to your Trash by the admin helper; restore from Health › Run History.",
+      "targets": [
+        {
+          "root": "/Library/LaunchAgents",
+          "match": "glob",
+          "pattern": "*.plist"
+        },
+        {
+          "root": "/Library/LaunchDaemons",
+          "match": "glob",
+          "pattern": "*.plist"
+        }
+      ],
+      "conditions": {
+        "launchProgramMissing": true,
+        "excludeNames": [
+          "com.apple.*"
+        ]
+      },
+      "action": "trash",
+      "privilege": "helper",
+      "zone": "launchItems",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
     }
   ]
 }

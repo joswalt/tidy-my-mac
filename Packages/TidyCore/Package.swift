@@ -19,29 +19,29 @@ let package = Package(
     ],
     targets: [
         .target(name: "SafetyFloor"),
-        .target(name: "HelperProtocol"),
+        .target(name: "HelperProtocol", dependencies: ["SafetyFloor"]),
         .target(name: "HelperCore", dependencies: ["SafetyFloor", "HelperProtocol"]),
         .target(name: "RuleEngine", dependencies: ["SafetyFloor", "RunLog"]),
         .target(name: "AppInventory", dependencies: ["SafetyFloor", "RuleEngine"]),
         .target(name: "DiskAnalysis", dependencies: ["SafetyFloor"]),
         .target(name: "SystemTasks", dependencies: ["HelperProtocol"]),
-        .target(name: "Monitors"),
+        .target(name: "Monitors", dependencies: ["SafetyFloor"]),
         .target(name: "RunLog"),
 
         // Command-line rule lint, run by scripts/lint-rules.sh.
         .executableTarget(name: "tidy-rule-lint", dependencies: ["RuleEngine", "SafetyFloor"]),
 
         // Test-only support: TestHome fixtures and snapshots (spec 017 §2). Never linked by the app.
-        .target(name: "TestSupport", dependencies: ["SafetyFloor", "RuleEngine"], path: "Tests/TestSupport"),
+        .target(name: "TestSupport", dependencies: ["SafetyFloor", "RuleEngine", "HelperCore", "HelperProtocol"], path: "Tests/TestSupport"),
 
         .testTarget(name: "SafetyFloorTests", dependencies: ["SafetyFloor", "TestSupport"]),
-        .testTarget(name: "HelperProtocolTests", dependencies: ["HelperProtocol"]),
-        .testTarget(name: "HelperCoreTests", dependencies: ["HelperCore"]),
+        .testTarget(name: "HelperProtocolTests", dependencies: ["HelperProtocol", "HelperCore", "SafetyFloor", "TestSupport"]),
+        .testTarget(name: "HelperCoreTests", dependencies: ["HelperCore", "HelperProtocol", "SafetyFloor", "TestSupport"]),
         .testTarget(name: "RuleEngineTests", dependencies: ["RuleEngine", "RunLog", "TestSupport"], exclude: ["Fixtures"]),
         .testTarget(name: "AppInventoryTests", dependencies: ["AppInventory"]),
         .testTarget(name: "DiskAnalysisTests", dependencies: ["DiskAnalysis"]),
         .testTarget(name: "SystemTasksTests", dependencies: ["SystemTasks"]),
-        .testTarget(name: "MonitorsTests", dependencies: ["Monitors"]),
+        .testTarget(name: "MonitorsTests", dependencies: ["Monitors", "SafetyFloor"]),
         .testTarget(name: "RunLogTests", dependencies: ["RunLog", "TestSupport"]),
         // The core property (spec 017 §4.1): a run removes exactly what was selected, nothing else.
         .testTarget(name: "EndToEndTests", dependencies: [

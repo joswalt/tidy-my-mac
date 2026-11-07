@@ -165,7 +165,7 @@ struct SnapshotDiffTests {
 
         // Every rule found its junk; the dangerous lookalikes were refused at scan time.
         let ids = Set(selection.map(\.ruleID))
-        for r in Self.rules.cleanRules where r.action != .operation { #expect(ids.contains(r.id), "\(r.id) found nothing") }
+        for r in Self.rules.cleanRules where r.action != .operation && r.privilege == .user { #expect(ids.contains(r.id), "\(r.id) found nothing") }
         let names = Set(selection.map(\.name))
         for bad in ["escape", "TidyMyMac", "com.apple.something", "com.example.Locked", "com.example.present.plist", "report.pdf"] {
             #expect(!names.contains(bad), "\(bad) must not be a candidate")

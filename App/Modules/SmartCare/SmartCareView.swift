@@ -7,6 +7,7 @@ struct SmartCareView: View {
     @Environment(AppModel.self) private var app
     @State private var showReview = false
     @State private var showConfirm = false
+    @State private var flushDNS = true
 
     var session: ScanSession { app.smartCare }
 
@@ -29,7 +30,7 @@ struct SmartCareView: View {
                 .disabled(session.phase == .scanning || session.phase == .running)
         }
         .sheet(isPresented: $showReview) { ReviewSheet(session: session) { showConfirm = true } }
-        .cleanConfirm($showConfirm, summary: session.summary) { session.run(dryRun: false) }
+        .cleanConfirm($showConfirm, summary: session.summary, adminItems: session.selected.filter(\.viaHelper)) { session.run(dryRun: false, flushDNS: flushDNS && app.helper.state.isReady) }
     }
 
     var idle: some View {
@@ -67,9 +68,9 @@ struct SmartCareView: View {
                 }
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 12)], spacing: 12) {
                     CleanupCard(session: session) { showReview = true }
-                    LaterCard(title: "Trash", symbol: "trash", note: "Needs Full Disk Access (setup arrives in a later build).")
+                    TrashCard(session: session)
                     LaterCard(title: "Applications", symbol: "square.grid.2x2", note: "Leftovers and updates arrive in a later build.")
-                    LaterCard(title: "Maintenance", symbol: "gauge.with.dots.needle.67percent", note: "Tasks arrive in a later build.")
+                    MaintenanceCard(flushDNS: $flushDNS)
                     LaterCard(title: "My Clutter", symbol: "doc.on.doc", note: "Large and old files arrive in a later build. Smart Care never cleans personal files.")
                     LaterCard(title: "Protection", symbol: "lock.shield", note: "Review app permissions (later build).")
                 }
@@ -90,7 +91,7 @@ struct CleanupCard: View {
     let onReview: () -> Void
 
     var body: some View {
-        let all = session.candidates
+        let all = session.candidates.filter { !TrashBins.isTrashItem($0) }
         GroupBox {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
@@ -128,5 +129,61 @@ struct LaterCard: View {
             .padding(8)
         }
         .opacity(0.6)
+    }
+}
+
+/// Trash card: starts unticked, emptying is permanent (spec 007 §3, build spec §6.4).
+struct TrashCard: View {
+    @Bindable var session: ScanSession
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        let items = session.candidates.filter(TrashBins.isTrashItem)
+        GroupBox {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    if !items.isEmpty {
+                        TriStateBox(state: session.selection.state(of: items)) {
+                            session.selection.setGroup(items, session.selection.state(of: items) != .all)
+                        }
+                    }
+                    Label("Trash", systemImage: "trash").font(.headline)
+                    Spacer()
+                    Text(sizeString(items.reduce(0) { $0 + $1.allocatedBytes })).monospacedDigit().foregroundStyle(.secondary)
+                }
+                if app.fullDiskAccess != .granted {
+                    Text("Needs Full Disk Access to see what's in the Trash.").font(.callout).foregroundStyle(.secondary)
+                    Button("Open Setup") { app.showSetup = true }
+                } else {
+                    Label("Emptying the Trash is permanent.", systemImage: "flame").font(.callout).foregroundStyle(.red)
+                    Text("\(items.count) items").font(.callout.monospacedDigit())
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(8)
+        }
+    }
+}
+
+/// Maintenance card: Flush DNS on by default; the other tasks live in Performance (spec 007 §3).
+struct MaintenanceCard: View {
+    @Binding var flushDNS: Bool
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Maintenance", systemImage: "gauge.with.dots.needle.67percent").font(.headline)
+                if app.helper.state.isReady {
+                    Toggle("Flush DNS cache", isOn: $flushDNS)
+                    Button("Spotlight and Time Machine…") { app.selectedModule = .performance }.buttonStyle(.link)
+                } else {
+                    Text("Needs the admin helper.").font(.callout).foregroundStyle(.secondary)
+                    Button("Open Setup") { app.showSetup = true }
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
+            .padding(8)
+        }
     }
 }

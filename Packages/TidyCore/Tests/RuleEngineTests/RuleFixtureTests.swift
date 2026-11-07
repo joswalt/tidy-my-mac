@@ -28,14 +28,14 @@ struct RuleFixtureTests {
     static let rules: [CleanRule] = try! RuleLoader.load(from: RepoPaths.rules, version: 1).cleanRules
 
     @Test func everyFileRuleHasFixtures() {
-        for rule in Self.rules where rule.action != .operation {
+        for rule in Self.rules where rule.action != .operation && rule.privilege == .user {
             let spec = Self.specs[rule.id]
             #expect(spec != nil, "\(rule.id) has no fixture")
             #expect(!(spec?.mustMatch.isEmpty ?? true) && !(spec?.mustNotMatch.isEmpty ?? true), "\(rule.id) needs both lists")
         }
     }
 
-    @Test(arguments: rules.filter { $0.action != .operation }.map(\.id))
+    @Test(arguments: rules.filter { $0.action != .operation && $0.privilege == .user }.map(\.id))
     func ruleMatchesItsFixture(_ id: String) throws {
         let rule = try #require(Self.rules.first { $0.id == id })
         let spec = try #require(Self.specs[id])

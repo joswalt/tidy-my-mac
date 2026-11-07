@@ -13,8 +13,9 @@ swift_files() { find App Helper Packages/TidyCore/Sources Packages/TidyCore/Test
 # Allowed files per check (extended regexes on the repo-relative path).
 # Composition root: the only app file that may build real file-system values (Home).
 COMPOSITION_ROOT='^App/(TidyMyMacApp|CompositionRoot)\.swift$'
-# Files that may hold literal system paths: the floor, helper zones, and their tests.
-LITERAL_PATHS_OK='^Packages/TidyCore/(Sources|Tests)/(SafetyFloor|HelperCore)(Tests)?/'
+# Files that may hold literal system paths: the floor, helper zones, and their tests (helper tests
+# map zone roots into a temp fixture with FakeHelperWorld.root("/Library/...")).
+LITERAL_PATHS_OK='^Packages/TidyCore/((Sources|Tests)/(SafetyFloor|HelperCore|HelperProtocol)(Tests)?/|Tests/TestSupport/FakeHelper[^/]*\.swift$)'
 # Files that may remove or trash: the floor, the RuleEngine remover, HelperCore, the composition root.
 REMOVERS_OK='^Packages/TidyCore/Sources/(SafetyFloor/|HelperCore/|RuleEngine/Remover[^/]*\.swift$)|^App/(TidyMyMacApp|CompositionRoot)\.swift$'
 # TestHome builds fixture homes in the temp dir.
@@ -63,6 +64,11 @@ for t in ${REQUIRED_TEST_FILES[@]+"${REQUIRED_TEST_FILES[@]}"}; do
   [ -f "$t" ] || report "required test file missing: $t"
 done
 
+# 8. The compiled team ID matches the signing team.
+team_cfg=$(sed -n 's/^DEVELOPMENT_TEAM *= *//p' Config/Identity.xcconfig | tr -d ' ')
+team_src=$(sed -n 's/.*teamID = "\([A-Z0-9]*\)".*/\1/p' Packages/TidyCore/Sources/HelperProtocol/TeamID.swift)
+[ -n "$team_cfg" ] && [ "$team_cfg" = "$team_src" ] || report "HelperProtocol.teamID ($team_src) differs from DEVELOPMENT_TEAM ($team_cfg)"
+
 # 7. Every file rule has a must-match and a must-not-match fixture (spec 006 §6 step 2, 017 §4.2).
 missing=$(/usr/bin/env python3 -I - Rules Packages/TidyCore/Tests/RuleEngineTests/Fixtures/rule-fixtures.json <<'PY'
 import json, pathlib, sys
@@ -71,8 +77,8 @@ for f in sorted(pathlib.Path(sys.argv[1]).glob("*.json")):
     if f.name in ("schema.json", "protected.json", "leftover-locations.json", "app-overrides.json"):
         continue
     for r in json.loads(f.read_text()).get("rules", []):
-        if r.get("action") == "operation":
-            continue
+        if r.get("action") == "operation" or r.get("privilege") == "helper":
+            continue  # helper rules are covered by HelperCore's zone tests and HelperRuleMatcher fixtures
         spec = fixtures.get(r.get("id"), {})
         if not spec.get("mustMatch") or not spec.get("mustNotMatch"):
             print(r.get("id"))

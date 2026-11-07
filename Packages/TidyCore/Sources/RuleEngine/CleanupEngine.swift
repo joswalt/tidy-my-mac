@@ -14,6 +14,12 @@ public struct CleanupContext: Sendable {
     public let unloader: LaunchItemUnloader?
     public let appVersion: String
 
+    /// The same context with a fresh Full Disk Access answer (the probe re-runs on activation).
+    public func with(fullDiskAccess: Bool) -> CleanupContext {
+        CleanupContext(home: home, rules: rules, guards: guards, hasFullDiskAccess: fullDiskAccess, trash: trash,
+                       unloader: unloader, appVersion: appVersion)
+    }
+
     public init(home: Home, rules: RuleSet, guards: GuardEnvironment, hasFullDiskAccess: Bool, trash: TrashMover,
                 unloader: LaunchItemUnloader?, appVersion: String) {
         self.home = home
@@ -127,11 +133,21 @@ public struct CleanupEngine: Sendable {
     }
 
     /// Runs the selection (or, with `dryRun`, only reports it). Every run is logged (§6.1).
-    public func run(_ selection: [Candidate], module: String, dryRun: Bool) throws -> Run {
+    /// Items the admin helper handled (or other one-off actions) arrive as `extraItems` and go into
+    /// the same run log; user-level items are removed here.
+    public func run(_ selection: [Candidate], module: String, dryRun: Bool, extraItems: [RunItem] = []) throws -> Run {
         let header = RunHeader(module: module, appVersion: context.appVersion, ruleSetVersion: context.rules.version, dryRun: dryRun)
         let log = try RunLogWriter(directory: context.home.tidyRunLogs, header: header)
         let remover = Remover(scanner: context.scanner, trash: context.trash, unloader: context.unloader)
-        let outcome = try remover.run(selection, rules: context.rules, log: log, dryRun: dryRun)
+        var outcome = try remover.run(selection, rules: context.rules, log: log, dryRun: dryRun)
+        for item in extraItems {
+            try log.append(item)
+            switch item.result {
+            case .done: outcome.done.append(item)
+            case .skipped: outcome.skipped.append(item)
+            case .failed: outcome.failed.append(item)
+            }
+        }
         try log.finish()
         return Run(outcome: outcome, record: try RunLogReader.read(log.fileURL), logURL: log.fileURL)
     }

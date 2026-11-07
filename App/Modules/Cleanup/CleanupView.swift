@@ -43,7 +43,7 @@ struct CleanupView: View {
         }
         .sheet(isPresented: $showReview) { ReviewSheet(session: session) { showConfirm = true } }
         .sheet(isPresented: $showIgnoreList) { IgnoreListView().frame(minWidth: 560, minHeight: 360) }
-        .cleanConfirm($showConfirm, summary: session.summary) { session.run(dryRun: false) }
+        .cleanConfirm($showConfirm, summary: session.summary, adminItems: session.selected.filter(\.viaHelper)) { session.run(dryRun: false) }
     }
 
     @ViewBuilder
@@ -103,7 +103,7 @@ struct CategoryRow: View {
         switch result.state {
         case .scanned: result.candidates.isEmpty ? "Nothing found" : nil
         case .needsFullDiskAccess: "Needs Full Disk Access"
-        case .requiresHelper: "Needs the admin helper (later build)"
+        case .requiresHelper: "Needs the admin helper"
         case .notForThisMacOS: "Not for this version of macOS"
         case .blocked(let why): "Skipped: \(why)"
         case .operation: "Runs a task (later build)"
@@ -138,6 +138,9 @@ struct RuleDetail: View {
                         Text(rule.action == .delete ? "Deleted permanently (caches and logs are re-created)" : "The Trash, where you can restore it")
                     }
                     GridRow { Text("Source").foregroundStyle(.secondary); Text(rule.source.origin == "own" ? "TidyMyMac" : rule.source.origin) }
+                    if rule.privilege == .helper {
+                        GridRow { Text("Needs").foregroundStyle(.secondary); Label("Your administrator password, once per run", systemImage: "lock.fill") }
+                    }
                 }
                 .font(.callout)
                 if rule.risk == .risky {
@@ -148,7 +151,11 @@ struct RuleDetail: View {
             .padding(20)
             Divider()
             if result.candidates.isEmpty {
-                EmptyStateView(symbol: "checkmark.circle", message: emptyMessage)
+                EmptyStateView(symbol: "checkmark.circle", message: emptyMessage) {
+                    if result.state == .needsFullDiskAccess || result.state == .requiresHelper {
+                        Button("Open Setup") { app.showSetup = true }
+                    }
+                }
             } else {
                 ItemTable(session: session, items: result.candidates)
             }
@@ -157,8 +164,8 @@ struct RuleDetail: View {
 
     var emptyMessage: String {
         switch result.state {
-        case .needsFullDiskAccess: "This category needs Full Disk Access, which arrives with the setup screen in a later build."
-        case .requiresHelper: "This category needs the admin helper, which arrives in a later build."
+        case .needsFullDiskAccess: "This category needs Full Disk Access. Open setup to turn it on."
+        case .requiresHelper: "This category needs the admin helper. Open setup to install it."
         case .blocked(let why): "Skipped because \(why)."
         case .operation: "This task runs from Maintenance in a later build."
         case .notForThisMacOS: "This rule doesn't apply to this version of macOS."

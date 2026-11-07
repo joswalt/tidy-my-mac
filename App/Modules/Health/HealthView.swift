@@ -104,13 +104,14 @@ struct RunDetail: View {
                         if state == .restored {
                             Button("Restore") { app.restore([i]); refresh += 1 }
                         } else {
-                            Text(state == .notInTrash ? "Not in Trash" : "—").foregroundStyle(.secondary).help(state.description)
+                            Text(state == .notInTrash ? "Not in Trash" : (state == .needsHelper ? "Needs helper" : "—"))
+                                .foregroundStyle(.secondary).help(state.description)
                         }
                     }
                 }
                 .width(100)
             })
-            .id(refresh)
+            .id("\(refresh)-\(app.restoreTick)")
         }
     }
 }

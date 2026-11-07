@@ -141,3 +141,19 @@ struct CleanupEngineTests {
         #expect(unloader.calls.paths == [t.path("Library/LaunchAgents/com.example.gone.plist")])
     }
 }
+
+struct SelectionIsolationTests {
+    @Test func tickingOneItemNeverTicksItsNeighbours() {
+        func cand(_ n: String, helper: Bool) -> Candidate {
+            Candidate(ruleID: "cache.system", path: HelperZone.systemCaches.roots[0] + "/" + n, root: HelperZone.systemCaches.roots[0], identity: ItemIdentity(device: 0, inode: 0),
+                      isDirectory: true, allocatedBytes: 1, newestModification: Date(), action: .delete, risk: .caution,
+                      status: .experimental, helperHandle: helper ? UUID() : nil)
+        }
+        let items = ["TidyCanary-A", "TidyCanary-B", "com.example"].map { cand($0, helper: true) }
+        var sel = Selection.defaults(for: items)
+        #expect(sel.ids.isEmpty, "experimental helper items start unticked")
+        sel.set(items[0], true)
+        #expect(sel.selected(from: items).map(\.name) == ["TidyCanary-A"])
+        #expect(sel.state(of: items) == .some)
+    }
+}
