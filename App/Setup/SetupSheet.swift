@@ -37,6 +37,9 @@ struct SetupSheet: View {
                     Text("Move TidyMyMac to the Applications folder first, then open it from there.").foregroundStyle(.orange)
                 case .needsApproval:
                     Button("Open Login Items Settings") { app.helper.openLoginItems() }
+                case .needsAdminAccount:
+                    Text("This is a standard account, and the helper only works for administrators. Everything in your own folders still works; system caches, logs and maintenance tasks need an admin account.")
+                        .font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 case .broken(let why):
                     Text(why).font(.caption).foregroundStyle(.orange)
                     Button("Repair Helper") { Task { await app.helper.repair() } }

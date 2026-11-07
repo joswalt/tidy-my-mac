@@ -119,10 +119,11 @@ struct HelperSettings: View {
                 switch app.helper.state {
                 case .notInstalled: Button("Install Helper") { Task { await app.helper.install() } }
                 case .needsApproval: Button("Open Login Items Settings") { app.helper.openLoginItems() }
+                case .needsAdminAccount: EmptyView()
                 default: Button("Repair Helper") { Task { await app.helper.repair() } }
                 }
                 Button("Remove Helper") { Task { await app.helper.remove() } }
-                    .disabled(app.helper.state == .notInstalled)
+                    .disabled(app.helper.state == .notInstalled || app.helper.state == .needsAdminAccount)
             }
             Text("Remove the helper before deleting TidyMyMac, so no stale Login Items entry is left behind.")
                 .font(.caption).foregroundStyle(.secondary)
