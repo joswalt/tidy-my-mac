@@ -2,7 +2,6 @@ import RuleEngine
 import SwiftUI
 
 /// Smart Care: one scan → result cards → review → one confirm → done (spec 007 §3).
-/// In this build only the Cleanup card is live; the others arrive with later milestones.
 struct SmartCareView: View {
     @Environment(AppModel.self) private var app
     @State private var showReview = false
@@ -19,7 +18,12 @@ struct SmartCareView: View {
             case .scanning: ScanningView(session: session)
             case .running: ProgressView("Cleaning…").frame(maxWidth: .infinity, maxHeight: .infinity)
             case .done(let dry):
-                if let run = session.lastRun { RunResultView(run: run, dryRun: dry) { session.finish() } }
+                if let run = session.lastRun {
+                    VStack(spacing: 0) {
+                        RunResultView(run: run, dryRun: dry) { session.finish() }
+                        if !dry { ReminderPrompt() }
+                    }
+                }
             case .results: results(session)
             }
         }
@@ -72,7 +76,7 @@ struct SmartCareView: View {
                     ApplicationsCard()
                     MaintenanceCard(flushDNS: $flushDNS)
                     ClutterCard()
-                    LaterCard(title: "Protection", symbol: "lock.shield", note: "Review app permissions (later build).")
+                    ProtectionCard()
                 }
             }
             .padding(20)
@@ -156,24 +160,6 @@ struct ApplicationsCard: View {
     func open(_ tab: ApplicationsModel.Tab) {
         app.applications.tab = tab
         app.selectedModule = .applications
-    }
-}
-
-struct LaterCard: View {
-    let title: String
-    let symbol: String
-    let note: String
-
-    var body: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 8) {
-                Label(title, systemImage: symbol).font(.headline)
-                Text(note).font(.callout).foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
-            .padding(8)
-        }
-        .opacity(0.6)
     }
 }
 
@@ -261,6 +247,51 @@ struct MaintenanceCard: View {
             }
             .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
             .padding(8)
+        }
+    }
+}
+
+/// Protection card: permissions are reviewed in System Settings, so no counts (build spec §6.10).
+struct ProtectionCard: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Protection", systemImage: "lock.shield").font(.headline)
+                Text("Review app permissions: camera, microphone, screen recording and more.").font(.callout).foregroundStyle(.secondary)
+                Button("Review App Permissions") { app.selectedModule = .protection }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(8)
+        }
+    }
+}
+
+/// Asked once, on the Done screen of the first Smart Care (spec 012 §2).
+struct ReminderPrompt: View {
+    @Environment(AppModel.self) private var app
+    @AppStorage("reminderPromptAnswered") private var answered = false
+
+    var body: some View {
+        if !answered {
+            GroupBox {
+                HStack {
+                    Image(systemName: "bell.badge").font(.title2).foregroundStyle(.tint)
+                    Text("Remind me to run Smart Care \(app.status.reminderInterval.title.lowercased())?")
+                    Spacer()
+                    Button("No Thanks") { app.status.remindersOn = false; answered = true }
+                    Button("Remind Me") {
+                        app.status.remindersOn = true
+                        app.status.requestNotificationPermission()
+                        answered = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .padding(8)
+            }
+            .frame(maxWidth: 560)
+            .padding(.bottom, 30)
         }
     }
 }

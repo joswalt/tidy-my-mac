@@ -6,6 +6,7 @@ struct MainWindow: View {
 
     @SceneStorage("selectedModule") private var selectedRaw = SidebarModule.smartCare.rawValue
     @Environment(AppModel.self) private var app
+    @Environment(\.openWindow) private var openWindow
 
     private var selection: Binding<SidebarModule?> {
         Binding(
@@ -31,6 +32,7 @@ struct MainWindow: View {
             ModuleDetail(module: app.selectedModule)
         }
         .frame(minWidth: 900, minHeight: 600)
+        .onAppear { app.openMainWindow = { openWindow(id: MainWindow.id) } }
         .toast(app.toast)
         .sheet(isPresented: Binding(get: { app.showSetup }, set: { app.showSetup = $0 })) { SetupSheet() }
         .onAppear {
@@ -90,15 +92,28 @@ struct SidebarFooter: View {
     @Environment(AppModel.self) private var app
 
     var body: some View {
-        Button { app.showSetup = true } label: {
-            HStack(alignment: .top, spacing: 6) {
-                Circle().fill(app.isSetUp ? Color.green : Color.orange).frame(width: 8, height: 8).padding(.top, 4)
-                Text(app.setupLine).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
-                Spacer(minLength: 0)
+        VStack(alignment: .leading, spacing: 6) {
+            if let s = app.status.storage {
+                Button { app.healthTab = .overview; app.selectedModule = .health } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "internaldrive").font(.caption).foregroundStyle(app.status.lowDiskActive ? .orange : .secondary)
+                        Text("\(sizeString(s.availableBytes)) free").font(.caption).foregroundStyle(.secondary).monospacedDigit()
+                        Spacer(minLength: 0)
+                    }
+                }
+                .buttonStyle(.plain)
+                .help("Open Health")
             }
+            Button { app.showSetup = true } label: {
+                HStack(alignment: .top, spacing: 6) {
+                    Circle().fill(app.isSetUp ? Color.green : Color.orange).frame(width: 8, height: 8).padding(.top, 4)
+                    Text(app.setupLine).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                    Spacer(minLength: 0)
+                }
+            }
+            .buttonStyle(.plain)
+            .help("Open setup")
         }
-        .buttonStyle(.plain)
-        .help("Open setup")
         .padding(12)
     }
 }

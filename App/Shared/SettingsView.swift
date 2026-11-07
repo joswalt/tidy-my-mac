@@ -1,3 +1,4 @@
+import Monitors
 import SwiftUI
 
 /// Settings window (⌘,). Panes per build spec §6.11; the others arrive with later milestones.
@@ -8,14 +9,15 @@ struct SettingsView: View {
 
     var body: some View {
         TabView {
-            Form {
-                LabeledContent("Run logs") {
-                    Button("Reveal Run Logs") { app.revealRunLogs() }.disabled(app.runs.isEmpty)
-                }
-                Text("Every run, including dry runs, is logged and kept.").font(.caption).foregroundStyle(.secondary)
-            }
-            .formStyle(.grouped)
-            .tabItem { Label("General", systemImage: "gearshape") }
+            GeneralSettings()
+                .tabItem { Label("General", systemImage: "gearshape") }
+
+            AlertSettingsPane()
+                .tabItem { Label("Alerts", systemImage: "exclamationmark.triangle") }
+
+            Form { ReminderControls(status: app.status) }
+                .formStyle(.grouped)
+                .tabItem { Label("Reminders", systemImage: "bell") }
 
             VStack(spacing: 0) {
                 IgnoreListView()
@@ -39,6 +41,69 @@ struct SettingsView: View {
                 .tabItem { Label("Helper", systemImage: "lock.shield") }
         }
         .frame(width: 560, height: 480)
+    }
+}
+
+/// Settings › General (build spec §6.11).
+struct GeneralSettings: View {
+    @Environment(AppModel.self) private var app
+    @AppStorage("showInMenuBar") private var showInMenuBar = true
+
+    var body: some View {
+        Form {
+            Toggle("Show in menu bar", isOn: $showInMenuBar)
+            Toggle("Open at login", isOn: Binding(get: { app.loginItem.isOn }, set: { app.loginItem.set($0) }))
+            if app.loginItem.needsApproval {
+                HStack {
+                    Text("Waiting for approval in Login Items.").font(.caption).foregroundStyle(.orange)
+                    Button("Open Login Items Settings") { app.loginItem.openSettings() }.buttonStyle(.link).font(.caption)
+                }
+            }
+            if let e = app.loginItem.error { Text(e).font(.caption).foregroundStyle(.orange) }
+            LabeledContent("Run logs") {
+                Button("Reveal Run Logs") { app.revealRunLogs() }.disabled(app.runs.isEmpty)
+            }
+            Text("Every run, including dry runs, is logged and kept.").font(.caption).foregroundStyle(.secondary)
+        }
+        .formStyle(.grouped)
+        .onAppear { app.loginItem.refresh() }
+    }
+}
+
+/// Settings › Alerts: the low-disk and Trash lines are shared with Health (specs 011 §4, 012 §1).
+struct AlertSettingsPane: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        @Bindable var status = app.status
+        Form {
+            Section {
+                Picker("Low disk space below", selection: $status.lowDiskGB) {
+                    ForEach(AlertSettings.lowDiskChoicesGB, id: \.self) { Text("\($0) GB").tag($0) }
+                }
+                Toggle("Alert me", isOn: $status.lowDiskAlertOn)
+                Text("Health turns orange at the same line, and red below 10 GB.").font(.caption).foregroundStyle(.secondary)
+            }
+            Section {
+                Picker("Trash larger than", selection: $status.trashGB) {
+                    ForEach(AlertSettings.trashChoicesGB, id: \.self) { Text("\($0) GB").tag($0) }
+                }
+                Toggle("Alert me", isOn: $status.trashAlertOn).disabled(app.fullDiskAccess != .granted)
+                if app.fullDiskAccess != .granted {
+                    HStack {
+                        Text("Needs Full Disk Access").font(.caption).foregroundStyle(.secondary)
+                        Button("Open Setup") { app.showSetup = true; app.showWindow() }.buttonStyle(.link).font(.caption)
+                    }
+                }
+            }
+            if status.notificationsDenied {
+                HStack {
+                    Label("Notifications are off in System Settings", systemImage: "bell.slash").font(.caption).foregroundStyle(.orange)
+                    Button("Open") { status.openNotificationSettings() }.buttonStyle(.link).font(.caption)
+                }
+            }
+        }
+        .formStyle(.grouped)
     }
 }
 

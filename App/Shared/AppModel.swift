@@ -25,6 +25,16 @@ final class AppModel {
     let applications: ApplicationsModel
     let clutter = ClutterModel()
     let spaceLens = SpaceLensModel()
+    let status = StatusModel()
+    let menuBarMonitor = MenuBarMonitor()
+    let loginItem = LoginItem()
+    /// Health's Empty Trash… (standard confirm, spec 012 §1).
+    let trashSession = ScanSession(module: "health")
+    /// Opens (or brings forward) the main window; set by a view that has `openWindow`.
+    var openMainWindow: (() -> Void)?
+    var healthTab: HealthView.Tab = .overview
+    /// A Cleanup category to show when Cleanup opens (the Trash notification uses it).
+    var cleanupFocus: String?
 
     init() {
         var ctx: CleanupContext?
@@ -41,12 +51,21 @@ final class AppModel {
         applications.installers.app = self
         clutter.app = self
         spaceLens.app = self
+        status.app = self
+        menuBarMonitor.status = status
+        trashSession.app = self
+        Notifier.install()
+        Notifier.shared.onResponse = { [weak self] category, action in self?.handleNotification(category: category, action: action) }
         reloadIgnoreList()
         reloadRuns()
         NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refreshSetup() }
+            MainActor.assumeIsolated {
+                self?.refreshSetup()
+                self?.status.refreshNotificationStatus()
+            }
         }
         refreshSetup()
+        status.start()
         if !UserDefaults.standard.bool(forKey: "setupDismissed") && context != nil { showSetup = true }
         #if DEBUG
         // Debug-only launch arguments for screenshots: -TidyModule cleanup -TidyScan YES.
@@ -84,6 +103,7 @@ final class AppModel {
             let wasGranted = fullDiskAccess == .granted
             fullDiskAccess = state
             self.context = context.with(fullDiskAccess: state == .granted)
+            status.fullDiskAccessChanged()
             // A new grant reaches the helper after a restart (015 §3).
             if state == .granted && !wasGranted && helper.state.isReady { Task { _ = try? await helper.send(.shutdown) } }
         }
@@ -136,9 +156,47 @@ final class AppModel {
     func reloadRuns() {
         guard let context else { return }
         runs = RunLogReader.runs(in: context.home.tidyRunLogs, limit: 50)
+        // After every run: disk and Trash alerts, Health, reminder dates (specs 011 §4, 012).
+        status.refresh()
+        status.rescheduleReminders()
     }
 
-    var lastSmartCare: RunRecord? { runs.first { $0.header.module == "smartCare" && !$0.header.dryRun } }
+    var lastSmartCare: RunRecord? { runs.first { $0.header.module == "smartCare" && !$0.header.dryRun && !$0.isInterrupted } }
+
+    // MARK: Navigation from the menu bar, notifications and Health
+
+    func showWindow() {
+        openMainWindow?()
+        NSApplication.shared.activate(ignoringOtherApps: true)
+    }
+
+    func open(_ module: SidebarModule) {
+        selectedModule = module
+        showWindow()
+    }
+
+    /// Opens Smart Care and starts the scan (scans delete nothing).
+    func runSmartCare() {
+        open(.smartCare)
+        if smartCare.phase == .idle || smartCare.phase == .results { smartCare.scan() }
+    }
+
+    /// Cleanup › Trash bins. Only scans; the notification never empties anything.
+    func reviewTrash() {
+        cleanupFocus = TrashBins.ruleID
+        open(.cleanup)
+        if cleanup.report == nil && cleanup.phase == .idle { cleanup.scan() }
+    }
+
+    func handleNotification(category: String, action: String) {
+        switch (category, action) {
+        case (Notifier.reminder, "tomorrow"): status.snoozeReminder()
+        case (Notifier.reminder, _): runSmartCare()
+        case (Notifier.lowDisk, _): open(.spaceLens)
+        case (Notifier.fullTrash, _): reviewTrash()
+        default: showWindow()
+        }
+    }
 
     func revealRunLogs() {
         guard let context else { return }
@@ -297,12 +355,25 @@ final class ScanSession {
             }
             let report = ScanReport(results: results)
             self.report = report
+            if module == "smartCare" {
+                app?.status.recordJunk(found: report.candidates.filter { !TrashBins.isTrashItem($0) }.reduce(0) { $0 + $1.allocatedBytes })
+            }
             selection = Selection.defaults(for: report.candidates)
             phase = .results
         }
     }
 
     func stopScan() { scanTask?.cancel() }
+
+    /// Health's Empty Trash…: only the Trash bins, all ticked, then the standard confirm.
+    func loadTrashOnly() async {
+        guard let ctx = app?.context else { return }
+        let bins = await Task.detached { TrashBins.results(home: ctx.home, floor: ctx.floor, hasFullDiskAccess: ctx.hasFullDiskAccess) }.value
+        let report = ScanReport(results: bins)
+        self.report = report
+        selection = Selection(ids: Set(report.candidates.map(\.id)))
+        phase = .results
+    }
 
     func applyIgnoreList() {
         guard let ignore = app?.ignoreList, let report else { return }
@@ -344,6 +415,10 @@ final class ScanSession {
                 let run = try await Task.detached { try engine.run(userItems, module: module, dryRun: dryRun, extraItems: extra) }.value
                 lastRun = run
                 phase = .done(dryRun: dryRun)
+                if module == "smartCare" && !dryRun {
+                    let cleaned = run.outcome.done.filter { !$0.ruleID.hasPrefix(TrashBins.ruleID) }.reduce(Int64(0)) { $0 + $1.allocatedBytes }
+                    app.status.smartCareCompleted(cleanedBytes: cleaned)
+                }
             } catch {
                 self.error = "\(error)"
                 phase = .results

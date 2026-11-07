@@ -4,7 +4,7 @@ import RunLog
 import SwiftUI
 
 /// Performance (spec 007 §2). Maintenance runs through the admin helper (005 §6.3); Login Items
-/// and Background Items arrive in milestone 6.
+/// and Background Items per build spec §6.9.
 struct PerformanceView: View {
     enum Tab: String, CaseIterable, Identifiable {
         case maintenance = "Maintenance", loginItems = "Login Items", backgroundItems = "Background Items"
@@ -17,8 +17,8 @@ struct PerformanceView: View {
         Group {
             switch tab {
             case .maintenance: MaintenanceView()
-            case .loginItems, .backgroundItems:
-                EmptyStateView(symbol: "list.bullet.rectangle", message: "\(tab.rawValue) arrive in a later build.")
+            case .loginItems: LoginItemsView()
+            case .backgroundItems: BackgroundItemsView()
             }
         }
         .toolbar {

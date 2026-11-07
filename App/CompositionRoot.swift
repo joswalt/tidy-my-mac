@@ -3,6 +3,7 @@ import Darwin
 import Foundation
 import RuleEngine
 import SafetyFloor
+import SystemTasks
 
 /// The one place in the app that builds real file-system values (spec 017 §2). Everything
 /// else receives them from here.
@@ -58,4 +59,12 @@ struct AppServices: Sendable {
     let receipts: PackageReceipts
     let fetcher: FeedFetcher
     let cache: UpdateCache
+}
+
+
+extension CompositionRoot {
+    /// Launch agents and daemons as the system has them (build spec §6.9).
+    static func makeBackgroundItems(home: Home) -> BackgroundItems {
+        BackgroundItems(home: home, signer: SystemProgramSigner())
+    }
 }
