@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 /// First-run setup (spec 007 §6, 015 §3): Full Disk Access, then the admin helper.
@@ -11,6 +12,7 @@ struct SetupSheet: View {
         VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 14) {
                 Image(nsImage: NSApplication.shared.applicationIconImage).resizable().frame(width: 56, height: 56)
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Set up TidyMyMac").font(.title2)
                     Text("Two permissions let TidyMyMac see and clean everything it offers. Nothing is removed without your review.")
@@ -69,8 +71,9 @@ struct SetupSheet: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: done ? "checkmark.circle.fill" : "\(n).circle")
                 .font(.title2).foregroundStyle(done ? Color.green : Color.secondary)
+                .accessibilityLabel(done ? "Step \(n), done" : "Step \(n)")
             VStack(alignment: .leading, spacing: 6) {
-                Text(title).font(.headline)
+                Text(title).font(.headline).accessibilityAddTraits(.isHeader)
                 Text(detail).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 if !done { actions() }
             }

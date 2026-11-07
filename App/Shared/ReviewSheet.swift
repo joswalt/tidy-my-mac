@@ -39,8 +39,9 @@ struct ReviewSheet: View {
                             HStack {
                                 if group.rule.risk == .risky {
                                     Image(systemName: "hand.raised").foregroundStyle(.secondary).help("Risky items are ticked one by one")
+                                        .accessibilityLabel("Risky items are ticked one by one")
                                 } else {
-                                    TriStateBox(state: session.selection.state(of: group.candidates)) {
+                                    TriStateBox(state: session.selection.state(of: group.candidates), name: group.rule.title) {
                                         session.selection.setGroup(group.candidates, session.selection.state(of: group.candidates) != .all)
                                     }
                                 }
@@ -72,6 +73,7 @@ struct ReviewRow: View {
         HStack(spacing: 10) {
             Toggle("", isOn: Binding(get: { session.selection.contains(candidate) }, set: { session.selection.set(candidate, $0) }))
                 .labelsHidden()
+                .accessibilityLabel("Select \(candidate.name)")
             VStack(alignment: .leading, spacing: 2) {
                 Text(candidate.name).lineLimit(1)
                 PathText(path: candidate.path)

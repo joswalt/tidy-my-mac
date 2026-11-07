@@ -111,13 +111,14 @@ struct Breadcrumb: View {
         HStack(spacing: 4) {
             Button { model.up() } label: { Image(systemName: "chevron.backward") }
                 .buttonStyle(.borderless)
+                .accessibilityLabel("Up one level")
                 .disabled(node.parent == nil)
                 .keyboardShortcut(.upArrow, modifiers: .command)
                 .help("Up one level (⌘↑)")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 2) {
                     ForEach(Array(node.ancestry.enumerated()), id: \.element.id) { i, n in
-                        if i > 0 { Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary) }
+                        if i > 0 { Image(systemName: "chevron.right").font(.caption2).foregroundStyle(.tertiary).accessibilityHidden(true) }
                         Button(n.name) { model.current = n; model.focused = nil }
                             .buttonStyle(.borderless)
                             .fontWeight(n === node ? .semibold : .regular)
@@ -176,8 +177,13 @@ struct TreemapView: View {
             }
             .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
         }
-        .accessibilityElement(children: .contain)
+        // The blocks are drawn shapes, not controls; the list beside the map has the same items
+        // with ticks, so VoiceOver gets one summary here and does its work in the list.
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("Treemap of \(node.name)")
+        .accessibilityValue(node.children.filter { $0.allocatedBytes > 0 }.prefix(3)
+            .map { "\($0.name), \(sizeString($0.allocatedBytes))" }.joined(separator: "; "))
+        .accessibilityHint("The list beside the map has the same items.")
     }
 }
 
@@ -278,12 +284,14 @@ struct SpaceRow: View {
                 Image(systemName: node.isItem ? "lock" : "circle.dashed")
                     .foregroundStyle(.tertiary).frame(width: 16)
                     .help(node.isItem ? "Protected: TidyMyMac never removes this" : "")
+                    .accessibilityLabel(node.isItem ? "Protected: TidyMyMac never removes this" : "Can't be selected")
             }
-            RoundedRectangle(cornerRadius: 2).fill(color.opacity(0.6)).frame(width: 10, height: 10)
+            RoundedRectangle(cornerRadius: 2).fill(color.opacity(0.6)).frame(width: 10, height: 10).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(node.name).lineLimit(1).truncationMode(.middle).help(node.isItem ? node.path : explanation)
                 Capsule().fill(color.opacity(0.5))
                     .frame(width: 140 * CGFloat(parentBytes > 0 ? Double(node.allocatedBytes) / Double(parentBytes) : 0), height: 3)
+                    .accessibilityHidden(true)
             }
             Spacer(minLength: 4)
             Text(sizeString(node.allocatedBytes)).font(.callout.monospacedDigit()).foregroundStyle(.secondary).fixedSize()
@@ -291,6 +299,7 @@ struct SpaceRow: View {
                 Button { model.open(node) } label: { Image(systemName: "chevron.right") }
                     .buttonStyle(.borderless)
                     .help("Open \(node.name)")
+                    .accessibilityLabel("Open \(node.name)")
             } else {
                 Color.clear.frame(width: 14)
             }

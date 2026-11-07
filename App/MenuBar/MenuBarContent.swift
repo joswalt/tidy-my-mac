@@ -126,6 +126,8 @@ struct MonitorRow<Detail: View>: View {
         }
         .buttonStyle(.plain)
         .help(help)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(help)
     }
 }
 

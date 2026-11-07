@@ -100,6 +100,7 @@ struct BackgroundItemsView: View {
                 .labelsHidden().toggleStyle(.switch)
                 .disabled(busy != nil || (item.domain.needsHelper && !app.helper.state.isReady))
                 .help(item.domain.needsHelper ? "Switches through the admin helper (asks for your password)" : "Switch this item off or on")
+                .accessibilityLabel("\(item.label) enabled")
         }
         .contextMenu {
             Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: item.plistPath)]) }

@@ -49,6 +49,7 @@ struct ToolTile: View {
                     .foregroundStyle(.tint)
                     .frame(width: 36, height: 36)
                     .background(.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .accessibilityHidden(true)
                 Text(tool.name).font(.headline).lineLimit(1)
                 Text(tool.detail).font(.callout).foregroundStyle(.secondary).lineLimit(2, reservesSpace: true)
             }
