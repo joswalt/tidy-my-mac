@@ -1,16 +1,39 @@
 import RunLog
 import SwiftUI
 
-/// Health. In this build: run history and run detail with Restore (build spec §6.1–6.2).
-/// Signals and reminders arrive in milestone 6 (spec 012).
+/// Health (spec 012, spec 007 §2): status from six signals, storage, Trash, setup, reminders,
+/// and run history with Restore (build spec §6.1–6.2).
 struct HealthView: View {
+    enum Tab: String, CaseIterable, Identifiable {
+        case overview = "Overview", history = "Run History"
+        var id: String { rawValue }
+    }
+
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        @Bindable var app = app
+        Group {
+            switch app.healthTab {
+            case .overview: HealthOverview()
+            case .history: RunHistoryView()
+            }
+        }
+        .toolbar {
+            Picker("View", selection: $app.healthTab) { ForEach(Tab.allCases) { Text($0.rawValue).tag($0) } }
+                .pickerStyle(.segmented)
+        }
+        .onAppear { app.reloadRuns() }
+    }
+}
+
+struct RunHistoryView: View {
     @Environment(AppModel.self) private var app
     @State private var selectedRun: UUID?
 
     var body: some View {
         HSplitView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Run History").font(.headline).padding([.horizontal, .top], 16).padding(.bottom, 8)
                 if app.runs.isEmpty {
                     EmptyStateView(symbol: "clock.arrow.circlepath", message: "No runs yet. Every scan you clean or dry-run shows up here.")
                 } else {
@@ -25,7 +48,7 @@ struct HealthView: View {
             }
         }
         .navigationSubtitle(app.runs.isEmpty ? "" : "\(app.runs.count) runs")
-        .onAppear { app.reloadRuns() }
+        .onAppear { if selectedRun == nil { selectedRun = app.runs.first?.header.runID } }
         .toolbar {
             Button { app.revealRunLogs() } label: { Label("Reveal Run Logs", systemImage: "folder") }
                 .help("Show the run log files in Finder")

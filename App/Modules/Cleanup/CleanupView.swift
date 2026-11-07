@@ -60,7 +60,17 @@ struct CleanupView: View {
                 RuleDetail(session: session, result: r)
             }
         }
-        .onAppear { if selectedRule == nil { selectedRule = results.first(where: { !$0.candidates.isEmpty })?.rule.id } }
+        .onAppear {
+            if let focus = app.cleanupFocus, !results.isEmpty {
+                // A category this scan doesn't have (e.g. a rule that is off) falls back to the first one.
+                if results.contains(where: { $0.rule.id == focus }) { selectedRule = focus }
+                app.cleanupFocus = nil
+            }
+            if selectedRule == nil { selectedRule = results.first(where: { !$0.candidates.isEmpty })?.rule.id }
+        }
+        .onChange(of: results.map(\.rule.id)) { _, ids in
+            if let focus = app.cleanupFocus, ids.contains(focus) { selectedRule = focus; app.cleanupFocus = nil }
+        }
         FooterBar(summary: session.summary.line) {
             Button("Dry Run") { session.run(dryRun: true) }
                 .help("List exactly what would be removed, without changing anything")

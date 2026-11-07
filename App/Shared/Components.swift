@@ -207,7 +207,7 @@ struct RunResultView: View {
                     .font(.callout).foregroundStyle(.orange)
             }
             HStack {
-                Button("View Run Log") { app.selectedModule = .health }
+                Button("View Run Log") { app.healthTab = .history; app.selectedModule = .health }
                 Button("Done", action: onDone).buttonStyle(.borderedProminent).keyboardShortcut(.defaultAction)
             }
             .controlSize(.large)

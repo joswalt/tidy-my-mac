@@ -17,7 +17,7 @@ Status: agreed with John (2026-11-07, "I agree" to all seven recommendations).
 |---|---|---|
 | CPU | `host_statistics(HOST_CPU_LOAD_INFO)`; delta of user+system+nice ticks over total ticks between samples | Total %, sparkline of the last 60 samples |
 | Memory | `host_statistics64(HOST_VM_INFO64)` × `vm_kernel_page_size`. Used = (internal − purgeable) + wired + compressor pages. Total = `sysctl hw.memsize`. Pressure = `sysctl kern.memorystatus_vm_pressure_level` (1/2/4) | "12.4 GB of 16 GB", pressure label Normal / Warning / Critical (green / yellow / red) |
-| Storage | `URL(fileURLWithPath: "/")` resource values `volumeAvailableCapacityForImportantUsageKey` and `volumeTotalCapacityKey` (matches Finder "available") | "Free 84.2 GB of 494 GB" + bar |
+| Storage | `URL(fileURLWithPath: "/")` resource value `volumeAvailableCapacityKey` (real free space) and `volumeTotalCapacityKey`. Finder's "available" (`volumeAvailableCapacityForImportantUsageKey`) is shown only as a note, because it can count hundreds of GB as purgeable while the disk fills (John's Mac, 2026-11-07: 975 GB available, 204 GB free; John chose real free space) | "Free 204 GB of 995 GB" + bar |
 | Network | `sysctl` `NET_RT_IFLIST2` → `if_msghdr2.ifm_data` 64-bit `ifi_ibytes`/`ifi_obytes`, summed over interfaces that are up, non-loopback, and physical (`en*`); `utun*`, `awdl*`, `llw*`, `bridge*`, `ap*`, `lo*` excluded so VPN traffic isn't double-counted. Rate = delta / elapsed | ↓ 1.2 MB/s ↑ 84 KB/s |
 | Trash size (alert only) | `FileManager` enumerator over `~/.Trash`, summing `totalFileAllocatedSizeKey`. **Needs Full Disk Access** (ticket 008) | Used by the alert and Health |
 

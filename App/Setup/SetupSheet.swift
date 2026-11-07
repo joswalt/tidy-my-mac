@@ -59,6 +59,8 @@ struct SetupSheet: View {
 
     func close() {
         UserDefaults.standard.set(true, forKey: "setupDismissed")
+        // Alerts need notification permission; asked once, after setup (spec 011 §4).
+        app.status.requestNotificationPermission()
         dismiss()
     }
 
