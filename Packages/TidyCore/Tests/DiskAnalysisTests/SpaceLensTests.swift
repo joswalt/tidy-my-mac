@@ -127,3 +127,31 @@ extension SpaceLensTests {
         #expect(tree.find(root + "/a")?.allocatedBytes == before.1 - three.allocatedBytes)
     }
 }
+
+extension SpaceLensTests {
+    /// The parallel walk gives the same tree as one thread, and hard links land on the first path.
+    @Test func parallelWalkMatchesOneThread() throws {
+        let t = try TestHome("lens-parallel")
+        defer { t.cleanUp() }
+        let root = try fixture(t)
+        for i in 0..<40 { try t.file("Lens/many/d\(i % 7)/sub\(i % 3)/f\(i)", size: 1000 * (i + 1)) }
+        func shape(_ n: SpaceNode) -> [String] {
+            ["\(n.path)|\(n.allocatedBytes)|\(n.itemCount)"] + n.children.sorted { $0.id < $1.id }.flatMap(shape)
+        }
+        let floor = ProtectedFloor(home: t.home)
+        let one = try #require(SpaceScanner(floor: floor, threads: 1).scan(root))
+        for _ in 0..<5 {
+            let many = try #require(SpaceScanner(floor: floor, threads: 8).scan(root))
+            #expect(shape(many) == shape(one))
+            #expect(many.find(root + "/b/one-link.bin")?.allocatedBytes == 0, "the second hard link counts nothing")
+        }
+        #expect(one.allocatedBytes / 1024 == (try Self.du(root)))
+    }
+
+    @Test func cancelledScanReturnsNothing() throws {
+        let t = try TestHome("lens-cancel")
+        defer { t.cleanUp() }
+        let root = try fixture(t)
+        #expect(SpaceScanner(floor: ProtectedFloor(home: t.home)).scan(root, isCancelled: { true }) == nil)
+    }
+}

@@ -47,8 +47,14 @@ public struct UpdateStatus: Sendable, Equatable, Codable, Identifiable {
     public let installedVersion: String
     public let availableVersion: String?
     public let releaseNotes: String?
+    /// The Homebrew cask that installed this app, when Homebrew manages it. Optional so older
+    /// cached results still decode.
+    public var brewCask: String?
 
     public var id: String { appPath }
+
+    /// "brew upgrade --cask <token>" for apps Homebrew manages. Shown, never run.
+    public var brewUpgradeCommand: String? { brewCask.map { "brew upgrade --cask \($0)" } }
 
     public init(app: InstalledApp, source: UpdateSource, state: State, availableVersion: String? = nil, releaseNotes: String? = nil) {
         appPath = app.path; bundleID = app.bundleID; name = app.name; self.source = source; self.state = state
@@ -101,10 +107,14 @@ public struct UpdateChecker: Sendable {
     /// Bundle IDs whose custom comparators give false positives (`Rules/update-overrides.json`).
     public let ignoredBundleIDs: Set<String>
 
-    public init(fetcher: FeedFetcher, osVersion: String, ignoredBundleIDs: Set<String> = []) {
+    /// Casks Homebrew installed here, for the `brew upgrade` hint.
+    public let installedCasks: InstalledCasks
+
+    public init(fetcher: FeedFetcher, osVersion: String, ignoredBundleIDs: Set<String> = [], installedCasks: InstalledCasks = InstalledCasks()) {
         self.fetcher = fetcher
         self.osVersion = osVersion
         self.ignoredBundleIDs = ignoredBundleIDs
+        self.installedCasks = installedCasks
     }
 
     public static var currentOSVersion: String {
@@ -133,6 +143,12 @@ public struct UpdateChecker: Sendable {
     }
 
     public func check(_ app: InstalledApp, casks: CaskCatalog?) async -> UpdateStatus {
+        var status = await status(of: app, casks: casks)
+        status.brewCask = installedCasks.token(for: app, casks: casks)
+        return status
+    }
+
+    func status(of app: InstalledApp, casks: CaskCatalog?) async -> UpdateStatus {
         let source = UpdateSource.find(for: app, casks: casks)
         if ignoredBundleIDs.contains(app.bundleID) { return UpdateStatus(app: app, source: source, state: .notChecked("Ignored for this app")) }
         switch source {

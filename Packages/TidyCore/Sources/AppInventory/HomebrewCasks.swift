@@ -96,3 +96,25 @@ public struct CaskCatalog: Codable, Sendable {
         return CaskCatalog(fetched: fetched, entries: out)
     }
 }
+
+/// The casks Homebrew has installed on this Mac: the folder names in its `Caskroom`. An app whose
+/// cask is here is managed by Homebrew, so the Updates tab suggests `brew upgrade --cask <token>`.
+/// TidyMyMac never runs it (spec 013: check only).
+public struct InstalledCasks: Sendable, Equatable {
+    public let tokens: Set<String>
+
+    public init(tokens: Set<String> = []) { self.tokens = tokens }
+
+    /// Reads `caskroom` (on Apple Silicon `/opt/homebrew/Caskroom`, passed in by the composition
+    /// root). A missing folder means Homebrew isn't installed: no casks.
+    public init(caskroom: URL) {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: caskroom.path)) ?? []
+        tokens = Set(names.filter { !$0.hasPrefix(".") })
+    }
+
+    /// The cask token if `app` was installed by Homebrew, matched through the catalogue.
+    public func token(for app: InstalledApp, casks: CaskCatalog?) -> String? {
+        guard !tokens.isEmpty, let entry = casks?.entry(bundleID: app.bundleID, appFileName: app.fileName) else { return nil }
+        return tokens.contains(entry.token) ? entry.token : nil
+    }
+}

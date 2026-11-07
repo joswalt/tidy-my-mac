@@ -1,4 +1,9 @@
 {
   "schemaVersion": 1,
-  "rules": []
+  "rules": [
+    {
+      "bundleId": "com.oracle.workbench.MySQLWorkbench",
+      "reason": "The app reports 8.0.47.CE while the Homebrew cask says 8.0.47; the comparator reads the CE suffix as a pre-release, so every check showed a false update."
+    }
+  ]
 }

@@ -344,7 +344,9 @@ final class ApplicationsModel {
             while listing == nil { try? await Task.sleep(for: .milliseconds(200)) }
             let apps = self.apps
             let casks = await services.cache.casks(fetcher: services.fetcher)
-            let checker = UpdateChecker(fetcher: services.fetcher, osVersion: UpdateChecker.currentOSVersion, ignoredBundleIDs: ignored)
+            let installedCasks = await Task.detached { InstalledCasks(caskroom: services.caskroom) }.value
+            let checker = UpdateChecker(fetcher: services.fetcher, osVersion: UpdateChecker.currentOSVersion,
+                                        ignoredBundleIDs: ignored, installedCasks: installedCasks)
             let statuses = await checker.check(apps, casks: casks)
             updates = statuses
             updatesChecked = Date()
@@ -366,6 +368,12 @@ final class ApplicationsModel {
 
     func openSoftwareUpdate() {
         if let url = URL(string: MacOSUpdates.settingsURL) { NSWorkspace.shared.open(url) }
+    }
+
+    /// Puts a shown command (the `brew upgrade` hint) on the clipboard. Nothing is run.
+    func copy(_ command: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(command, forType: .string)
     }
 
     func open(_ status: UpdateStatus) {

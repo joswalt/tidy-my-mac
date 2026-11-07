@@ -573,6 +573,15 @@ struct UpdateRow: View {
                     }
                 }
                 .font(.callout.monospacedDigit()).foregroundStyle(.secondary)
+                if status.state == .updateAvailable, let command = status.brewUpgradeCommand {
+                    HStack(spacing: 4) {
+                        Text("Update with").foregroundStyle(.secondary)
+                        Text(command).font(.callout.monospaced()).textSelection(.enabled)
+                        Button { model.copy(command) } label: { Image(systemName: "doc.on.doc") }
+                            .buttonStyle(.borderless).help("Copy the command. TidyMyMac never runs it.")
+                    }
+                    .font(.callout)
+                }
             }
             Spacer()
             if status.source != .none {
