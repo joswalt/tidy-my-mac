@@ -274,7 +274,8 @@ struct DuplicatesTab: View {
                                     Text("\(g.files.count) copies · \(sizeString(g.files.first?.entry.allocatedBytes ?? 0)) each")
                                         .foregroundStyle(.secondary)
                                     Spacer()
-                                    Text("frees \(sizeString(model.duplicateSelection.freedBytes([g])))")
+                                    let freed = model.duplicateSelection.freedBytes([g])
+                                    Text(freed == 0 ? "frees nothing" : "frees \(sizeString(freed))")
                                         .font(.callout.monospacedDigit()).foregroundStyle(.secondary)
                                 }
                             }
