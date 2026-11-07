@@ -85,11 +85,11 @@ struct HealthOverview: View {
 
     func fix(_ fix: HealthSignal.Fix?) {
         switch fix {
-        case .spaceLens: app.selectedModule = .spaceLens
-        case .runSmartCare: app.runSmartCare()
-        case .smartCare:
-            app.selectedModule = .smartCare
-            if app.smartCare.report == nil && app.smartCare.phase == .idle { app.smartCare.scan() }
+        case .diskMap: app.selectedModule = .diskMap
+        case .runTidyUp: app.runTidyUp()
+        case .tidyUp:
+            app.selectedModule = .tidyUp
+            if app.tidyUp.report == nil && app.tidyUp.phase == .idle { app.tidyUp.scan() }
         case .emptyTrash: emptyTrash()
         case .openSetup: app.showSetup = true
         case nil: break
@@ -125,9 +125,9 @@ struct SignalRow: View {
 
     static func title(_ fix: HealthSignal.Fix) -> String {
         switch fix {
-        case .spaceLens: "Space Lens"
-        case .runSmartCare: "Run Smart Care"
-        case .smartCare: "Smart Care"
+        case .diskMap: "Disk Map"
+        case .runTidyUp: "Run Tidy Up"
+        case .tidyUp: "Tidy Up"
         case .emptyTrash: "Empty Trash…"
         case .openSetup: "Open Setup"
         }
@@ -192,8 +192,8 @@ struct RemindersCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 Label("Reminders", systemImage: "bell").font(.headline)
                 ReminderControls(status: status)
-                if let last = app.lastSmartCare {
-                    Text("Last Smart Care \(last.header.start.formatted(.relative(presentation: .named)))").font(.caption).foregroundStyle(.secondary)
+                if let last = app.lastTidyUp {
+                    Text("Last Tidy Up \(last.header.start.formatted(.relative(presentation: .named)))").font(.caption).foregroundStyle(.secondary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -207,7 +207,7 @@ struct ReminderControls: View {
     @Bindable var status: StatusModel
 
     var body: some View {
-        Toggle("Remind me to run Smart Care", isOn: $status.remindersOn)
+        Toggle("Remind me to run Tidy Up", isOn: $status.remindersOn)
         Picker("How often", selection: $status.reminderInterval) {
             ForEach(ReminderInterval.allCases, id: \.self) { Text($0.title).tag($0) }
         }

@@ -5,8 +5,8 @@ import TestSupport
 @testable import DiskAnalysis
 import SafetyFloor
 
-/// Space Lens sizes match `du -k` on a fixture (milestone 5 "done when", 017 §4.3).
-struct SpaceLensTests {
+/// Disk Map sizes match `du -k` on a fixture (milestone 5 "done when", 017 §4.3).
+struct DiskMapTests {
     /// `du -sk` in KB.
     static func du(_ path: String) throws -> Int64 {
         let p = Process()
@@ -60,7 +60,7 @@ struct SpaceLensTests {
         let b = try #require(tree.children.first { $0.name == "b" })
         let app = try #require(b.children.first { $0.name == "Thing.app" })
         #expect(app.kind == .package && app.children.isEmpty, "packages are leaves")
-        #expect(b.children.contains { $0.name == ".hidden" }, "Space Lens counts hidden files")
+        #expect(b.children.contains { $0.name == ".hidden" }, "Disk Map counts hidden files")
         let link = try #require(tree.children.first { $0.name == "link-to-a" })
         #expect(link.kind == .file, "a symlink is never followed")
         #expect(tree.find(root + "/a/deeper/three.bin")?.ancestry.map(\.name) == ["Lens", "a", "deeper", "three.bin"])
@@ -113,7 +113,7 @@ struct SpaceLensTests {
     }
 }
 
-extension SpaceLensTests {
+extension DiskMapTests {
     @Test func pruneTakesSizesOffEveryFolderAbove() throws {
         let t = try TestHome("lens-prune")
         defer { t.cleanUp() }
@@ -128,7 +128,7 @@ extension SpaceLensTests {
     }
 }
 
-extension SpaceLensTests {
+extension DiskMapTests {
     /// The parallel walk gives the same tree as one thread, and hard links land on the first path.
     @Test func parallelWalkMatchesOneThread() throws {
         let t = try TestHome("lens-parallel")

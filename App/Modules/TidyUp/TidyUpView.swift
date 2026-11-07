@@ -1,14 +1,14 @@
 import RuleEngine
 import SwiftUI
 
-/// Smart Care: one scan → result cards → review → one confirm → done (spec 007 §3).
-struct SmartCareView: View {
+/// Tidy Up: one scan → result cards → review → one confirm → done (spec 007 §3).
+struct TidyUpView: View {
     @Environment(AppModel.self) private var app
     @State private var showReview = false
     @State private var showConfirm = false
     @State private var flushDNS = true
 
-    var session: ScanSession { app.smartCare }
+    var session: ScanSession { app.tidyUp }
 
     var body: some View {
         @Bindable var session = session
@@ -45,12 +45,12 @@ struct SmartCareView: View {
             Button("Scan") { session.scan() }
                 .buttonStyle(.borderedProminent).controlSize(.extraLarge)
             HStack(spacing: 8) {
-                ForEach(["Cleanup", "Trash", "Applications", "Maintenance", "My Clutter", "Protection"], id: \.self) {
+                ForEach(["Cleanup", "Trash", "Applications", "Maintenance", "Declutter", "Protection"], id: \.self) {
                     Text($0).font(.caption).padding(.horizontal, 8).padding(.vertical, 4)
                         .background(.quaternary, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 }
             }
-            if let last = app.lastSmartCare {
+            if let last = app.lastTidyUp {
                 Text("Last run \(last.header.start.formatted(.relative(presentation: .named)))").font(.callout).foregroundStyle(.secondary)
             }
         }
@@ -119,7 +119,7 @@ struct CleanupCard: View {
 }
 
 /// Applications card (spec 007 §3): leftovers of removed apps and the update count. Look-and-go:
-/// leftovers are `caution` items reviewed in Applications, never cleaned by Smart Care itself.
+/// leftovers are `caution` items reviewed in Applications, never cleaned by Tidy Up itself.
 struct ApplicationsCard: View {
     @Environment(AppModel.self) private var app
 
@@ -163,7 +163,7 @@ struct ApplicationsCard: View {
     }
 }
 
-/// Look only (spec 007 §3): the large and old files count, opening My Clutter. Smart Care
+/// Look only (spec 007 §3): the large and old files count, opening Declutter. Tidy Up
 /// never cleans personal files.
 struct ClutterCard: View {
     @Environment(AppModel.self) private var app
@@ -173,20 +173,20 @@ struct ClutterCard: View {
         GroupBox {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Label("My Clutter", systemImage: "doc.on.doc").font(.headline)
+                    Label("Declutter", systemImage: "doc.on.doc").font(.headline)
                     Spacer()
                     if clutter.largeFiles != nil {
                         Text(sizeString(clutter.visibleLarge.reduce(0) { $0 + $1.allocatedBytes })).monospacedDigit().foregroundStyle(.secondary)
                     }
                 }
-                Text("Your own files. Smart Care never cleans them; you choose in My Clutter.").font(.callout).foregroundStyle(.secondary)
+                Text("Your own files. Tidy Up never cleans them; you choose in Declutter.").font(.callout).foregroundStyle(.secondary)
                 if clutter.largeFiles == nil {
                     Text(clutter.scanningLarge ? "Looking for large and old files…" : "Large and old files not checked yet").font(.callout)
                 } else {
                     let n = clutter.visibleLarge.count
                     Text("\(n) large or old \(n == 1 ? "file" : "files")").font(.callout.monospacedDigit())
                 }
-                Button("Open My Clutter…") { clutter.tab = .largeOld; app.selectedModule = .myClutter }
+                Button("Open Declutter…") { clutter.tab = .largeOld; app.selectedModule = .declutter }
             }
             .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
             .padding(8)
@@ -268,7 +268,7 @@ struct ProtectionCard: View {
     }
 }
 
-/// Asked once, on the Done screen of the first Smart Care (spec 012 §2).
+/// Asked once, on the Done screen of the first Tidy Up (spec 012 §2).
 struct ReminderPrompt: View {
     @Environment(AppModel.self) private var app
     @AppStorage("reminderPromptAnswered") private var answered = false
@@ -278,7 +278,7 @@ struct ReminderPrompt: View {
             GroupBox {
                 HStack {
                     Image(systemName: "bell.badge").font(.title2).foregroundStyle(.tint)
-                    Text("Remind me to run Smart Care \(app.status.reminderInterval.title.lowercased())?")
+                    Text("Remind me to run Tidy Up \(app.status.reminderInterval.title.lowercased())?")
                     Spacer()
                     Button("No Thanks") { app.status.remindersOn = false; answered = true }
                     Button("Remind Me") {

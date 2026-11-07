@@ -146,13 +146,13 @@ final class StatusModel {
         return (Int64(defaults.integer(forKey: "junkLeftBytes")), date)
     }
 
-    /// After a Smart Care scan: what it found, not counting the Trash bins (they have their own line).
+    /// After a Tidy Up scan: what it found, not counting the Trash bins (they have their own line).
     func recordJunk(found: Int64) {
         defaults.set(Int(found), forKey: "junkLeftBytes")
         defaults.set(Date(), forKey: "junkScanDate")
     }
 
-    /// After a real Smart Care run: what is left of what the scan found.
+    /// After a real Tidy Up run: what is left of what the scan found.
     func recordCleaned(_ bytes: Int64) {
         guard let j = junkLeft else { return }
         defaults.set(Int(max(0, j.bytes - bytes)), forKey: "junkLeftBytes")
@@ -160,7 +160,7 @@ final class StatusModel {
 
     var signals: [HealthSignal] {
         let all = Health.signals(HealthInputs(now: Date(), freeBytes: storage?.freeBytes, lowDiskGB: lowDiskGB,
-                                    lastSmartCare: app?.lastSmartCare?.header.start, reminderInterval: reminderInterval,
+                                    lastTidyUp: app?.lastTidyUp?.header.start, reminderInterval: reminderInterval,
                                     junkLeft: junkLeft, trashBytes: trashBytes, trashGB: trashGB,
                                     hasFullDiskAccess: hasFullDiskAccess, helperReady: app?.helper.state.isReady ?? false))
         // The helper row says what is actually wrong (not installed, not in Applications, …).
@@ -177,12 +177,12 @@ final class StatusModel {
     var firstLaunch: Date { defaults.object(forKey: "firstLaunch") as? Date ?? Date() }
 
     /// Local calendar notifications, so the app need not be running. Rescheduled on launch, every
-    /// Smart Care completion and every settings change.
+    /// Tidy Up completion and every settings change.
     func rescheduleReminders() {
         let center = UNUserNotificationCenter.current()
         center.removePendingNotificationRequests(withIdentifiers: ["reminder.0", "reminder.1"])
         guard remindersOn else { center.removePendingNotificationRequests(withIdentifiers: ["reminder.snooze"]); return }
-        let last = app?.lastSmartCare?.header.start
+        let last = app?.lastTidyUp?.header.start
         let plan = ReminderSchedule.plan(lastRun: last, firstLaunch: firstLaunch, interval: reminderInterval,
                                          minutesOfDay: reminderMinutes, now: Date())
         for (i, date) in plan.pending.enumerated() {
@@ -195,11 +195,11 @@ final class StatusModel {
     /// The reminder's second action: one day later.
     func snoozeReminder() {
         Notifier.post(id: "reminder.snooze", category: Notifier.reminder,
-                      body: ReminderSchedule.message(lastRun: app?.lastSmartCare?.header.start, at: Date().addingTimeInterval(86400)),
+                      body: ReminderSchedule.message(lastRun: app?.lastTidyUp?.header.start, at: Date().addingTimeInterval(86400)),
                       trigger: UNTimeIntervalNotificationTrigger(timeInterval: 86400, repeats: false))
     }
 
-    func smartCareCompleted(cleanedBytes: Int64) {
+    func tidyUpCompleted(cleanedBytes: Int64) {
         recordCleaned(cleanedBytes)
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["reminder.snooze"])
         rescheduleReminders()
@@ -212,7 +212,7 @@ final class StatusModel {
         }
     }
 
-    /// macOS's prompt, asked after setup (alerts) or on the first Smart Care Done screen (reminders).
+    /// macOS's prompt, asked after setup (alerts) or on the first Tidy Up Done screen (reminders).
     func requestNotificationPermission() {
         Task {
             _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
@@ -242,7 +242,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate, @unchecked Sen
         let c = UNUserNotificationCenter.current()
         c.delegate = shared
         c.setNotificationCategories([
-            UNNotificationCategory(identifier: lowDisk, actions: [UNNotificationAction(identifier: "openSpaceLens", title: "Open Space Lens", options: [.foreground])],
+            UNNotificationCategory(identifier: lowDisk, actions: [UNNotificationAction(identifier: "openDiskMap", title: "Open Disk Map", options: [.foreground])],
                                    intentIdentifiers: []),
             UNNotificationCategory(identifier: fullTrash, actions: [UNNotificationAction(identifier: "reviewTrash", title: "Review Trash", options: [.foreground])],
                                    intentIdentifiers: []),

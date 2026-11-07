@@ -7,7 +7,7 @@ enum ToolDestination: Hashable {
     case cleanup(ruleID: String)
     case applications(ApplicationsModel.Tab)
     case clutter(ClutterModel.Tab)
-    case spaceLens
+    case diskMap
     case performance(PerformanceView.Tab)
     case protection
     case health(HealthView.Tab)
@@ -16,8 +16,8 @@ enum ToolDestination: Hashable {
         switch self {
         case .cleanup: .cleanup
         case .applications: .applications
-        case .clutter: .myClutter
-        case .spaceLens: .spaceLens
+        case .clutter: .declutter
+        case .diskMap: .diskMap
         case .performance: .performance
         case .protection: .protection
         case .health: .health
@@ -57,11 +57,11 @@ struct Tool: Identifiable, Hashable {
         Tool(name: "App Leftovers", detail: "Files of deleted apps", symbol: "puzzlepiece.extension", destination: .applications(.leftovers)),
         Tool(name: "Installers", detail: "Old .dmg and .pkg files", symbol: "shippingbox", destination: .applications(.installers)),
         Tool(name: "Update Check", detail: "Newer app and macOS versions", symbol: "arrow.down.circle", destination: .applications(.updates)),
-        // My Clutter and Space Lens
+        // Declutter and Disk Map
         Tool(name: "Large & Old Files", detail: "Big or forgotten files", symbol: "doc.badge.clock", destination: .clutter(.largeOld)),
         Tool(name: "Duplicates", detail: "Identical copies", symbol: "doc.on.doc", destination: .clutter(.duplicates)),
         Tool(name: "Downloads", detail: "Review by where they came from", symbol: "arrow.down.doc", destination: .clutter(.downloads)),
-        Tool(name: "Space Lens", detail: "Map a disk or folder", symbol: "chart.pie", destination: .spaceLens),
+        Tool(name: "Disk Map", detail: "Map a disk or folder", symbol: "chart.pie", destination: .diskMap),
         // Performance and Protection
         Tool(name: "Flush DNS", detail: "Reset website address lookups", symbol: "network", destination: .performance(.maintenance)),
         Tool(name: "Reindex Spotlight", detail: "Rebuild the search index", symbol: "magnifyingglass", destination: .performance(.maintenance)),

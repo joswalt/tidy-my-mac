@@ -33,7 +33,7 @@ public struct FileEntry: Sendable, Hashable, Identifiable {
     public var folder: String { (path as NSString).deletingLastPathComponent }
 }
 
-/// Where My Clutter looks (spec 014 §3) and the smallest file it cares about (§4).
+/// Where Declutter looks (spec 014 §3) and the smallest file it cares about (§4).
 public struct ClutterScope: Sendable, Equatable {
     public var folders: [String]
     public var minimumSize: Int64
@@ -55,7 +55,7 @@ public struct ClutterScope: Sendable, Equatable {
     }
 }
 
-/// Walks the My Clutter scope with the duplicate finder's skips (spec 014 §4): never `~/Library`
+/// Walks the Declutter scope with the duplicate finder's skips (spec 014 §4): never `~/Library`
 /// (so never iCloud Drive or `~/Library/CloudStorage`), never hidden items, `.git` or `node_modules`, packages as
 /// opaque units, iCloud placeholders never read, nothing on the protected floor, no symlinks
 /// followed, no other volume entered. Hard links are returned once.

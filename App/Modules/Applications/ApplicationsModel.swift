@@ -326,7 +326,7 @@ final class ApplicationsModel {
         UserDefaults.standard.object(forKey: "checkAppUpdatesAutomatically") as? Bool ?? true
     }
 
-    /// At most once a day, when the Updates tab or Smart Care opens (spec 013 §6).
+    /// At most once a day, when the Updates tab or Tidy Up opens (spec 013 §6).
     func checkUpdatesIfDue() {
         macOSPassive = MacOSUpdates.readPlist()
         guard checkAutomatically else { return }

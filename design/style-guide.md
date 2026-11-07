@@ -66,13 +66,13 @@ Use SF Symbols with `.symbolRenderingMode(.hierarchical)` and the accent tint fo
 
 | Module | SF Symbol |
 |---|---|
-| Smart Care | `sparkles` |
+| Tidy Up | `sparkles` |
 | Cleanup | `bubbles.and.sparkles` |
 | Protection | `lock.shield` |
 | Performance | `gauge.with.dots.needle.67percent` |
 | Applications | `square.grid.2x2` |
-| My Clutter | `doc.on.doc` |
-| Space Lens | `chart.pie` |
+| Declutter | `doc.on.doc` |
+| Disk Map | `chart.pie` |
 | My Tools | `wrench.and.screwdriver` |
 | Health | `heart.text.square` |
 
@@ -83,7 +83,7 @@ Menu bar extra: a monochrome **template** version of the chosen icon's glyph at 
 - Primary action: `Button("Clean") {}.buttonStyle(.borderedProminent).controlSize(.large)`.
 - Destructive confirmation: `.confirmationDialog` with a `role: .destructive` button whose label states the effect ("Move 312 items to Trash").
 - Secondary actions: `.bordered`; tertiary: `.link` or plain.
-- Progress: `ProgressView` (linear) for scans with a known total; spinner only when the total is unknown. The Smart Care hero can show a ring (direction C reuses the icon's ring).
+- Progress: `ProgressView` (linear) for scans with a known total; spinner only when the total is unknown. The Tidy Up hero can show a ring (direction C reuses the icon's ring).
 - Empty and clean states: an SF Symbol at 48 pt in `.secondary`, one short line, one action.
 - Use `.help("…")` tooltips on every icon-only button.
 

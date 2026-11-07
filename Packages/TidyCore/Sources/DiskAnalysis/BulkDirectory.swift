@@ -2,7 +2,7 @@ import Darwin
 import Foundation
 import SafetyFloor
 
-/// One folder entry as `getattrlistbulk` returns it: what Space Lens needs, without an `lstat`
+/// One folder entry as `getattrlistbulk` returns it: what Disk Map needs, without an `lstat`
 /// per entry. Never follows symlinks (the bulk call never does).
 struct BulkEntry: Sendable {
     let name: String
@@ -16,7 +16,7 @@ struct BulkEntry: Sendable {
 
 /// Reads a whole folder with `getattrlistbulk(2)`: names, types, identities, link counts and
 /// allocated sizes in a few system calls instead of one `lstat` per entry. This is what makes
-/// Space Lens fast on folders with millions of files.
+/// Disk Map fast on folders with millions of files.
 enum BulkDirectory {
     static let bufferSize = 256 * 1024
 

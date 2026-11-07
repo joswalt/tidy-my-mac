@@ -5,9 +5,9 @@ import RuleEngine
 import RunLog
 import SafetyFloor
 
-/// State for Space Lens (build spec §6.8): one scan per target, cached for the session only.
+/// State for Disk Map (build spec §6.8): one scan per target, cached for the session only.
 @MainActor @Observable
-final class SpaceLensModel {
+final class DiskMapModel {
     enum Phase: Equatable {
         case browsing, running
         case done(dryRun: Bool)
@@ -158,7 +158,7 @@ final class SpaceLensModel {
                         ManualPick(path: path, root: SpaceScanner.containmentRoot(for: path, scanRoot: scanRoot) ?? (path as NSString).deletingLastPathComponent,
                                    identity: identity, allocatedBytes: bytes)
                     }
-                    return try ManualRemover(context: ctx).run(picks, module: "spaceLens", dryRun: dryRun)
+                    return try ManualRemover(context: ctx).run(picks, module: "diskMap", dryRun: dryRun)
                 }.value
                 lastRun = run
                 if !dryRun {

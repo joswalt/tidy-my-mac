@@ -2,7 +2,7 @@ import Foundation
 import RunLog
 import SafetyFloor
 
-/// An item John picked by hand in My Clutter or Space Lens.
+/// An item John picked by hand in Declutter or Disk Map.
 public struct ManualPick: Sendable, Hashable, Identifiable {
     public let path: String
     /// The folder it was found under: the item must still sit inside it, reached without links.

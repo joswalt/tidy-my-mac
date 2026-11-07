@@ -2,13 +2,13 @@ import AppKit
 import DiskAnalysis
 import SwiftUI
 
-/// Space Lens (spec 007 §2, build spec §6.8): breadcrumb, disk/folder picker, a treemap two
+/// Disk Map (spec 007 §2, build spec §6.8): breadcrumb, disk/folder picker, a treemap two
 /// levels deep and a size-ranked list with ticks. Removal goes to the Trash only.
-struct SpaceLensView: View {
+struct DiskMapView: View {
     @Environment(AppModel.self) private var app
     @State private var showConfirm = false
 
-    var model: SpaceLensModel { app.spaceLens }
+    var model: DiskMapModel { app.diskMap }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -79,7 +79,7 @@ struct SpaceLensView: View {
 
 /// Home, the startup disk, each mounted volume, Choose Folder… (build spec §6.8).
 struct TargetMenu: View {
-    @Bindable var model: SpaceLensModel
+    @Bindable var model: DiskMapModel
 
     var body: some View {
         Menu {
@@ -104,7 +104,7 @@ struct TargetMenu: View {
 }
 
 struct Breadcrumb: View {
-    let model: SpaceLensModel
+    let model: DiskMapModel
     let node: SpaceNode
 
     var body: some View {
@@ -162,7 +162,7 @@ enum LensColor {
 // MARK: - Treemap
 
 struct TreemapView: View {
-    let model: SpaceLensModel
+    let model: DiskMapModel
     let node: SpaceNode
 
     var body: some View {
@@ -182,7 +182,7 @@ struct TreemapView: View {
 }
 
 struct TreemapBlock: View {
-    let model: SpaceLensModel
+    let model: DiskMapModel
     let node: SpaceNode
     let rect: CGRect
     let color: Color
@@ -238,7 +238,7 @@ struct TreemapBlock: View {
 // MARK: - List
 
 struct SpaceList: View {
-    @Bindable var model: SpaceLensModel
+    @Bindable var model: DiskMapModel
     let node: SpaceNode
 
     var body: some View {
@@ -262,7 +262,7 @@ struct SpaceList: View {
 }
 
 struct SpaceRow: View {
-    @Bindable var model: SpaceLensModel
+    @Bindable var model: DiskMapModel
     let node: SpaceNode
     let parentBytes: Int64
     let color: Color

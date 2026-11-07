@@ -69,7 +69,7 @@ struct SnapshotDiffTests {
 
     static func run(_ t: TestHome, _ selection: [Candidate], scanner: RuleScanner) throws -> (Remover.Outcome, RunRecord) {
         let log = try RunLogWriter(directory: t.home.tidyRunLogs,
-                                   header: RunHeader(module: "smartCare", appVersion: "test", ruleSetVersion: 1, dryRun: false))
+                                   header: RunHeader(module: "tidyUp", appVersion: "test", ruleSetVersion: 1, dryRun: false))
         let outcome = try Remover(scanner: scanner, trash: HomeTrash(home: t.home)).run(selection, rules: rules, log: log, dryRun: false)
         try log.finish()
         return (outcome, try RunLogReader.read(log.fileURL))

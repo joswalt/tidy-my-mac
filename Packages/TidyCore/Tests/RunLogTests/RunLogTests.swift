@@ -36,7 +36,7 @@ struct RunLogTests {
     @Test func crashMidWrite() throws {
         let t = try TestHome("runlog-crash")
         defer { t.cleanUp() }
-        let w = try RunLogWriter(directory: t.home.tidyRunLogs, header: RunHeader(module: "smartCare", appVersion: "1.0", ruleSetVersion: 1, dryRun: true))
+        let w = try RunLogWriter(directory: t.home.tidyRunLogs, header: RunHeader(module: "tidyUp", appVersion: "1.0", ruleSetVersion: 1, dryRun: true))
         try w.append(RunItem(ruleID: "log.user", path: "/x/a", allocatedBytes: 1, action: .delete, result: .done))
         // Simulate a crash: a half-written line and no summary.
         let h = try FileHandle(forWritingTo: w.fileURL)

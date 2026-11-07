@@ -23,7 +23,7 @@ struct SettingsView: View {
                 IgnoreListView()
                 Form {
                     Toggle("Check for app updates automatically", isOn: $checkUpdates)
-                    Text("At most once a day, when Applications › Updates or Smart Care opens. TidyMyMac never installs updates.")
+                    Text("At most once a day, when Applications › Updates or Tidy Up opens. TidyMyMac never installs updates.")
                         .font(.caption).foregroundStyle(.secondary)
                     Picker("Duplicates: smallest file", selection: $duplicateMinimumMB) {
                         ForEach([1, 5, 10, 50, 100], id: \.self) { Text("\($0) MB").tag($0) }

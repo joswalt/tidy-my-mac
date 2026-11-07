@@ -14,10 +14,10 @@ public enum HealthLevel: Int, Comparable, Sendable {
 
 public struct HealthSignal: Identifiable, Equatable, Sendable {
     public enum ID: String, Sendable, CaseIterable {
-        case freeSpace, lastSmartCare, junkFound, trash, fullDiskAccess, helper
+        case freeSpace, lastTidyUp, junkFound, trash, fullDiskAccess, helper
     }
     public enum Fix: Equatable, Sendable {
-        case spaceLens, runSmartCare, smartCare, emptyTrash, openSetup
+        case diskMap, runTidyUp, tidyUp, emptyTrash, openSetup
     }
 
     public let id: ID
@@ -36,9 +36,9 @@ public struct HealthInputs: Sendable {
     /// Real free space (not counting purgeable); nil if unreadable.
     public var freeBytes: Int64?
     public var lowDiskGB: Int
-    public var lastSmartCare: Date?
+    public var lastTidyUp: Date?
     public var reminderInterval: ReminderInterval
-    /// What the last Smart Care scan found and was not cleaned, and when.
+    /// What the last Tidy Up scan found and was not cleaned, and when.
     public var junkLeft: (bytes: Int64, scanned: Date)?
     /// Nil without Full Disk Access: the row is hidden then.
     public var trashBytes: Int64?
@@ -46,9 +46,9 @@ public struct HealthInputs: Sendable {
     public var hasFullDiskAccess: Bool
     public var helperReady: Bool
 
-    public init(now: Date, freeBytes: Int64?, lowDiskGB: Int, lastSmartCare: Date?, reminderInterval: ReminderInterval,
+    public init(now: Date, freeBytes: Int64?, lowDiskGB: Int, lastTidyUp: Date?, reminderInterval: ReminderInterval,
                 junkLeft: (bytes: Int64, scanned: Date)?, trashBytes: Int64?, trashGB: Int, hasFullDiskAccess: Bool, helperReady: Bool) {
-        self.now = now; self.freeBytes = freeBytes; self.lowDiskGB = lowDiskGB; self.lastSmartCare = lastSmartCare
+        self.now = now; self.freeBytes = freeBytes; self.lowDiskGB = lowDiskGB; self.lastTidyUp = lastTidyUp
         self.reminderInterval = reminderInterval; self.junkLeft = junkLeft; self.trashBytes = trashBytes; self.trashGB = trashGB
         self.hasFullDiskAccess = hasFullDiskAccess; self.helperReady = helperReady
     }
@@ -75,22 +75,22 @@ public enum Health {
             case .worthALook: "\(fmt(free)) free, below your \(i.lowDiskGB) GB line"
             case .needsAttention: "Only \(fmt(free)) free. macOS needs room to update and run smoothly."
             }
-            out.append(HealthSignal(id: .freeSpace, title: "Free disk space", level: level, reason: reason, fix: level == .good ? nil : .spaceLens))
+            out.append(HealthSignal(id: .freeSpace, title: "Free disk space", level: level, reason: reason, fix: level == .good ? nil : .diskMap))
         } else {
             out.append(HealthSignal(id: .freeSpace, title: "Free disk space", level: .good, reason: "Couldn't read the startup disk", fix: nil))
         }
 
-        // Last Smart Care: orange if never, or more than 2× the reminder interval ago.
-        if let last = i.lastSmartCare {
+        // Last Tidy Up: orange if never, or more than 2× the reminder interval ago.
+        if let last = i.lastTidyUp {
             let limit = calendar.date(byAdding: i.reminderInterval.component, value: 2 * i.reminderInterval.amount, to: last) ?? last
             let days = max(0, calendar.dateComponents([.day], from: calendar.startOfDay(for: last), to: calendar.startOfDay(for: i.now)).day ?? 0)
             let ago = days == 0 ? "today" : (days == 1 ? "yesterday" : "\(days) days ago")
             let late = i.now > limit
-            out.append(HealthSignal(id: .lastSmartCare, title: "Last Smart Care", level: late ? .worthALook : .good,
-                                    reason: "Last run \(ago)", fix: late ? .runSmartCare : nil))
+            out.append(HealthSignal(id: .lastTidyUp, title: "Last Tidy Up", level: late ? .worthALook : .good,
+                                    reason: "Last run \(ago)", fix: late ? .runTidyUp : nil))
         } else {
-            out.append(HealthSignal(id: .lastSmartCare, title: "Last Smart Care", level: .worthALook,
-                                    reason: "Not run yet", fix: .runSmartCare))
+            out.append(HealthSignal(id: .lastTidyUp, title: "Last Tidy Up", level: .worthALook,
+                                    reason: "Not run yet", fix: .runTidyUp))
         }
 
         // Junk found last time and left.
@@ -98,7 +98,7 @@ public enum Health {
             let date = junk.scanned.formatted(date: .abbreviated, time: .omitted)
             let level: HealthLevel = junk.bytes > junkLine ? .worthALook : .good
             out.append(HealthSignal(id: .junkFound, title: "Junk found last time", level: level,
-                                    reason: "\(fmt(junk.bytes)) left after the scan on \(date)", fix: level == .good ? nil : .smartCare))
+                                    reason: "\(fmt(junk.bytes)) left after the scan on \(date)", fix: level == .good ? nil : .tidyUp))
         } else {
             out.append(HealthSignal(id: .junkFound, title: "Junk found last time", level: .good, reason: "No scan yet", fix: nil))
         }
@@ -151,8 +151,8 @@ public enum ReminderSchedule {
     public static let defaultMinutes = 10 * 60
     public static let repeatAfterDays = 3
 
-    /// Due = (last completed Smart Care, or first launch if never) + interval, at the time of day.
-    /// One repeat 3 days later; then silent until the next Smart Care run. Past dates are dropped:
+    /// Due = (last completed Tidy Up, or first launch if never) + interval, at the time of day.
+    /// One repeat 3 days later; then silent until the next Tidy Up run. Past dates are dropped:
     /// a Mac asleep at the time gets the notification on wake from the system.
     public static func plan(lastRun: Date?, firstLaunch: Date, interval: ReminderInterval, minutesOfDay: Int,
                             now: Date, calendar: Calendar = .current) -> ReminderPlan {
@@ -163,10 +163,10 @@ public enum ReminderSchedule {
         return ReminderPlan(due: due, repeatDate: rep, pending: [due, rep].filter { $0 > now })
     }
 
-    /// "Time for Smart Care. Last run 16 days ago."
+    /// "Time to Tidy Up. Last run 16 days ago."
     public static func message(lastRun: Date?, at date: Date, calendar: Calendar = .current) -> String {
-        guard let lastRun else { return "Time for Smart Care. You haven't run it yet." }
+        guard let lastRun else { return "Time to Tidy Up. You haven't run it yet." }
         let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: lastRun), to: calendar.startOfDay(for: date)).day ?? 0
-        return "Time for Smart Care. Last run \(days == 1 ? "1 day" : "\(days) days") ago."
+        return "Time to Tidy Up. Last run \(days == 1 ? "1 day" : "\(days) days") ago."
     }
 }

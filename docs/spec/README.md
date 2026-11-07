@@ -37,11 +37,11 @@ The Keep column of the [feature list](../planning/cleanmymac-feature-list.md) (5
 
 | Module | v1 features | Detailed in |
 |---|---|---|
-| Smart Care | One scan → six result cards → review sheet → one confirm → done | 007 §3, 006 §4 |
+| Tidy Up | One scan → six result cards → review sheet → one confirm → done | 007 §3, 006 §4 |
 | Health | Status from six signals, storage (purgeable read-only), Trash size, setup status, run history, reminders | [012](012-health-and-reminders.md), §6.1 |
 | Cleanup | User/system caches, user/system logs, Xcode junk, AI junk, local AI models (risky), iOS backups (risky), Trash bins, broken login items, ignore list | [006](006-safety-rules.md), [005](005-admin-helper.md), §6.2–6.4 |
-| My Clutter | Large & old files, duplicates, Downloads review, duplicate downloads | [014](014-duplicate-finder.md), §6.6–6.7 |
-| Space Lens | Treemap + size-ranked list, scan one folder or volume | 007 §2, §6.8 |
+| Declutter | Large & old files, duplicates, Downloads review, duplicate downloads | [014](014-duplicate-finder.md), §6.6–6.7 |
+| Disk Map | Treemap + size-ranked list, scan one folder or volume | 007 §2, §6.8 |
 | Applications | Uninstaller, unused apps, leftover files, installer leftovers, update check (Sparkle, Electron, Homebrew, macOS; check only) | 006, 005, [013](013-update-checks.md), §6.5 |
 | Performance | Flush DNS, reindex Spotlight, thin Time Machine snapshots (helper), login items, background items | 005 §6, §6.9 |
 | Protection | App permissions, read-only, with links to System Settings | §6.10 |
@@ -67,7 +67,7 @@ Full layout: [spec 016](016-repo-layout.md). In short:
 |---|---|
 | [005 Admin helper](005-admin-helper.md) | Install/approval/lifecycle, 6 zones, handles, typed operations, admin auth once per run, Trash ledger + restore, signing and caller checks |
 | [006 Safety rules](006-safety-rules.md) | Rule kinds, JSON format and fields, delete-vs-Trash, three risk levels, protected floor, seed rule set, review process, licences |
-| [007 App layout](007-app-layout.md) | Window, sidebar, Smart Care flow, shared patterns, menu bar, first run. Prototype: [tidymymac-layout.html](../../design/prototype/tidymymac-layout.html) |
+| [007 App layout](007-app-layout.md) | Window, sidebar, Tidy Up flow, shared patterns, menu bar, first run. Prototype: [tidymymac-layout.html](../../design/prototype/tidymymac-layout.html) |
 | [011 Menu bar](011-menu-bar.md) | Monitor sources, sampling, alerts and thresholds |
 | [012 Health and reminders](012-health-and-reminders.md) | Health signals and status, reminder notifications |
 | [013 Update checks](013-update-checks.md) | Feed discovery, appcast parsing, version comparison, macOS updates |
@@ -85,7 +85,7 @@ These filled the last gaps a builder would otherwise ask about. John signed off 
 
 ### 6.1 Run log (format left open by 005 §8 and 006 §5.7)
 - One **JSON Lines** file per run: `~/Library/Application Support/TidyMyMac/RunLog/<yyyy-MM-dd'T'HHmmss>-<runID>.jsonl`. Dry runs are logged too, marked `dryRun: true`.
-- Line 1 `header`: `runID` (UUID), `start`, `module` (`smartCare`, `cleanup`, …), `appVersion`, `ruleSetVersion`, `dryRun`.
+- Line 1 `header`: `runID` (UUID), `start`, `module` (`tidyUp`, `cleanup`, …), `appVersion`, `ruleSetVersion`, `dryRun`.
 - One `item` line per item, written as it happens: `time`, `ruleID` (or `manual`), `path`, `allocatedBytes`, `action` (`trash` / `delete` / operation id), `result` (`done` / `skipped` / `failed`), `reason` on skip/fail, `trashPath` for trashed items, `helperLedgerID` for helper items.
 - Last line `summary`: `end`, counts and bytes per action. A run with no summary (crash) is shown as "Interrupted"; a truncated last line is ignored (017 §4.4).
 - Kept indefinitely (they are small); Settings › General has **Reveal Run Logs**. Health shows the last 50 runs; each opens a detail list.
@@ -100,7 +100,7 @@ These filled the last gaps a builder would otherwise ask about. John signed off 
 
 ### 6.4 Trash bins
 - Covers `~/.Trash` and `/Volumes/*/.Trashes/<uid>` on mounted non-startup volumes the user can write. Mail's trash is **not** in v1 (`~/Library/Mail` is on the protected floor).
-- Needs FDA (015 §4). Shown as one category per volume with size; always unticked in Smart Care; permanent, so the confirm uses the red **Delete** button.
+- Needs FDA (015 §4). Shown as one category per volume with size; always unticked in Tidy Up; permanent, so the confirm uses the red **Delete** button.
 - Emptying: user-owned items with `removeItem` after floor checks; root-owned items that are in the helper ledger via `emptyTrashed`; any other root-owned item is skipped with "Empty in Finder (needs your password)".
 
 ### 6.5 Applications details not in 005/006/013
@@ -118,7 +118,7 @@ These filled the last gaps a builder would otherwise ask about. John signed off 
 - Top-level items of `~/Downloads` with size, date added, source site (`kMDItemWhereFroms`, host only), and the "Also elsewhere" duplicate flag (014 §8).
 - Default filter "older than 30 days"; nothing ticked by default; Trash only.
 
-### 6.8 Space Lens
+### 6.8 Disk Map
 - Default target: the home folder. Picker: Home, the startup disk (`/`), each mounted volume, **Choose Folder…**. Scanning `/` runs as the user, so unreadable folders appear as one grey "Not readable" block, never an error.
 - Treemap two levels deep (squarified layout, our own code), folders coloured by kind with the accent for the selection; the size-ranked list beside it has ticks. Packages are leaves. Hard links counted once, allocated size.
 - Removal to the Trash only, protected floor applies (items on it show no tick). Results cached for the session only.
@@ -128,7 +128,7 @@ These filled the last gaps a builder would otherwise ask about. John signed off 
 - **Background Items tab:** plists in `~/Library/LaunchAgents` (toggle with `launchctl disable|enable gui/<uid>/<label>` from the app), `/Library/LaunchAgents` (same, user domain) and `/Library/LaunchDaemons` (toggle via helper `setDaemonEnabled`). Shows label, program, vendor (from the program's code signature), loaded/disabled, program missing. Toggling is reversible and logged; removal of broken ones is Cleanup's job. `com.apple.*` never shown.
 
 ### 6.10 Protection: app permissions
-- Decided (John's sign-off, 2026-11-07): list each privacy area (Camera, Microphone, Screen & System Audio Recording, Accessibility, Full Disk Access, Input Monitoring, Automation, Location Services, Files & Folders) with a one-line explanation and a button to its System Settings pane; no per-app list (TCC.db is private and moved in macOS 27). Smart Care's Protection card then reads "Review app permissions" instead of counts.
+- Decided (John's sign-off, 2026-11-07): list each privacy area (Camera, Microphone, Screen & System Audio Recording, Accessibility, Full Disk Access, Input Monitoring, Automation, Location Services, Files & Folders) with a one-line explanation and a button to its System Settings pane; no per-app list (TCC.db is private and moved in macOS 27). Tidy Up's Protection card then reads "Review app permissions" instead of counts.
 
 ### 6.11 Settings window (⌘,)
 | Pane | Settings |
@@ -154,10 +154,10 @@ Each milestone ends with a pull request John reviews; CI (017 §3) runs from mil
 |---|---|---|
 | 0 | **Repo bootstrap**: `project.yml`, `Config/`, empty targets, TidyCore with 9 empty libraries, `CLAUDE.md`, CI workflow, `safety-lint.sh`, `lint-rules.sh`, specs into `docs/spec/`, planning into `docs/planning/`, app icon | App builds signed on John's Mac and opens an empty sidebar; CI green |
 | 1 | **Safety core**: `SafetyFloor`, `RunLog`, `RuleEngine` (loader, lint, matcher, sizing, dry run), user-level rules, `TestHome`, end-to-end snapshot-diff test | 017 §4.1–4.2 cases pass |
-| 2 | **Cleanup + Smart Care (user level)**: Cleanup module, review sheet, confirm, run log, Health run history, restore, ignore list | Dry run on John's account looks right; real run in `tidytest` passes |
+| 2 | **Cleanup + Tidy Up (user level)**: Cleanup module, review sheet, confirm, run log, Health run history, restore, ignore list | Dry run on John's account looks right; real run in `tidytest` passes |
 | 3 | **Helper + setup**: `HelperProtocol`, `HelperCore`, helper target, auth, ledger, FDA probe and first-run sheet, system rules, Trash bins, maintenance tasks | First-build checklist (017 §7) recorded; canary run passes |
 | 4 | **Applications**: inventory, Uninstaller, leftovers, unused, installers, update checks | Dummy-app uninstall and fixture appcast tests pass; live check vs 5 apps |
-| 5 | **My Clutter + Space Lens** (`DiskAnalysis`) | Treemap vs `du -k`, duplicate rules tests pass |
+| 5 | **Declutter + Disk Map** (`DiskAnalysis`) | Treemap vs `du -k`, duplicate rules tests pass |
 | 6 | **Performance, Protection, Health, reminders, menu bar** (`SystemTasks`, `Monitors`) | Health signals and alerts behave as 011/012 |
 | 7 | **My Tools, polish, release gate** | Full release gate (017 §6) passes; tag `v1.0` |
 

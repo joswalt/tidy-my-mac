@@ -17,14 +17,14 @@ final class AppModel {
     var showSetup = false
     var ignoreList = IgnoreList()
     var runs: [RunRecord] = []
-    var selectedModule: SidebarModule = .smartCare
+    var selectedModule: SidebarModule = .tidyUp
     var toast: String?
 
     let cleanup: ScanSession
-    let smartCare: ScanSession
+    let tidyUp: ScanSession
     let applications: ApplicationsModel
     let clutter = ClutterModel()
-    let spaceLens = SpaceLensModel()
+    let diskMap = DiskMapModel()
     let status = StatusModel()
     let menuBarMonitor = MenuBarMonitor()
     let loginItem = LoginItem()
@@ -44,14 +44,14 @@ final class AppModel {
         context = ctx
         loadError = err
         cleanup = ScanSession(module: "cleanup")
-        smartCare = ScanSession(module: "smartCare")
+        tidyUp = ScanSession(module: "tidyUp")
         applications = ApplicationsModel(services: ctx.map { CompositionRoot.makeAppServices(home: $0.home) })
         cleanup.app = self
-        smartCare.app = self
+        tidyUp.app = self
         applications.app = self
         applications.installers.app = self
         clutter.app = self
-        spaceLens.app = self
+        diskMap.app = self
         status.app = self
         menuBarMonitor.status = status
         trashSession.app = self
@@ -73,10 +73,10 @@ final class AppModel {
         // Scans are read-only; nothing here can remove a file.
         let defaults = UserDefaults.standard
         if let m = defaults.string(forKey: "TidyModule"), let module = SidebarModule(rawValue: m) { selectedModule = module }
-        if defaults.bool(forKey: "TidyScan") { (selectedModule == .cleanup ? cleanup : smartCare).scan() }
+        if defaults.bool(forKey: "TidyScan") { (selectedModule == .cleanup ? cleanup : tidyUp).scan() }
         // -TidyAppsTab updates|leftovers|… opens that Applications tab (read-only, like scans).
         if let t = defaults.string(forKey: "TidyAppsTab"), let tab = ApplicationsModel.Tab(rawValue: t) { applications.tab = tab }
-        // -TidyClutterTab largeOld|duplicates|downloads opens that My Clutter tab (read-only).
+        // -TidyClutterTab largeOld|duplicates|downloads opens that Declutter tab (read-only).
         if let t = defaults.string(forKey: "TidyClutterTab"), let tab = ClutterModel.Tab(rawValue: t) { clutter.tab = tab }
         #endif
     }
@@ -133,7 +133,7 @@ final class AppModel {
         ignoreList.add(entry)
         try? context.ignoreStore.save(ignoreList)
         cleanup.applyIgnoreList()
-        smartCare.applyIgnoreList()
+        tidyUp.applyIgnoreList()
         applications.installers.applyIgnoreList()
         if let groups = applications.leftovers {
             applications.leftovers = groups.compactMap { g in
@@ -162,7 +162,10 @@ final class AppModel {
         status.rescheduleReminders()
     }
 
-    var lastSmartCare: RunRecord? { runs.first { $0.header.module == "smartCare" && !$0.header.dryRun && !$0.isInterrupted } }
+    /// Run logs written before the rename say "smartCare"; they still count.
+    var lastTidyUp: RunRecord? {
+        runs.first { ["tidyUp", "smartCare"].contains($0.header.module) && !$0.header.dryRun && !$0.isInterrupted }
+    }
 
     // MARK: Navigation from the menu bar, notifications and Health
 
@@ -187,15 +190,15 @@ final class AppModel {
         case .clutter(let tab): clutter.tab = tab
         case .performance(let tab): performanceTab = tab
         case .health(let tab): healthTab = tab
-        case .spaceLens, .protection: break
+        case .diskMap, .protection: break
         }
         selectedModule = destination.module
     }
 
-    /// Opens Smart Care and starts the scan (scans delete nothing).
-    func runSmartCare() {
-        open(.smartCare)
-        if smartCare.phase == .idle || smartCare.phase == .results { smartCare.scan() }
+    /// Opens Tidy Up and starts the scan (scans delete nothing).
+    func runTidyUp() {
+        open(.tidyUp)
+        if tidyUp.phase == .idle || tidyUp.phase == .results { tidyUp.scan() }
     }
 
     /// Cleanup › Trash bins. Only scans; the notification never empties anything.
@@ -208,8 +211,8 @@ final class AppModel {
     func handleNotification(category: String, action: String) {
         switch (category, action) {
         case (Notifier.reminder, "tomorrow"): status.snoozeReminder()
-        case (Notifier.reminder, _): runSmartCare()
-        case (Notifier.lowDisk, _): open(.spaceLens)
+        case (Notifier.reminder, _): runTidyUp()
+        case (Notifier.lowDisk, _): open(.diskMap)
         case (Notifier.fullTrash, _): reviewTrash()
         default: showWindow()
         }
@@ -267,7 +270,7 @@ final class AppModel {
     }
 }
 
-/// One module's scan → review → run cycle (Cleanup and Smart Care each have one).
+/// One module's scan → review → run cycle (Cleanup and Tidy Up each have one).
 @MainActor @Observable
 final class ScanSession {
     enum Phase: Equatable {
@@ -300,14 +303,14 @@ final class ScanSession {
     var rules: [CleanRule] {
         guard let ctx = app?.context else { return [] }
         switch module {
-        case "smartCare": return ctx.smartCareRules
+        case "tidyUp": return ctx.tidyUpRules
         // Applications › Installers shows the installer rule on its own (build spec §6.5).
         case "applications": return ctx.rules.cleanRules.filter { $0.category == .installer }
         default: return ctx.cleanupRules
         }
     }
 
-    /// Only Cleanup and Smart Care look at the Trash bins.
+    /// Only Cleanup and Tidy Up look at the Trash bins.
     var includesTrashBins: Bool { module != "applications" }
 
     func scan() {
@@ -372,7 +375,7 @@ final class ScanSession {
             }
             let report = ScanReport(results: results)
             self.report = report
-            if module == "smartCare" {
+            if module == "tidyUp" {
                 app?.status.recordJunk(found: report.candidates.filter { !TrashBins.isTrashItem($0) }.reduce(0) { $0 + $1.allocatedBytes })
             }
             selection = Selection.defaults(for: report.candidates)
@@ -432,9 +435,9 @@ final class ScanSession {
                 let run = try await Task.detached { try engine.run(userItems, module: module, dryRun: dryRun, extraItems: extra) }.value
                 lastRun = run
                 phase = .done(dryRun: dryRun)
-                if module == "smartCare" && !dryRun {
+                if module == "tidyUp" && !dryRun {
                     let cleaned = run.outcome.done.filter { !$0.ruleID.hasPrefix(TrashBins.ruleID) }.reduce(Int64(0)) { $0 + $1.allocatedBytes }
-                    app.status.smartCareCompleted(cleanedBytes: cleaned)
+                    app.status.tidyUpCompleted(cleanedBytes: cleaned)
                 }
             } catch {
                 self.error = "\(error)"

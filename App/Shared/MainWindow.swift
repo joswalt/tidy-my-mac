@@ -4,14 +4,14 @@ import SwiftUI
 struct MainWindow: View {
     static let id = "main"
 
-    @SceneStorage("selectedModule") private var selectedRaw = SidebarModule.smartCare.rawValue
+    @SceneStorage("selectedModule") private var selectedRaw = SidebarModule.tidyUp.rawValue
     @Environment(AppModel.self) private var app
     @Environment(\.openWindow) private var openWindow
 
     private var selection: Binding<SidebarModule?> {
         Binding(
             get: { app.selectedModule },
-            set: { app.selectedModule = $0 ?? .smartCare; selectedRaw = app.selectedModule.rawValue }
+            set: { app.selectedModule = $0 ?? .tidyUp; selectedRaw = app.selectedModule.rawValue }
         )
     }
 
@@ -39,7 +39,7 @@ struct MainWindow: View {
             #if DEBUG
             if UserDefaults.standard.string(forKey: "TidyModule") != nil { return }
             #endif
-            app.selectedModule = SidebarModule(rawValue: selectedRaw) ?? .smartCare
+            app.selectedModule = SidebarModule(rawValue: selectedRaw) ?? .tidyUp
         }
         .alert("TidyMyMac can't start cleaning", isPresented: .constant(app.loadError != nil)) {
             Button("Quit") { NSApplication.shared.terminate(nil) }
@@ -72,11 +72,11 @@ struct ModuleDetail: View {
     var body: some View {
         Group {
             switch module {
-            case .smartCare: SmartCareView()
+            case .tidyUp: TidyUpView()
             case .health: HealthView()
             case .cleanup: CleanupView()
-            case .myClutter: MyClutterView()
-            case .spaceLens: SpaceLensView()
+            case .declutter: DeclutterView()
+            case .diskMap: DiskMapView()
             case .applications: ApplicationsView()
             case .performance: PerformanceView()
             case .protection: ProtectionView()

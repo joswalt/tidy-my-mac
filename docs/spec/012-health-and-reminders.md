@@ -1,6 +1,6 @@
-# Spec 012: Health summary and Smart Care reminders
+# Spec 012: Health summary and Tidy Up reminders
 
-Ticket: [012](../planning/tickets/012-health-summary-and-reminders.md). Screens: [spec 007](007-app-layout.md) (Health module, Smart Care Done screen). Shared alert settings: [spec 011](011-menu-bar.md). Agreed with John, 2026-11-07.
+Ticket: [012](../planning/tickets/012-health-summary-and-reminders.md). Screens: [spec 007](007-app-layout.md) (Health module, Tidy Up Done screen). Shared alert settings: [spec 011](011-menu-bar.md). Agreed with John, 2026-11-07.
 
 ## 1. Health status
 
@@ -9,9 +9,9 @@ Ticket: [012](../planning/tickets/012-health-summary-and-reminders.md). Screens:
 
 | Signal | Orange | Red | Fix button |
 |---|---|---|---|
-| Free disk space (real free space, `volumeAvailableCapacityKey`; see spec 011 §2) | below the shared **low-disk setting** (default 20 GB; 10/20/50) | below 10 GB (fixed; Health only, no notification). If the setting is 10, it goes straight to red | Space Lens |
-| Last Smart Care | more than 2× the reminder interval ago, or never run | never | Run Smart Care |
-| Junk found last time | last scan found > 5 GB that was not cleaned | never | Smart Care |
+| Free disk space (real free space, `volumeAvailableCapacityKey`; see spec 011 §2) | below the shared **low-disk setting** (default 20 GB; 10/20/50) | below 10 GB (fixed; Health only, no notification). If the setting is 10, it goes straight to red | Disk Map |
+| Last Tidy Up | more than 2× the reminder interval ago, or never run | never | Run Tidy Up |
+| Junk found last time | last scan found > 5 GB that was not cleaned | never | Tidy Up |
 | Trash size (needs FDA; hidden without it) | above the shared **Trash setting** (default 5 GB; 1/5/10/20) | never | Empty Trash… (standard confirm) |
 | Full Disk Access | off | never | Open setup |
 | Admin helper | not approved | never | Open setup |
@@ -23,11 +23,11 @@ Ticket: [012](../planning/tickets/012-health-summary-and-reminders.md). Screens:
 ## 2. Reminders
 
 - Notification only; never unattended scanning or cleaning.
-- Text: "Time for Smart Care. Last run 16 days ago." Default action opens TidyMyMac on Smart Care and **starts the scan** (scans delete nothing). Second action **Tomorrow** snoozes one day.
-- Timing counts from the **last completed Smart Care run**: due = last run + interval, at the chosen time of day. If ignored, one repeat 3 days later, then silent until the next Smart Care run. Implemented as local `UNUserNotificationCenter` requests (calendar triggers), rescheduled on every Smart Care completion, app launch and settings change; the app need not be running. A Mac asleep at the time gets it on wake.
+- Text: "Time to Tidy Up. Last run 16 days ago." Default action opens TidyMyMac on Tidy Up and **starts the scan** (scans delete nothing). Second action **Tomorrow** snoozes one day.
+- Timing counts from the **last completed Tidy Up run**: due = last run + interval, at the chosen time of day. If ignored, one repeat 3 days later, then silent until the next Tidy Up run. Implemented as local `UNUserNotificationCenter` requests (calendar triggers), rescheduled on every Tidy Up completion, app launch and settings change; the app need not be running. A Mac asleep at the time gets it on wake.
 - Never run: due = first launch + interval.
 - Defaults: **on**, **every 2 weeks**, **10:00**. Choices: every week / every 2 weeks / every month. (Replaces the prototype's "Every week".)
-- Permission: macOS's notification prompt is requested only on the Done screen of the first Smart Care ("Remind me to run Smart Care every 2 weeks?"). If denied, the Reminders card shows "Notifications are off in System Settings" with a link.
+- Permission: macOS's notification prompt is requested only on the Done screen of the first Tidy Up ("Remind me to run Tidy Up every 2 weeks?"). If denied, the Reminders card shows "Notifications are off in System Settings" with a link.
 
 ## 3. Settings
 

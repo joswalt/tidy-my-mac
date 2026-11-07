@@ -3,9 +3,9 @@ import DiskAnalysis
 import RuleEngine
 import SwiftUI
 
-/// My Clutter (spec 007 §2): Large & Old · Duplicates · Downloads. Personal files: nothing is
+/// Declutter (spec 007 §2): Large & Old · Duplicates · Downloads. Personal files: nothing is
 /// ticked for you except duplicate copies, and everything goes to the Trash.
-struct MyClutterView: View {
+struct DeclutterView: View {
     @Environment(AppModel.self) private var app
     @State private var showConfirm = false
 
@@ -79,7 +79,7 @@ struct MyClutterView: View {
     }
 }
 
-/// Where My Clutter looks: the six default folders plus Add Folder… (spec 014 §3).
+/// Where Declutter looks: the six default folders plus Add Folder… (spec 014 §3).
 struct ScopeMenu: View {
     @Bindable var model: ClutterModel
     @Environment(AppModel.self) private var app
@@ -104,7 +104,7 @@ struct ScopeMenu: View {
         } label: {
             Label("Folders", systemImage: "folder.badge.plus")
         }
-        .help("Choose where My Clutter looks")
+        .help("Choose where Declutter looks")
         .disabled(model.phase != .browsing || model.isScanning)
     }
 }
@@ -262,7 +262,7 @@ struct DuplicatesTab: View {
                 .padding(.horizontal, 16).padding(.vertical, 8)
                 Divider()
                 if groups.isEmpty {
-                    EmptyStateView(symbol: "doc.on.doc", message: "No duplicates of 1 MB or more in the folders My Clutter looks in.")
+                    EmptyStateView(symbol: "doc.on.doc", message: "No duplicates of 1 MB or more in the folders Declutter looks in.")
                 } else {
                     List {
                         ForEach(groups) { g in

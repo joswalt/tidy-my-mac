@@ -22,7 +22,7 @@ A safety rule (see [CONTEXT.md](../planning/CONTEXT.md)) says that a kind of ite
 - Duplicates
 - Downloads review
 - Duplicate downloads
-- Space Lens
+- Disk Map
 
 These are fixed operations, not rules: emptying the Trash bins, flush DNS, reindex Spotlight, thin Time Machine snapshots, and toggling login and background items. They live in the app or in the admin helper's allow-list (spec 005). A `clean` rule can name an operation by id, such as `simctl.deleteUnavailable`, but never contains a shell command.
 
@@ -132,7 +132,7 @@ Why not the alternatives: rules written as Swift code mix with app code and are 
 
 **Risk levels (John's choice: three):**
 
-| Risk | Meaning | In a scan | In Smart Care |
+| Risk | Meaning | In a scan | In Tidy Up |
 |---|---|---|---|
 | `safe` | The OS or the app recreates it, and it holds no user data. `evidence` is required. | Ticked | Included, ticked |
 | `caution` | It can be recreated, but at a cost (re-downloads, rebuilds), or it holds a little state. | Shown, unticked | Shown, unticked |
@@ -147,7 +147,7 @@ These checks are in code, not in rule files, so a bad rule file can't turn them 
 1. **Protected floor.** No rule file can override this list:
    - System folders: `/System`, `/usr` (except `/usr/local`), `/bin`, `/sbin`, `/private/var/db`, `/Library/Apple`, `/Library/Extensions`, `/.DocumentRevisions-V100`, `/.Spotlight-V100`.
    - Folders that are never removed as a whole: `/Applications` itself, and `~` itself.
-   - Personal folders: `~/Documents`, `~/Desktop`, `~/Pictures`, `~/Movies`, `~/Music`. Large and old files, duplicates and Space Lens may still trash items *inside* them that John picks by hand.
+   - Personal folders: `~/Documents`, `~/Desktop`, `~/Pictures`, `~/Movies`, `~/Music`. Large and old files, duplicates and Disk Map may still trash items *inside* them that John picks by hand.
    - iCloud and cloud sync: `~/Library/Mobile Documents`, `~/Library/CloudStorage`.
    - `~/Library/Keychains`.
    - Photos and Music libraries, and anything inside any bundle or package.
@@ -217,7 +217,7 @@ The leftover locations are seeded from app-cleaner.sh's list of about 27 places 
 
 ## 8. Left to other tickets
 
-- Which items Smart Care includes, and how the review screen looks: Smart Care flow, ticket 007.
+- Which items Tidy Up includes, and how the review screen looks: Tidy Up flow, ticket 007.
 - The end-to-end test plan beyond rule fixtures: the "Testing and safety" topic on the map.
 - The run log's file format: handoff.
 - The helper's zones and deny list: spec 005. This spec supplies the extra deny names in §5.1.
