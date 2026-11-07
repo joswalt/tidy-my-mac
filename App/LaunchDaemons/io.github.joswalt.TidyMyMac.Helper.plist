@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Root helper, registered with SMAppService.daemon (spec 005 §3). No RunAtLoad, no KeepAlive:
+     launchd starts it when the app connects; it exits after 60 s idle. Not registered until milestone 3. -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>io.github.joswalt.TidyMyMac.Helper</string>
+	<key>BundleProgram</key>
+	<string>Contents/MacOS/TidyMyMacHelper</string>
+	<key>MachServices</key>
+	<dict>
+		<key>io.github.joswalt.TidyMyMac.Helper</key>
+		<true/>
+	</dict>
+	<key>AssociatedBundleIdentifiers</key>
+	<array>
+		<string>io.github.joswalt.TidyMyMac</string>
+	</array>
+</dict>
+</plist>

@@ -1,0 +1,6 @@
+// Identity: the one place to change names and the signing team (spec 005 §3, §9).
+// Team IDs are not secret; this file is committed (spec 016 §2).
+
+DEVELOPMENT_TEAM = 26TUUFN7M2
+TIDY_APP_BUNDLE_ID = io.github.joswalt.TidyMyMac
+TIDY_HELPER_BUNDLE_ID = io.github.joswalt.TidyMyMac.Helper

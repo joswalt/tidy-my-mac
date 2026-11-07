@@ -1,0 +1,895 @@
+<title>TidyMyMac Layout Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout concept: a macOS 26 desktop with one TidyMyMac window (NavigationSplitView: inset sidebar + toolbar + content),
+   a menu bar extra, and in-window sheets and alerts. Native look per design/style-guide.md; one accent (Tidy Teal). */
+:root{
+  --page:#eef1f0; --page-fg:#1d1f1f; --page-fg2:#5d6463;
+  --desk1:#cfe3df; --desk2:#e9eef2; --desk3:#b8d7d1;
+  --win:#ffffff; --side:rgba(242,244,244,.92); --bar:rgba(255,255,255,.72);
+  --fg:#1d1d1f; --fg2:rgba(60,60,67,.66); --fg3:rgba(60,60,67,.42);
+  --sep:rgba(60,60,67,.16); --card:#f4f6f6; --ctl:#ffffff; --ctl-b:rgba(0,0,0,.14); --hover:rgba(0,0,0,.045);
+  --accent:#0C7D75; --on-accent:#ffffff; --mint:#DDFBF4; --sel:rgba(12,125,117,.13);
+  --green:#248A3D; --orange:#C45500; --red:#D70015; --blue:#0066CC;
+  --green-f:#34C759; --orange-f:#FF9500; --red-f:#FF3B30;
+  --scrim:rgba(0,0,0,.18); --shadow:0 24px 70px rgba(0,40,36,.28),0 0 0 .5px rgba(0,0,0,.22);
+  --tile-hi:#0C7D75; --tile-lo:#e7f4f1;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro",system-ui,"Helvetica Neue",sans-serif;
+  --round:ui-rounded,"SF Pro Rounded",-apple-system,system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:#121515; --page-fg:#e8eceb; --page-fg2:#9aa4a2;
+  --desk1:#0f2a28; --desk2:#1b2026; --desk3:#123c37;
+  --win:#1e1f20; --side:rgba(44,46,47,.9); --bar:rgba(30,31,32,.75);
+  --fg:#f5f5f7; --fg2:rgba(235,235,245,.62); --fg3:rgba(235,235,245,.36);
+  --sep:rgba(255,255,255,.11); --card:#28292b; --ctl:#3a3b3d; --ctl-b:rgba(255,255,255,.08); --hover:rgba(255,255,255,.06);
+  --accent:#3DD9C5; --on-accent:#05302b; --mint:rgba(61,217,197,.14); --sel:rgba(61,217,197,.18);
+  --green:#30D158; --orange:#FF9F0A; --red:#FF453A; --blue:#64A8FF;
+  --green-f:#30D158; --orange-f:#FF9F0A; --red-f:#FF453A;
+  --scrim:rgba(0,0,0,.4); --shadow:0 24px 70px rgba(0,0,0,.6),0 0 0 .5px rgba(255,255,255,.14);
+  --tile-hi:#3DD9C5; --tile-lo:#203331; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --page:#121515; --page-fg:#e8eceb; --page-fg2:#9aa4a2;
+  --desk1:#0f2a28; --desk2:#1b2026; --desk3:#123c37;
+  --win:#1e1f20; --side:rgba(44,46,47,.9); --bar:rgba(30,31,32,.75);
+  --fg:#f5f5f7; --fg2:rgba(235,235,245,.62); --fg3:rgba(235,235,245,.36);
+  --sep:rgba(255,255,255,.11); --card:#28292b; --ctl:#3a3b3d; --ctl-b:rgba(255,255,255,.08); --hover:rgba(255,255,255,.06);
+  --accent:#3DD9C5; --on-accent:#05302b; --mint:rgba(61,217,197,.14); --sel:rgba(61,217,197,.18);
+  --green:#30D158; --orange:#FF9F0A; --red:#FF453A; --blue:#64A8FF;
+  --green-f:#30D158; --orange-f:#FF9F0A; --red-f:#FF453A;
+  --scrim:rgba(0,0,0,.4); --shadow:0 24px 70px rgba(0,0,0,.6),0 0 0 .5px rgba(255,255,255,.14);
+  --tile-hi:#3DD9C5; --tile-lo:#203331; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--page-fg);font:13px/1.38 var(--font);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 32px;max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.intro{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+.intro h1{margin:0;font-size:22px;font-weight:650;letter-spacing:-.01em;text-wrap:balance}
+.intro h1 b{color:var(--accent);font-weight:650}
+.intro p{margin:4px 0 0;color:var(--page-fg2);max-width:62ch}
+.pctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pctl .lbl{color:var(--page-fg2);font-size:12px}
+.stage-scroll{overflow-x:auto;border-radius:18px}
+.stage{width:1180px;margin:0 auto;border-radius:18px;background:radial-gradient(120% 90% at 15% 0%,var(--desk3),transparent 60%),linear-gradient(160deg,var(--desk1),var(--desk2));position:relative;padding:0 0 40px;overflow:hidden}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px 28px;color:var(--page-fg2);font-size:12.5px}
+.notes h3{margin:0 0 4px;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--page-fg)}
+.notes ul{margin:0;padding-left:18px}
+.notes li{margin:2px 0}
+
+/* desktop menu bar */
+.menubar{height:28px;display:flex;align-items:center;gap:18px;padding:0 16px;background:var(--bar);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);font-size:13px;color:var(--fg)}
+.menubar b{font-weight:650}
+.menubar .sp{flex:1}
+.mbx{display:flex;align-items:center;justify-content:center;width:30px;height:22px;border-radius:6px;border:0;background:none;cursor:pointer;color:var(--fg)}
+.mbx:hover,.mbx.on{background:var(--hover)}
+.mbx svg{width:18px;height:16px;fill:currentColor}
+
+/* window */
+.win{position:relative;width:1100px;height:720px;margin:28px auto 0;background:var(--win);border-radius:18px;box-shadow:var(--shadow);display:grid;grid-template-columns:236px 1fr;overflow:hidden;color:var(--fg)}
+.side{margin:8px 0 8px 8px;border-radius:12px;background:var(--side);border:.5px solid var(--sep);display:flex;flex-direction:column;padding:12px 8px 8px;min-height:0}
+.lights{display:flex;gap:8px;padding:2px 6px 16px}
+.lights i{width:12px;height:12px;border-radius:50%;display:block;background:#ff5f57;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.2)}
+.lights i:nth-child(2){background:#febc2e}.lights i:nth-child(3){background:#28c840}
+.nav{display:flex;flex-direction:column;gap:1px;overflow:auto;flex:1}
+.navh{font-size:11px;font-weight:600;color:var(--fg3);padding:12px 10px 4px}
+.navi{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px;border-radius:8px;border:0;background:none;text-align:left;cursor:pointer;width:100%}
+.navi:hover{background:var(--hover)}
+.navi .i{width:18px;height:18px;color:var(--accent);flex:none}
+.navi span{flex:1;white-space:nowrap}
+.navi em{font-style:normal;font-size:11.5px;color:var(--fg2);font-variant-numeric:tabular-nums}
+.navi.on{background:var(--sel);font-weight:600}
+.navi:focus-visible,.btn:focus-visible,.tb:focus-visible,.seg button:focus-visible,.row:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.sidefoot{border-top:.5px solid var(--sep);margin-top:6px;padding:8px 6px 2px;display:flex;flex-direction:column;gap:6px}
+.stat{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--fg2);border:0;background:none;padding:2px 4px;border-radius:6px;cursor:pointer;text-align:left}
+.stat:hover{background:var(--hover)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green-f);flex:none}
+.dot.warn{background:var(--orange-f)}
+
+.main{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative}
+.toolbar{height:56px;flex:none;display:flex;align-items:center;gap:10px;padding:0 16px 0 20px}
+.toolbar .tt{flex:1;min-width:0}
+.toolbar h2{margin:0;font-size:15px;font-weight:650;line-height:1.2}
+.toolbar small{display:block;font-size:11px;color:var(--fg2)}
+.tb{height:30px;min-width:30px;padding:0 12px;border-radius:15px;border:.5px solid var(--ctl-b);background:var(--ctl);display:inline-flex;align-items:center;gap:6px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.tb .i{width:15px;height:15px}
+.tb.icon{padding:0;width:30px;justify-content:center}
+.tb.pri{background:var(--accent);color:var(--on-accent);border-color:transparent;font-weight:600}
+.tbgroup{display:flex;gap:6px}
+.search{height:30px;border-radius:15px;border:.5px solid var(--ctl-b);background:var(--ctl);display:flex;align-items:center;gap:6px;padding:0 10px;color:var(--fg3);width:170px}
+.search .i{width:14px;height:14px}
+.search input{border:0;background:none;outline:0;font:inherit;color:var(--fg);width:100%}
+.content{flex:1;overflow:auto;padding:4px 20px 20px;min-height:0}
+.foot{flex:none;border-top:.5px solid var(--sep);display:flex;align-items:center;gap:12px;padding:10px 16px 10px 20px;background:var(--win)}
+.foot .sum{flex:1;font-size:12px;color:var(--fg2);font-variant-numeric:tabular-nums}
+.foot .sum b{color:var(--fg);font-weight:600}
+
+/* controls */
+.btn{height:24px;padding:0 12px;border-radius:7px;border:.5px solid var(--ctl-b);background:var(--ctl);box-shadow:0 .5px 1.5px rgba(0,0,0,.1);cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn .i{width:14px;height:14px}
+.btn.lg{height:32px;padding:0 18px;border-radius:9px;font-size:13.5px}
+.btn.xl{height:40px;padding:0 28px;border-radius:20px;font-size:15px;font-weight:600}
+.btn.pri{background:var(--accent);color:var(--on-accent);border-color:transparent;font-weight:600}
+.btn.dest{background:var(--red-f);color:#fff;border-color:transparent;font-weight:600}
+.btn.link{border:0;background:none;box-shadow:none;color:var(--accent);padding:0 4px;height:auto}
+.btn[disabled]{opacity:.45;cursor:default}
+.seg{display:inline-flex;background:var(--hover);border-radius:8px;padding:2px;gap:2px;border:.5px solid var(--sep)}
+.seg button{border:0;background:none;padding:3px 12px;border-radius:6px;cursor:pointer;font-size:12.5px;white-space:nowrap}
+.seg button.on{background:var(--ctl);box-shadow:0 1px 2px rgba(0,0,0,.14);font-weight:600}
+input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;margin:0;flex:none;cursor:pointer}
+.sw{width:34px;height:20px;border-radius:10px;background:var(--fg3);position:relative;border:0;cursor:pointer;flex:none;transition:background .2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:left .2s}
+.sw.on{background:var(--accent)}.sw.on::after{left:16px}
+.popup{height:22px;border-radius:6px;border:.5px solid var(--ctl-b);background:var(--ctl);padding:0 6px;font:inherit;font-size:12px;color:var(--fg)}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:middle}
+
+/* status + badges */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:1px 7px 1px 5px;border-radius:6px;white-space:nowrap}
+.badge .i{width:12px;height:12px}
+.b-safe{color:var(--green);background:color-mix(in srgb,var(--green-f) 13%,transparent)}
+.b-caution{color:var(--orange);background:color-mix(in srgb,var(--orange-f) 14%,transparent)}
+.b-risky{color:var(--red);background:color-mix(in srgb,var(--red-f) 12%,transparent)}
+.b-info{color:var(--fg2);background:var(--hover)}
+.b-acc{color:var(--accent);background:var(--sel)}
+.dest-t{color:var(--fg2);font-size:11.5px;display:inline-flex;gap:4px;align-items:center;white-space:nowrap}
+.dest-d{color:var(--red);font-size:11.5px;display:inline-flex;gap:4px;align-items:center;white-space:nowrap}
+.dest-t .i,.dest-d .i{width:12px;height:12px}
+.mono{font-family:var(--mono);font-size:11.5px;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.muted{color:var(--fg2)}
+.small{font-size:11.5px}
+
+/* cards / lists */
+.card{background:var(--card);border-radius:12px;padding:16px;border:.5px solid var(--sep)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.sect{font-size:17px;font-weight:600;margin:20px 0 10px}
+.sect:first-child{margin-top:8px}
+.list{background:var(--card);border-radius:12px;border:.5px solid var(--sep);overflow:hidden}
+.row{display:flex;align-items:center;gap:10px;padding:8px 12px;min-height:40px;border-top:.5px solid var(--sep);background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left;cursor:default}
+.row:first-child{border-top:0}
+button.row{cursor:pointer}
+button.row:hover{background:var(--hover)}
+.row.on{background:var(--sel)}
+.row .grow{flex:1;min-width:0}
+.row .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ico{width:28px;height:28px;border-radius:7px;background:var(--mint);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none}
+.ico .i{width:16px;height:16px}
+.appi{width:30px;height:30px;border-radius:8px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.15)}
+.thead{display:flex;gap:10px;padding:6px 12px;font-size:11px;font-weight:600;color:var(--fg2);border-bottom:.5px solid var(--sep)}
+.bar{height:6px;border-radius:3px;background:var(--hover);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+
+/* smart care */
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:48px 20px 20px}
+.hero img{width:132px;height:132px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.18))}
+.hero h1{margin:6px 0 0;font-size:26px;font-weight:700}
+.hero p{margin:0;color:var(--fg2);max-width:46ch;font-size:13.5px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 10px;border-radius:14px;background:var(--card);border:.5px solid var(--sep);color:var(--fg2)}
+.chip .i{width:14px;height:14px;color:var(--accent)}
+.big{font:600 44px/1 var(--round);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.ring{width:150px;height:150px}
+.scanlist{width:420px;display:flex;flex-direction:column;gap:2px;margin-top:6px;text-align:left}
+.scanlist .row{border:0;min-height:34px;padding:4px 8px}
+.res-top{display:flex;align-items:center;gap:24px;padding:12px 4px 18px}
+.res-top .grow{flex:1}
+.res-card{display:flex;flex-direction:column;gap:8px;min-height:150px}
+.res-card .h{display:flex;align-items:center;gap:10px}
+.res-card .h b{flex:1;font-size:13px}
+.res-card .v{font:600 22px/1.1 var(--round);font-variant-numeric:tabular-nums}
+.res-card p{margin:0;color:var(--fg2);font-size:12px;flex:1}
+.res-card .f{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.res-card.off{opacity:.62}
+.diskbar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--hover);width:260px}
+.diskbar i{display:block;height:100%}
+
+/* split panes */
+.split{display:grid;grid-template-columns:270px 1fr;gap:16px;min-height:100%}
+.pane{min-width:0}
+.detail h3{margin:2px 0 4px;font-size:17px;font-weight:600;display:flex;align-items:center;gap:8px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px;margin:10px 0 14px}
+.kv dt{color:var(--fg2)}.kv dd{margin:0}
+.note{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--fg2);background:var(--hover);border-radius:8px;padding:8px 10px;margin:0 0 12px}
+.note .i{width:14px;height:14px;margin-top:1px;flex:none}
+.note.warn{color:var(--orange);background:color-mix(in srgb,var(--orange-f) 10%,transparent)}
+
+/* space lens */
+.crumbs{display:flex;align-items:center;gap:4px;font-size:12.5px;flex-wrap:wrap}
+.crumbs button{border:0;background:none;cursor:pointer;padding:2px 6px;border-radius:5px;color:var(--fg2)}
+.crumbs button:hover{background:var(--hover);color:var(--fg)}
+.crumbs button:last-child{color:var(--fg);font-weight:600}
+.crumbs .i{width:11px;height:11px;color:var(--fg3)}
+.tmap{position:relative;height:510px;border-radius:12px;overflow:hidden;background:var(--card);border:.5px solid var(--sep)}
+.tile{position:absolute;border:1.5px solid var(--win);border-radius:8px;padding:7px 8px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;justify-content:flex-end;gap:1px;transition:filter .15s}
+.tile:hover{filter:brightness(1.06)}
+.tile b{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile span{font-size:11px;opacity:.85;font-variant-numeric:tabular-nums}
+.tile.sel{outline:2.5px solid var(--fg);outline-offset:-3px}
+.tile .i{position:absolute;top:7px;right:7px;width:12px;height:12px;opacity:.7}
+
+/* overlays */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:20;display:flex;justify-content:center;align-items:flex-start;animation:fade .2s}
+.sheet{margin-top:0;width:780px;max-height:640px;background:var(--win);border-radius:0 0 14px 14px;box-shadow:0 18px 50px rgba(0,0,0,.35),0 0 0 .5px var(--sep);display:flex;flex-direction:column;animation:drop .28s ease-out}
+.sheet.r{border-radius:14px;margin-top:40px}
+.sheet header{padding:16px 20px 10px;display:flex;align-items:center;gap:12px}
+.sheet header h3{margin:0;font-size:15px;font-weight:650;flex:1}
+.sheet .body{overflow:auto;padding:0 20px 12px;flex:1}
+.sheet footer{border-top:.5px solid var(--sep);padding:12px 20px;display:flex;gap:10px;align-items:center}
+.alert{margin:auto;width:290px;background:var(--win);border-radius:16px;padding:20px 18px 16px;box-shadow:0 18px 50px rgba(0,0,0,.35),0 0 0 .5px var(--sep);text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;animation:pop .2s ease-out}
+.scrim.center{align-items:center}
+.alert img{width:64px;height:64px}
+.alert h4{margin:4px 0 0;font-size:13px;font-weight:700}
+.alert p{margin:0;font-size:11.5px;color:var(--fg2)}
+.alert .bt{display:flex;gap:8px;width:100%;margin-top:8px}
+.alert .bt .btn{flex:1;justify-content:center;height:28px}
+.grp{border-top:.5px solid var(--sep)}
+.grp>.gh{display:flex;align-items:center;gap:10px;padding:9px 4px;font-weight:600;cursor:pointer;background:none;border:0;width:100%;text-align:left}
+.ghb{display:flex;align-items:center;gap:10px;flex:1;border:0;background:none;padding:0;font-weight:600;cursor:pointer;text-align:left}
+.grp .chev{width:12px;height:12px;color:var(--fg3);transition:transform .15s}
+.grp.open .chev{transform:rotate(90deg)}
+.irow{display:grid;grid-template-columns:22px 1fr 92px 96px 74px;align-items:center;gap:8px;padding:5px 4px 5px 26px;border-radius:6px}
+.irow:hover{background:var(--hover)}
+.irow .badge{justify-self:start}
+.irow .nm{min-width:0}
+.irow .nm div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ssum{flex:1;font-size:12px;color:var(--fg2);font-variant-numeric:tabular-nums}.ssum b{color:var(--fg);font-weight:600}
+.toast{position:absolute;left:50%;bottom:70px;transform:translateX(-50%);background:var(--fg);color:var(--win);padding:8px 14px;border-radius:10px;font-size:12.5px;display:flex;gap:8px;align-items:center;z-index:30;animation:fade .2s;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.toast .i{width:14px;height:14px}
+
+/* menu bar popover */
+.mbpop{position:absolute;top:34px;right:64px;width:300px;background:var(--side);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.3),0 0 0 .5px var(--sep);padding:12px;z-index:40;color:var(--fg);display:flex;flex-direction:column;gap:8px;animation:pop .18s ease-out}
+.mbpop .m{display:grid;grid-template-columns:22px 1fr auto;gap:2px 8px;align-items:center;padding:8px;border-radius:9px;background:var(--hover)}
+.mbpop .m .i{color:var(--accent)}
+.mbpop .m small{grid-column:2/4;color:var(--fg2);font-size:11px}
+.mbpop h5{margin:4px 4px 0;font-size:11px;color:var(--fg3);font-weight:600}
+.mbpop .al{display:flex;align-items:center;gap:8px;padding:4px;font-size:12px}
+.mbpop .al span{flex:1}
+
+/* onboarding */
+.steps{display:flex;flex-direction:column;gap:10px;margin:6px 0 4px}
+.step{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:12px;background:var(--card);border:.5px solid var(--sep)}
+.step .n{width:24px;height:24px;border-radius:50%;background:var(--sel);color:var(--accent);font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;font-size:12px}
+.step .n.done{background:var(--green-f);color:#fff}
+.step b{display:block}
+.step p{margin:2px 0 8px;color:var(--fg2);font-size:12px}
+
+.tools{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.tool{display:flex;flex-direction:column;gap:6px;align-items:flex-start;text-align:left;padding:12px;border-radius:12px;background:var(--card);border:.5px solid var(--sep);cursor:pointer;min-height:104px}
+.tool:hover{border-color:var(--accent)}
+.tool b{font-size:12.5px}
+.tool span{font-size:11.5px;color:var(--fg2)}
+.health{display:flex;align-items:center;gap:16px}
+.spark{width:100%;height:28px}
+
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes drop{from{transform:translateY(-24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes pop{from{transform:scale(.96);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<symbol id="i-sparkles" viewBox="0 0 20 20"><path d="M8 2.5l1.3 3.7 3.7 1.3-3.7 1.3L8 12.5 6.7 8.8 3 7.5l3.7-1.3z"/><path d="M14.5 11l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></symbol>
+<symbol id="i-cleanup" viewBox="0 0 20 20"><circle cx="7.5" cy="12" r="4.2"/><circle cx="13.8" cy="6.8" r="2.6"/><circle cx="14.6" cy="14.6" r="1.6"/><path d="M4.6 2.8l.5 1.4 1.4.5-1.4.5-.5 1.4-.5-1.4-1.4-.5 1.4-.5z"/></symbol>
+<symbol id="i-shield" viewBox="0 0 20 20"><path d="M10 2.5l6 2.2v4.6c0 3.9-2.6 6.6-6 8.2-3.4-1.6-6-4.3-6-8.2V4.7z"/><rect x="7.4" y="9.2" width="5.2" height="3.8" rx="1"/><path d="M8.5 9.2V8a1.5 1.5 0 013 0v1.2"/></symbol>
+<symbol id="i-gauge" viewBox="0 0 20 20"><path d="M3.3 14.5a7 7 0 1113.4 0"/><path d="M10 12.2l3.2-4"/><circle cx="10" cy="12.4" r="1.2"/><path d="M5.6 9.2h.01M7.4 6.6h.01M10 5.6h.01"/></symbol>
+<symbol id="i-apps" viewBox="0 0 20 20"><rect x="3" y="3" width="6" height="6" rx="1.7"/><rect x="11" y="3" width="6" height="6" rx="1.7"/><rect x="3" y="11" width="6" height="6" rx="1.7"/><rect x="11" y="11" width="6" height="6" rx="1.7"/></symbol>
+<symbol id="i-clutter" viewBox="0 0 20 20"><path d="M7 5.5V3.8a1 1 0 011-1h5l3.2 3.2v7.7a1 1 0 01-1 1H13"/><rect x="3.8" y="5.5" width="9.2" height="11.7" rx="1"/></symbol>
+<symbol id="i-pie" viewBox="0 0 20 20"><path d="M10 3a7 7 0 107 7h-7z"/><path d="M12.5 1.8a6 6 0 015.7 5.7h-5.7z"/></symbol>
+<symbol id="i-tools" viewBox="0 0 20 20"><path d="M12.8 3.2a3.6 3.6 0 00-3 4.8l-6 6a1.4 1.4 0 002 2l6-6a3.6 3.6 0 004.8-3l-2.1 1.3-1.9-.6-.5-1.9z"/></symbol>
+<symbol id="i-health" viewBox="0 0 20 20"><rect x="2.6" y="3" width="14.8" height="14" rx="3.2"/><path d="M5.6 10.4h2l1.2-2.6 2.2 5 1.2-2.4h2.2"/></symbol>
+<symbol id="i-ok" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="currentColor" stroke="none"/><path d="M6.5 10.3l2.3 2.3 4.7-4.8" stroke="#fff" stroke-width="1.8"/></symbol>
+<symbol id="i-warn" viewBox="0 0 20 20"><path d="M10 2.6L18 16.8H2z" fill="currentColor" stroke="currentColor"/><path d="M10 8v4" stroke="#fff" stroke-width="1.8"/><path d="M10 14.6h.01" stroke="#fff" stroke-width="2"/></symbol>
+<symbol id="i-risky" viewBox="0 0 20 20"><path d="M7 2.5h6L17.5 7v6L13 17.5H7L2.5 13V7z" fill="currentColor" stroke="currentColor"/><path d="M7.6 7.6l4.8 4.8M12.4 7.6l-4.8 4.8" stroke="#fff" stroke-width="1.8"/></symbol>
+<symbol id="i-lock" viewBox="0 0 20 20"><rect x="4.5" y="9" width="11" height="8" rx="2"/><path d="M7 9V6.5a3 3 0 016 0V9"/></symbol>
+<symbol id="i-trash" viewBox="0 0 20 20"><path d="M3.8 5.5h12.4M8 5.5V4a1 1 0 011-1h2a1 1 0 011 1v1.5M5.4 5.5l.8 10.7a1 1 0 001 .9h5.6a1 1 0 001-.9l.8-10.7M8.4 8.5v5.5M11.6 8.5v5.5"/></symbol>
+<symbol id="i-burn" viewBox="0 0 20 20"><path d="M10 2.5c.5 3 3.8 4.4 3.8 8.3a3.8 3.8 0 01-7.6 0c0-1.5.6-2.4 1.4-3.2.2 1.3.8 2 1.6 2.2C9 7.5 9.2 4.6 10 2.5z"/></symbol>
+<symbol id="i-chev" viewBox="0 0 20 20"><path d="M7.5 4.5l5.5 5.5-5.5 5.5"/></symbol>
+<symbol id="i-search" viewBox="0 0 20 20"><circle cx="8.6" cy="8.6" r="5.3"/><path d="M12.6 12.6l4.2 4.2"/></symbol>
+<symbol id="i-folder" viewBox="0 0 20 20"><path d="M2.5 6.2V4.8a1 1 0 011-1h4.1l1.6 1.8h7.3a1 1 0 011 1V15a1 1 0 01-1 1h-13a1 1 0 01-1-1z"/><path d="M2.5 8h15"/></symbol>
+<symbol id="i-info" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5"/><path d="M10 9v5M10 6.3h.01"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 20 20"><path d="M16 10a6 6 0 11-1.8-4.3"/><path d="M14.6 2.6v3.5h-3.5"/></symbol>
+<symbol id="i-clock" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.3"/><path d="M10 5.6V10l3 1.8"/></symbol>
+<symbol id="i-cpu" viewBox="0 0 20 20"><rect x="5" y="5" width="10" height="10" rx="2"/><rect x="8" y="8" width="4" height="4" rx=".6"/><path d="M8 2.5V5M12 2.5V5M8 15v2.5M12 15v2.5M2.5 8H5M2.5 12H5M15 8h2.5M15 12h2.5"/></symbol>
+<symbol id="i-mem" viewBox="0 0 20 20"><rect x="2.5" y="6" width="15" height="8" rx="1.5"/><path d="M5.5 8.5v3M8.5 8.5v3M11.5 8.5v3M14.5 8.5v3M5 14v2M15 14v2"/></symbol>
+<symbol id="i-disk" viewBox="0 0 20 20"><rect x="2.5" y="5" width="15" height="10" rx="2.5"/><path d="M5.5 12h4"/><circle cx="14" cy="12" r=".5"/></symbol>
+<symbol id="i-net" viewBox="0 0 20 20"><path d="M7 16V4M3.8 7.2L7 4l3.2 3.2M13 4v12M9.8 12.8L13 16l3.2-3.2"/></symbol>
+<symbol id="i-globe" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.3"/><path d="M2.7 10h14.6M10 2.7c2 2.1 3 4.5 3 7.3s-1 5.2-3 7.3c-2-2.1-3-4.5-3-7.3s1-5.2 3-7.3z"/></symbol>
+<symbol id="i-tm" viewBox="0 0 20 20"><path d="M3.4 10a6.6 6.6 0 106.6-6.6c-2.4 0-4.5 1.3-5.7 3.2"/><path d="M3.6 3v3.8h3.8"/><path d="M10 6.5V10l2.5 1.6"/></symbol>
+<symbol id="i-power" viewBox="0 0 20 20"><path d="M10 2.8v6.4"/><path d="M6.2 5.4a6 6 0 107.6 0"/></symbol>
+<symbol id="i-gear" viewBox="0 0 20 20"><circle cx="10" cy="10" r="2.6"/><path d="M10 2.6v2.2M10 15.2v2.2M2.6 10h2.2M15.2 10h2.2M4.8 4.8l1.5 1.5M13.7 13.7l1.5 1.5M4.8 15.2l1.5-1.5M13.7 6.3l1.5-1.5"/><circle cx="10" cy="10" r="5.4"/></symbol>
+<symbol id="i-camera" viewBox="0 0 20 20"><rect x="2.5" y="5.5" width="11" height="9" rx="2"/><path d="M13.5 8.8l4-2.3v7l-4-2.3"/></symbol>
+<symbol id="i-mic" viewBox="0 0 20 20"><rect x="7.5" y="2.5" width="5" height="9" rx="2.5"/><path d="M4.8 9.5a5.2 5.2 0 0010.4 0M10 14.7v2.8"/></symbol>
+<symbol id="i-screen" viewBox="0 0 20 20"><rect x="2.5" y="3.5" width="15" height="10" rx="1.6"/><path d="M7 17h6M10 13.5V17"/></symbol>
+<symbol id="i-keys" viewBox="0 0 20 20"><rect x="2.5" y="5.5" width="15" height="9" rx="1.6"/><path d="M5.5 8.5h.01M8.5 8.5h.01M11.5 8.5h.01M14.5 8.5h.01M6.5 11.5h7"/></symbol>
+<symbol id="i-person" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.5"/><circle cx="10" cy="6.4" r="1.1"/><path d="M6 8.6l4 .9 4-.9M10 9.5v2.6l-2 3.2M10 12.1l2 3.2"/></symbol>
+<symbol id="i-loc" viewBox="0 0 20 20"><path d="M16.5 3.5L3.5 9l5.6 1.9L11 16.5z"/></symbol>
+<symbol id="i-auto" viewBox="0 0 20 20"><rect x="3" y="3" width="14" height="14" rx="3"/><path d="M7 10h6M10.8 7.6L13.2 10l-2.4 2.4"/></symbol>
+<symbol id="i-ext" viewBox="0 0 20 20"><path d="M11 3.5h5.5V9M16.5 3.5L9.5 10.5"/><path d="M14 11.5v4a1 1 0 01-1 1H4.5a1 1 0 01-1-1V7a1 1 0 011-1h4"/></symbol>
+<symbol id="i-box" viewBox="0 0 20 20"><path d="M10 2.6l7 3.6v7.6l-7 3.6-7-3.6V6.2z"/><path d="M3 6.2l7 3.6 7-3.6M10 9.8v7.6"/></symbol>
+<symbol id="i-down" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.3"/><path d="M10 6v7.5M7 10.6l3 3 3-3"/></symbol>
+<symbol id="i-dup" viewBox="0 0 20 20"><rect x="2.8" y="5.8" width="9" height="11.4" rx="1.4"/><path d="M6.8 5.8V4.2a1.4 1.4 0 011.4-1.4h7.6a1.4 1.4 0 011.4 1.4v8.6a1.4 1.4 0 01-1.4 1.4h-4"/></symbol>
+<symbol id="i-big" viewBox="0 0 20 20"><path d="M5 2.8h6.5L15.5 7v9.2a1 1 0 01-1 1H5a1 1 0 01-1-1V3.8a1 1 0 011-1z"/><path d="M11.3 2.8V7h4.2M7 13l2-2.2 1.6 1.6L13 10"/></symbol>
+<symbol id="i-hammer" viewBox="0 0 20 20"><path d="M11.5 3.5l5 5-2 2-1.5-1.5-6.8 6.8a1.4 1.4 0 01-2-2l6.8-6.8L9.5 5.5z"/></symbol>
+<symbol id="i-cube" viewBox="0 0 20 20"><path d="M10 2.6l6.5 3.7v7.4L10 17.4l-6.5-3.7V6.3z"/><path d="M10 10l6.5-3.7M10 10L3.5 6.3M10 10v7.4"/></symbol>
+<symbol id="i-phone" viewBox="0 0 20 20"><rect x="5.5" y="2.5" width="9" height="15" rx="2.2"/><path d="M8.8 15h2.4"/></symbol>
+<symbol id="i-bell" viewBox="0 0 20 20"><path d="M5 13.5V9a5 5 0 0110 0v4.5l1.5 1.5h-13zM8.3 17h3.4"/></symbol>
+<symbol id="i-update" viewBox="0 0 20 20"><circle cx="10" cy="10" r="7.3"/><path d="M10 13.8V6.4M7 9.2l3-3 3 3"/></symbol>
+<symbol id="i-moon" viewBox="0 0 20 20"><path d="M15.8 12.4A6.6 6.6 0 017.6 4.2 6.6 6.6 0 1015.8 12.4z"/></symbol>
+<symbol id="i-x" viewBox="0 0 20 20"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/></symbol>
+<symbol id="i-list" viewBox="0 0 20 20"><path d="M7 5.5h10M7 10h10M7 14.5h10M3.5 5.5h.01M3.5 10h.01M3.5 14.5h.01"/></symbol>
+<symbol id="i-photo" viewBox="0 0 20 20"><rect x="2.5" y="4" width="15" height="12" rx="2"/><circle cx="7" cy="8.2" r="1.4"/><path d="M2.8 14.2l4.3-3.6 3 2.4 2.8-2.6 4.3 3.8"/></symbol>
+<symbol id="i-film" viewBox="0 0 20 20"><rect x="2.5" y="4" width="15" height="12" rx="2"/><path d="M6 4v12M14 4v12M2.5 8H6M2.5 12H6M14 8h3.5M14 12h3.5"/></symbol>
+</defs>
+</svg>
+
+<div class="wrap">
+  <div class="intro">
+    <div>
+      <h1><b>Tidy</b>MyMac layout prototype</h1>
+      <p>A clickable sketch of the v1 app: every module in the sidebar, the Smart Care scan, review and clean flow, the menu bar extra and first-run setup. All files, sizes and apps are made-up examples. Nothing here touches a real Mac.</p>
+    </div>
+    <div class="pctl">
+      <span class="lbl">Appearance</span>
+      <div class="seg" id="themeSeg"><button data-a="theme" data-v="" class="on">Auto</button><button data-a="theme" data-v="light">Light</button><button data-a="theme" data-v="dark">Dark</button></div>
+      <button class="btn" data-a="onboard">Show first run</button>
+      <button class="btn" data-a="reset">Reset</button>
+    </div>
+  </div>
+
+  <div class="stage-scroll">
+    <div class="stage" id="stage"></div>
+  </div>
+
+  <div class="notes">
+    <div><h3>Try this</h3><ul>
+      <li>Smart Care: Scan, then Review All, untick a few items and Clean.</li>
+      <li>Space Lens: click a folder tile to drill in, tick items in the list.</li>
+      <li>The sweep glyph in the menu bar opens the monitors and alerts.</li>
+      <li>The status line under the sidebar opens first-run setup.</li>
+    </ul></div>
+    <div><h3>What it settles</h3><ul>
+      <li>Nine sidebar modules in three groups; My Tools is a launcher, not a tenth engine.</li>
+      <li>Every clean goes through the same review list and one confirmation that names Trash vs permanent.</li>
+      <li>Risky items (iOS backups, AI models) never appear in Smart Care and have no select-all.</li>
+    </ul></div>
+    <div><h3>Not real yet</h3><ul>
+      <li>App icons in lists are placeholders; the real app draws each app's own icon.</li>
+      <li>The admin password prompt is a macOS system dialog, so it is only described here.</li>
+      <li>Liquid Glass is drawn by macOS 26 itself; this sketch only hints at it.</li>
+    </ul></div>
+  </div>
+</div>
+
+<script>
+const ICON="data:image/png;base64,%%ICON%%";
+const GLYPH='%%GLYPH%%';
+const I=(n,c='')=>`<svg class="i ${c}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+function fmt(b){if(b==null)return'—';const u=['bytes','KB','MB','GB','TB'];let i=0;while(b>=1000&&i<4){b/=1000;i++}return (i<=1?Math.round(b):b<100?b.toFixed(1):Math.round(b))+' '+u[i]}
+const n0=n=>n.toLocaleString('en-US');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const RISK={safe:['b-safe','ok','Safe'],caution:['b-caution','warn','Caution'],risky:['b-risky','risky','Risky']};
+const badge=r=>`<span class="badge ${RISK[r][0]}">${I(RISK[r][1])}${RISK[r][2]}</span>`;
+const dest=a=>a==='trash'?`<span class="dest-t">${I('trash')}Trash</span>`:`<span class="dest-d">${I('burn')}Delete</span>`;
+
+/* ---------- example data ---------- */
+function mkCats(){return [
+ {id:'ucache',area:'cleanup',name:'User Caches',icon:'cleanup',risk:'safe',act:'delete',removes:'Cache files apps keep in your Library so they open and load faster.',keeps:'Settings, documents and sign-ins. Apps rebuild caches when they need them.',src:'Apple docs, ClearDisk',items:[
+  ['Spotify','~/Library/Caches/com.spotify.client',2.31e9,412],['Google Chrome','~/Library/Caches/Google/Chrome',1.12e9,3820],['Homebrew downloads','~/Library/Caches/Homebrew',846e6,61],['Safari','~/Library/Caches/com.apple.Safari',412e6,1290],['Slack','~/Library/Caches/com.tinyspeck.slackmacgap',298e6,977],['pip','~/Library/Caches/pip',188e6,240]]},
+ {id:'scache',area:'cleanup',name:'System Caches',icon:'cleanup',risk:'safe',act:'delete',helper:true,removes:'Shared caches in /Library/Caches that macOS and installed apps rebuild on their own.',keeps:'Anything under /System, which is protected and never touched.',src:'Apple docs, mac-cleanup-py',items:[
+  ['Icon services cache','/Library/Caches/com.apple.iconservices.store',318e6,1],['Software update downloads','/Library/Caches/com.apple.SoftwareUpdate',1.04e9,9],['Font registry cache','/Library/Caches/com.apple.FontRegistry',64e6,22]]},
+ {id:'ulogs',area:'cleanup',name:'User Logs',icon:'list',risk:'safe',act:'delete',removes:'Old app logs and crash reports in your Library.',keeps:'Logs from the last 7 days, so recent problems can still be traced.',src:'Apple docs',items:[
+  ['Crash reports','~/Library/Logs/DiagnosticReports',212e6,184],['Xcode logs','~/Library/Logs/CoreSimulator',96e6,33],['Zoom logs','~/Library/Logs/zoom.us',41e6,58]]},
+ {id:'slogs',area:'cleanup',name:'System Logs',icon:'list',risk:'safe',act:'delete',helper:true,removes:'Rotated, compressed system logs and old diagnostic reports.',keeps:'The current log files and the unified log, which macOS manages itself.',src:'Apple docs',items:[
+  ['Rotated logs (.gz)','/private/var/log/*.gz',148e6,64],['System crash reports','/Library/Logs/DiagnosticReports',88e6,41]]},
+ {id:'xcode',area:'cleanup',name:'Xcode Junk',icon:'hammer',risk:'caution',act:'delete',removes:'Build products and old device support files.',keeps:'Your projects and archives. The next build will take longer while Xcode rebuilds these.',src:'ClearDisk, PureMac',items:[
+  ['DerivedData','~/Library/Developer/Xcode/DerivedData',18.4e9,212880],['iOS DeviceSupport 17.x','~/Library/Developer/Xcode/iOS DeviceSupport',7.1e9,8820],['Unavailable simulators','~/Library/Developer/CoreSimulator/Devices',4.6e9,30110],['SwiftUI previews','~/Library/Developer/Xcode/UserData/Previews',1.9e9,2210]]},
+ {id:'ai',area:'cleanup',name:'AI Tool Caches',icon:'cube',risk:'caution',act:'delete',removes:'Download and runtime caches left by AI apps and Python tooling.',keeps:'Models you downloaded on purpose. Those are listed under Local AI Models.',src:'Own research',items:[
+  ['Hugging Face download cache','~/.cache/huggingface/xet',3.2e9,140],['ChatGPT app cache','~/Library/Caches/com.openai.chat',512e6,880,'safe'],['Torch kernels cache','~/.cache/torch/kernels',236e6,320]]},
+ {id:'broken',area:'cleanup',name:'Broken Login Items',icon:'power',risk:'safe',act:'trash',removes:'Launch agents that point to apps that are no longer installed.',keeps:'Every launch item whose app still exists.',src:'Apple docs',items:[
+  ['com.oldvpn.helper.plist','~/Library/LaunchAgents/com.oldvpn.helper.plist',4e3,1],['com.betaapp.updater.plist','~/Library/LaunchAgents/com.betaapp.updater.plist',3e3,1]]},
+ {id:'trash',area:'trash',name:'Trash Bins',icon:'trash',risk:'caution',act:'delete',removes:'Everything already in the Trash on your Mac and connected drives.',keeps:'Nothing. Emptying the Trash cannot be undone.',src:'Apple docs',items:[
+  ['Trash on Macintosh HD','~/.Trash',2.14e9,318],['Trash on Backup SSD','/Volumes/Backup SSD/.Trashes',640e6,41]]},
+ {id:'leftovers',area:'apps',name:'App Leftovers',icon:'apps',risk:'caution',act:'trash',removes:'Support files of apps you already deleted.',keeps:'Files of every app that is still installed.',src:'app-cleaner.sh',items:[
+  ['Sketch (removed 2025)','~/Library/Application Support/com.bohemiancoding.sketch3',880e6,1420,'safe'],['Discord (removed)','~/Library/Application Support/discord',412e6,2210,'safe'],['Old VPN','~/Library/Preferences/com.oldvpn.client.plist',2e3,1]]},
+ {id:'ios',area:'cleanup',name:'iOS Device Backups',icon:'phone',risk:'risky',act:'trash',review:true,removes:'Old local backups of iPhone and iPad.',keeps:'Nothing is ticked for you. A backup may be the only copy of a phone.',src:'Apple docs',items:[
+  ["John's iPhone · 2 Mar 2025",'~/Library/Application Support/MobileSync/Backup/00008101-…',38.2e9,1],["iPad Air · 18 Nov 2023",'~/Library/Application Support/MobileSync/Backup/00008027-…',21.6e9,1]]},
+ {id:'models',area:'cleanup',name:'Local AI Models',icon:'cube',risk:'risky',act:'trash',review:true,removes:'Large model files stored by Ollama, LM Studio and similar apps.',keeps:'Nothing is ticked for you. Models can take hours to download again.',src:'Own research',items:[
+  ['llama3.1:70b (Ollama)','~/.ollama/models/blobs/sha256-…',39.9e9,1],['qwen2.5-coder:14b (Ollama)','~/.ollama/models/blobs/sha256-…',9e9,1],['mistral-7b-instruct Q4 (LM Studio)','~/.lmstudio/models/…',4.4e9,1]]},
+].map(c=>({...c,items:c.items.map(([n,p,s,k,r])=>({n,p,s,k,risk:r||c.risk,on:(r||c.risk)==='safe'}))}))}
+
+const TASKS0=[
+ {id:'dns',name:'Flush DNS cache',icon:'globe',desc:'Clears saved name lookups. Helps when websites fail to load after a network change.',time:'A second',last:'Never',on:true},
+ {id:'spot',name:'Reindex Spotlight',icon:'search',desc:'Rebuilds the search index for Macintosh HD. Only needed when Spotlight misses files.',time:'1 to 2 hours in the background',last:'Never',on:false},
+ {id:'tm',name:'Thin local Time Machine snapshots',icon:'tm',desc:'Removes 3 local snapshots (about 14.2 GB). Backups on your backup disk stay.',time:'A minute',last:'12 Sep 2026',on:false}];
+
+const APPS=[
+ {n:'Slack',v:'4.41.92',dev:'Slack Technologies',s:812e6,last:'Today',c:'#4a3a8c',up:'4.41.97'},
+ {n:'Zoom',v:'6.2.5',dev:'Zoom Communications',s:604e6,last:'3 days ago',c:'#2d6fd9',up:null},
+ {n:'Visual Studio Code',v:'1.95.3',dev:'Microsoft',s:1.21e9,last:'Today',c:'#1f7ac4',up:'1.96.0'},
+ {n:'Docker',v:'4.36.0',dev:'Docker Inc',s:2.84e9,last:'5 weeks ago',c:'#2496ed',up:null},
+ {n:'Blender',v:'4.1.1',dev:'Blender Foundation',s:1.62e9,last:'11 months ago',c:'#e87d0d',unused:true,up:'4.2.3'},
+ {n:'Steam',v:'2026.10',dev:'Valve',s:946e6,last:'1 year ago',c:'#1b2838',unused:true,up:null},
+ {n:'OBS Studio',v:'30.2.2',dev:'OBS Project',s:488e6,last:'9 months ago',c:'#302e31',unused:true,up:null},
+ {n:'Transmit',v:'5.10.4',dev:'Panic',s:96e6,last:'2 months ago',c:'#d9a21b',up:null},
+ {n:'Spotify',v:'1.2.48',dev:'Spotify AB',s:384e6,last:'Today',c:'#1db954',up:null},
+];
+function appFiles(a){const id=a.n.toLowerCase().replace(/\s+/g,'');return [
+ {g:'Application',p:`/Applications/${a.n}.app`,s:a.s*.62},
+ {g:'Application Support',p:`~/Library/Application Support/${a.n}`,s:a.s*.24},
+ {g:'Caches',p:`~/Library/Caches/com.${id}.app`,s:a.s*.11},
+ {g:'Preferences',p:`~/Library/Preferences/com.${id}.app.plist`,s:12e3},
+ {g:'Saved State',p:`~/Library/Saved Application State/com.${id}.savedState`,s:180e3},
+ {g:'Launch Agent',p:`~/Library/LaunchAgents/com.${id}.helper.plist`,s:2e3},
+]}
+
+const LARGE=[
+ {n:'trip-2025.mov',k:'film',kind:'Movie',s:6.2e9,o:'14 months ago',p:'~/Movies'},
+ {n:'Windows11_ARM.iso',k:'box',kind:'Disk image',s:5.8e9,o:'2 years ago',p:'~/Downloads'},
+ {n:'Photos backup 2023.zip',k:'box',kind:'ZIP archive',s:4.1e9,o:'3 years ago',p:'~/Documents/Archive'},
+ {n:'Final Cut render files',k:'folder',kind:'Folder',s:3.9e9,o:'8 months ago',p:'~/Movies/Final Cut Projects'},
+ {n:'ubuntu-24.04-arm64.img',k:'box',kind:'Disk image',s:3.3e9,o:'1 year ago',p:'~/Developer/vm'},
+ {n:'Screen Recording 2026-02-11.mov',k:'film',kind:'Movie',s:2.2e9,o:'9 months ago',p:'~/Movies/Screen Recordings'},
+ {n:'sample-dataset.parquet',k:'big',kind:'Document',s:1.6e9,o:'6 months ago',p:'~/Developer/data'},
+ {n:'Xcode_15.4.xip',k:'box',kind:'Archive',s:3.0e9,o:'1 year ago',p:'~/Downloads'},
+];
+const DUPS=[
+ {n:'IMG_4821.HEIC',s:4.2e6,f:[['~/Pictures/Exports','12 Aug 2026'],['~/Desktop/to sort','12 Aug 2026'],['~/Downloads','3 Sep 2026']]},
+ {n:'Tax return 2025.pdf',s:2.8e6,f:[['~/Documents/Taxes','14 Apr 2026'],['~/Downloads','14 Apr 2026']]},
+ {n:'brand-video-final.mp4',s:612e6,f:[['~/Movies','2 Jan 2026'],['~/Documents/Work/Assets','5 Jan 2026']]},
+ {n:'node-v22.11.0.pkg',s:88e6,f:[['~/Downloads','10 Oct 2026'],['~/Downloads/old','11 Oct 2026']]},
+];
+const DOWNLOADS=[
+ {n:'Xcode_15.4.xip',src:'Safari',s:3.0e9,d:'1 year ago'},{n:'Windows11_ARM.iso',src:'Chrome',s:5.8e9,d:'2 years ago'},{n:'Q3 report final.key',src:'Slack',s:184e6,d:'5 weeks ago'},{n:'Docker.dmg',src:'Chrome',s:612e6,d:'4 months ago'},{n:'IMG_4821.HEIC',src:'Safari',s:4.2e6,d:'2 months ago'},{n:'invoice-0412.pdf',src:'Safari',s:212e3,d:'7 months ago'}];
+const INSTALLERS=[['Docker.dmg','~/Downloads',612e6,'4 months ago'],['Zoom.pkg','~/Downloads',88e6,'1 year ago'],['Blender-4.1.1-arm64.dmg','~/Downloads',382e6,'11 months ago'],['GoogleChrome.dmg','~/Desktop',224e6,'2 years ago']];
+
+const LOGIN0=[{n:'Spotify',k:'App',on:true,c:'#1db954'},{n:'Docker',k:'App',on:true,c:'#2496ed'},{n:'Slack',k:'App',on:false,c:'#4a3a8c'},{n:'Transmit',k:'App',on:false,c:'#d9a21b'}];
+const BG0=[
+ {n:'com.docker.vmnetd',dev:'Docker Inc',p:'/Library/LaunchDaemons/com.docker.vmnetd.plist',on:true,root:true},
+ {n:'com.google.keystone.agent',dev:'Google LLC',p:'~/Library/LaunchAgents/com.google.keystone.agent.plist',on:true},
+ {n:'us.zoom.ZoomDaemon',dev:'Zoom Communications',p:'/Library/LaunchDaemons/us.zoom.ZoomDaemon.plist',on:true,root:true},
+ {n:'com.oldvpn.helper',dev:'Unknown',p:'~/Library/LaunchAgents/com.oldvpn.helper.plist',on:true,broken:true},
+ {n:'com.microsoft.update.agent',dev:'Microsoft',p:'/Library/LaunchAgents/com.microsoft.update.agent.plist',on:false},
+];
+const PERMS=[
+ {id:'fda',n:'Full Disk Access',i:'disk',apps:['TidyMyMac','Terminal','iTerm','Docker','Backblaze']},
+ {id:'acc',n:'Accessibility',i:'person',apps:['Raycast','Rectangle','Zoom']},
+ {id:'scr',n:'Screen & System Audio Recording',i:'screen',apps:['Zoom','OBS Studio','Slack']},
+ {id:'cam',n:'Camera',i:'camera',apps:['Zoom','Slack','Google Chrome','OBS Studio']},
+ {id:'mic',n:'Microphone',i:'mic',apps:['Zoom','Slack','Google Chrome']},
+ {id:'inp',n:'Input Monitoring',i:'keys',apps:['Raycast']},
+ {id:'aut',n:'Automation',i:'auto',apps:['Raycast → Finder','Script Editor → Mail']},
+ {id:'loc',n:'Location Services',i:'loc',apps:['Weather','Maps','Google Chrome']},
+];
+const HISTORY=[
+ ['4 Nov 2026, 21:12','Smart Care','4.6 GB','1,962','3.1 GB','1.5 GB'],
+ ['28 Oct 2026, 09:40','Uninstall Sketch','880 MB','1,421','880 MB','—'],
+ ['21 Oct 2026, 18:05','Cleanup: Xcode Junk','22.9 GB','241,890','—','22.9 GB'],
+ ['12 Oct 2026, 08:31','Smart Care','3.8 GB','1,604','2.2 GB','1.6 GB'],
+ ['12 Sep 2026, 10:02','Thin Time Machine snapshots','11.0 GB','2 snapshots','—','11.0 GB'],
+];
+const LENS0={n:'Macintosh HD',k:[
+ {n:'Users',k:[{n:'joswalt',k:[
+  {n:'Library',k:[{n:'Developer',k:[{n:'Xcode',k:[{n:'DerivedData',s:18.4e9},{n:'iOS DeviceSupport',s:7.1e9},{n:'Archives',s:5.6e9}]},{n:'CoreSimulator',s:15.2e9}]},{n:'Application Support',s:22.3e9},{n:'Containers',s:12.1e9},{n:'Caches',s:9.8e9},{n:'Group Containers',s:6.4e9},{n:'Mail',s:4.2e9}]},
+  {n:'Movies',k:[{n:'Final Cut Projects',s:31e9},{n:'Screen Recordings',s:14.6e9},{n:'trip-2025.mov',s:6.2e9,f:1}]},
+  {n:'Documents',s:41.3e9},{n:'Pictures',k:[{n:'Photos Library.photoslibrary',s:36.1e9,f:1},{n:'Exports',s:2.4e9}]},
+  {n:'Downloads',s:23.1e9},{n:'.ollama',s:53.3e9},{n:'Developer',s:17.6e9},{n:'Music',s:12e9},{n:'Desktop',s:5.8e9}]},
+  {n:'Shared',s:1.2e9}]},
+ {n:'Applications',s:64.2e9},{n:'Library',s:41e9},{n:'System',s:18.4e9,lock:1},{n:'private',s:22.6e9,lock:1},{n:'opt',s:9.3e9}]};
+(function sz(n){if(n.k){n.s=n.k.reduce((a,c)=>a+sz(c),0)}return n.s})(LENS0);
+
+/* ---------- state ---------- */
+let S;
+function fresh(){S={mod:'smart',sc:'idle',prog:0,sheet:null,dialog:null,cats:mkCats(),tasks:TASKS0.map(t=>({...t})),
+ cleanSel:'ucache',clutter:'large',largeOn:new Set(),dupKeep:'newest',dupOn:null,dlOn:new Set(),
+ appsTab:'uninstall',appSel:0,appFileOn:null,perf:'maint',login:LOGIN0.map(x=>({...x})),bg:BG0.map(x=>({...x})),
+ prot:'fda',lens:[],lensOn:new Set(),mb:false,onb:false,onbStep:[false,false],fda:true,helper:true,
+ openGroups:new Set(['ucache','scache','xcode']),toast:null,remind:true,remindEvery:'Every week',freed:0,lastFreed:null,scanned:false}}
+fresh();
+
+/* ---------- totals ---------- */
+const SMART_AREAS=['cleanup','trash','apps'];
+function smartCats(){return S.cats.filter(c=>SMART_AREAS.includes(c.area)&&c.risk!=='risky')}
+function totals(cats){let t=0,d=0,n=0;cats.forEach(c=>c.items.forEach(i=>{if(i.on){n+=i.k;if(c.act==='trash')t+=i.s;else d+=i.s}}));return{t,d,n,all:t+d}}
+function found(cats){return cats.reduce((a,c)=>a+c.items.reduce((b,i)=>b+i.s,0),0)}
+function sumLine(T,tasks){const p=[];p.push(`<b>${n0(T.n)} items</b>`);if(T.t)p.push(`<b>${fmt(T.t)}</b> to Trash`);if(T.d)p.push(`<b>${fmt(T.d)}</b> deleted permanently`);if(tasks)p.push(`<b>${tasks}</b> task${tasks>1?'s':''}`);return T.n||tasks?p.join(' · '):'Nothing selected'}
+
+/* ---------- shell ---------- */
+const NAV=[
+ [null,[['smart','Smart Care','sparkles'],['health','Health','health']]],
+ ['Clean up',[['cleanup','Cleanup','cleanup'],['clutter','My Clutter','clutter'],['lens','Space Lens','pie']]],
+ ['Maintain',[['apps','Applications','apps'],['perf','Performance','gauge'],['prot','Protection','shield']]],
+ [null,[['tools','My Tools','tools']]]];
+function navBadge(id){if(!S.scanned)return'';if(id==='cleanup')return fmt(found(S.cats.filter(c=>c.area==='cleanup'&&c.risk!=='risky')));if(id==='apps')return'2 updates';if(id==='clutter')return fmt(LARGE.reduce((a,x)=>a+x.s,0));return''}
+
+function render(){
+ const st=document.getElementById('stage');
+ const keep=st.querySelector('.content');const top=keep?keep.scrollTop:0;const prevMod=st.dataset.mod;
+ const M=MODS[S.mod]();
+ st.innerHTML=`
+ <div class="menubar"><b>TidyMyMac</b><span>File</span><span>Edit</span><span>View</span><span>Window</span><span>Help</span><span class="sp"></span>
+  <button class="mbx ${S.mb?'on':''}" data-a="mb" aria-label="TidyMyMac menu bar extra" title="TidyMyMac"><svg viewBox="215 240 590 540">${GLYPH}</svg></button>
+  <span class="num">Sat 7 Nov  09:41</span></div>
+ ${S.mb?mbPop():''}
+ <div class="win">
+  <aside class="side">
+   <div class="lights"><i></i><i></i><i></i></div>
+   <nav class="nav" aria-label="Modules">${NAV.map(([h,items])=>(h?`<div class="navh">${h}</div>`:'<div style="height:6px"></div>')+items.map(([id,l,ic])=>`<button class="navi ${S.mod===id?'on':''}" data-a="nav" data-v="${id}">${I(ic)}<span>${l}</span><em>${navBadge(id)}</em></button>`).join('')).join('')}</nav>
+   <div class="sidefoot">
+    <button class="stat" data-a="onboard"><span class="dot ${S.fda&&S.helper?'':'warn'}"></span>${S.fda&&S.helper?'Full Disk Access on · Helper ready':'Setup needed'}</button>
+    <button class="stat" data-a="nav" data-v="health">${I('disk')}132 GB free of 994 GB</button>
+   </div>
+  </aside>
+  <section class="main">
+   <div class="toolbar"><div class="tt"><h2>${M.title}</h2>${M.sub?`<small>${M.sub}</small>`:''}</div>${M.tools||''}</div>
+   <div class="content">${M.body}</div>
+   ${M.foot?`<div class="foot">${M.foot}</div>`:''}
+   ${S.toast?`<div class="toast">${I('ok')}${S.toast}</div>`:''}
+  </section>
+  ${S.sheet?`<div class="scrim">${SHEETS[S.sheet]()}</div>`:''}
+  ${S.onb?`<div class="scrim">${onboarding()}</div>`:''}
+  ${S.dialog?`<div class="scrim center">${dialog()}</div>`:''}
+ </div>`;
+ st.dataset.mod=S.mod;
+ const c=st.querySelector('.content');if(c&&prevMod===S.mod)c.scrollTop=top;
+ if(S.mod==='lens')drawLens();
+}
+
+/* ---------- Smart Care ---------- */
+function smart(){
+ const cats=smartCats();
+ if(S.sc==='idle')return{title:'Smart Care',sub:S.lastFreed?`Last run just now · freed ${fmt(S.lastFreed)}`:'Last run 3 days ago · freed 4.6 GB',
+  body:`<div class="hero"><img src="${ICON}" alt="TidyMyMac icon"><h1>Smart Care</h1>
+  <p>One scan checks caches, logs, leftovers, the Trash and routine maintenance. Nothing is removed until you have reviewed it.</p>
+  <div style="height:10px"></div><button class="btn xl pri" data-a="scan">Scan</button>
+  <div class="chips">${[['cleanup','Cleanup'],['trash','Trash'],['apps','App leftovers'],['gauge','Maintenance'],['clutter','Large files (look only)'],['shield','Permissions (look only)']].map(([i,l])=>`<span class="chip">${I(i)}${l}</span>`).join('')}</div>
+  <p class="small" style="margin-top:14px">Risky items such as iOS backups and AI models are never part of Smart Care.</p></div>`};
+ if(S.sc==='scan'||S.sc==='cleaning'){
+  const p=S.prog,cl=S.sc==='cleaning';
+  const steps=cl?[['cleanup','Removing caches and logs'],['trash','Moving items to the Trash'],['gauge','Running maintenance tasks']]:[['cleanup','Caches and logs'],['trash','Trash bins'],['apps','App leftovers and updates'],['gauge','Maintenance'],['clutter','Large and old files'],['shield','App permissions']];
+  const amount=cl?S.freed*p:found(cats)*p;
+  const R=66,C=2*Math.PI*R;
+  return{title:'Smart Care',sub:cl?'Cleaning…':'Scanning…',tools:`<button class="tb" data-a="stop">Stop</button>`,
+  body:`<div class="hero" style="padding-top:36px">
+   <svg class="ring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="${R}" fill="none" stroke="var(--hover)" stroke-width="9"/><circle cx="75" cy="75" r="${R}" fill="none" stroke="var(--accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-p)}" transform="rotate(-90 75 75)"/>
+   <text x="75" y="82" text-anchor="middle" style="font:600 22px var(--round);fill:var(--fg)">${Math.round(p*100)}%</text></svg>
+   <div class="big" style="font-size:30px">${fmt(amount)}</div><p>${cl?'freed so far':'found so far'}</p>
+   ${cl?`<p class="small">macOS asks for your administrator password once, for the system caches and logs.</p>`:''}
+   <div class="scanlist">${steps.map(([i,l],k)=>{const a=k/steps.length,b=(k+1)/steps.length;const st=p>=b?'done':p>=a?'now':'wait';
+    return `<div class="row">${st==='done'?I('ok','" style="color:var(--green-f)'):st==='now'?`<span class="ico" style="width:16px;height:16px;background:none">${I(i)}</span>`:I(i,'" style="color:var(--fg3)')}<span class="grow ${st==='wait'?'muted':''}">${l}</span><span class="small muted">${st==='done'?'Done':st==='now'?(cl?'Working…':'Checking…'):''}</span></div>`}).join('')}</div></div>`};
+ }
+ if(S.sc==='done')return{title:'Smart Care',sub:'Finished',
+  body:`<div class="hero" style="padding-top:60px"><svg class="i" style="width:64px;height:64px;color:var(--green-f)"><use href="#i-ok"/></svg>
+  <div class="big">${fmt(S.freed)}</div><h1 style="margin:0;font-size:20px">freed on Macintosh HD</h1>
+  <p>${fmt(S.doneT)} is in the Trash if you need anything back. ${S.doneTasks?`${S.doneTasks} maintenance task${S.doneTasks>1?'s':''} ran.`:''} The run is saved in Health.</p>
+  <div style="display:flex;gap:10px;margin-top:14px"><button class="btn lg" data-a="nav" data-v="health">View Run Log</button><button class="btn lg pri" data-a="scdone">Done</button></div></div>`};
+ // results
+ const T=totals(cats),tk=S.tasks.filter(t=>t.on).length;
+ const area=a=>{const cs=cats.filter(c=>c.area===a);return{f:found(cs),T:totals(cs)}};
+ const cu=area('cleanup'),tr=area('trash'),ap=area('apps');
+ const card=(icon,title,val,desc,act,off)=>`<div class="card res-card ${off?'off':''}"><div class="h"><span class="ico">${I(icon)}</span><b>${title}</b></div><div class="v">${val}</div><p>${desc}</p><div class="f">${act}</div></div>`;
+ const used=862e9,cap=994e9,after=used-T.all;
+ return{title:'Smart Care',sub:`Scan finished · ${fmt(found(cats))} found`,tools:`<button class="tb" data-a="rescan">${I('refresh')}Scan Again</button>`,
+ body:`<div class="res-top"><div class="grow"><div class="big">${fmt(T.all)}</div><div style="margin-top:6px;font-size:13.5px">selected to clean, from ${n0(T.n)} items. Review anything before it goes.</div></div>
+  <div><div class="small muted" style="margin-bottom:6px">Free space after cleaning</div><div class="diskbar"><i style="width:${after/cap*100}%;background:var(--fg3)"></i><i style="width:${T.all/cap*100}%;background:var(--accent)"></i></div><div class="small num" style="margin-top:5px">${fmt(cap-used)} → <b>${fmt(cap-after)}</b> free</div></div></div>
+ <div class="grid3">
+  ${card('cleanup','Cleanup',fmt(cu.T.all),`Caches, logs, Xcode junk and AI tool caches. ${fmt(cu.f-cu.T.all)} more is unticked because it costs a rebuild.`,`<span class="small muted num">${fmt(cu.f)} found</span><button class="btn" data-a="review" data-v="cleanup">Review…</button>`)}
+  ${card('trash','Trash',tr.T.all?fmt(tr.T.all):'Not included',`${fmt(tr.f)} in two Trash bins. Emptying is permanent, so it starts unticked.`,`${badge('caution')}<button class="btn" data-a="review" data-v="trash">Review…</button>`,!tr.T.all)}
+  ${card('apps','Applications',ap.T.all?fmt(ap.T.all):'2 updates',`Leftovers from 3 deleted apps (${fmt(ap.f)}). Slack and VS Code have updates.`,`<button class="btn link" data-a="nav" data-v="apps">Updates</button><button class="btn" data-a="review" data-v="apps">Review…</button>`)}
+  ${card('gauge','Maintenance',tk?`${tk} task${tk>1?'s':''}`:'None',S.tasks.map(t=>`${t.on?'✓':'○'} ${t.name}`).join('<br>'),`<span class="small muted">Uses the admin helper</span><button class="btn" data-a="review" data-v="tasks">Review…</button>`)}
+  ${card('clutter','My Clutter','36.1 GB','8 large or old files. Personal files are never cleaned automatically; open My Clutter to decide.',`<span class="badge b-info">Look only</span><button class="btn" data-a="nav" data-v="clutter">Open</button>`)}
+  ${card('shield','Protection','All clear','5 apps have Full Disk Access and 3 can record the screen. Nothing looks unusual.',`<span class="badge b-safe">${I('ok')}OK</span><button class="btn" data-a="nav" data-v="prot">Open</button>`)}
+ </div>`,
+ foot:`<span class="sum">${sumLine(T,tk)}</span><button class="btn lg" data-a="review" data-v="all">Review All…</button><button class="btn lg pri" data-a="clean" data-v="smart" ${T.n||tk?'':'disabled'}>${T.n?`Clean ${fmt(T.all)}`:'Clean'}</button>`};
+}
+
+/* review sheet: groups of items with checkboxes */
+function groupHTML(c){
+ const open=S.openGroups.has(c.id);const on=c.items.filter(i=>i.on).length;const sum=c.items.filter(i=>i.on).reduce((a,i)=>a+i.s,0);
+ const all=on===c.items.length;
+ return `<div class="grp ${open?'open':''}">
+ <div class="gh">
+  ${c.risk==='risky'?`<span style="width:14px"></span>`:`<input type="checkbox" data-a="gall" data-v="${c.id}" ${all?'checked':''} aria-label="Select all in ${c.name}" ${on&&!all?'data-mixed="1"':''}>`}
+  <button class="ghb" data-a="gtog" data-v="${c.id}">${I('chev','chev')}<span class="ico" style="width:22px;height:22px">${I(c.icon)}</span><span style="flex:1">${c.name}${c.helper?` <span class="badge b-info" title="Handled by the admin helper">${I('lock')}Admin</span>`:''}</span></button>
+  <span class="small muted num" style="font-weight:400">${on} of ${c.items.length} · </span><span class="num">${fmt(sum)}</span>
+ </div>
+ ${open?`<div style="padding-bottom:8px">${c.items.map((i,k)=>`<label class="irow"><input type="checkbox" data-a="item" data-v="${c.id}:${k}" ${i.on?'checked':''}><span class="nm"><div>${esc(i.n)}</div><div class="mono">${esc(i.p)}</div></span>${badge(i.risk)}${dest(c.act)}<span class="num" style="text-align:right">${fmt(i.s)}</span></label>`).join('')}</div>`:''}
+ </div>`}
+const SHEETS={
+ review(){
+  const f=S.reviewFilter;const cats=smartCats().filter(c=>f==='all'||c.area===f);
+  const T=totals(smartCats()),tk=S.tasks.filter(t=>t.on).length;
+  const showTasks=f==='all'||f==='tasks';
+  return `<div class="sheet"><header><h3>Review before cleaning</h3><div class="seg">${[['all','All'],['cleanup','Cleanup'],['trash','Trash'],['apps','Leftovers'],['tasks','Tasks']].map(([v,l])=>`<button class="${f===v?'on':''}" data-a="rfilter" data-v="${v}">${l}</button>`).join('')}</div></header>
+  <div class="body">
+   <div class="note">${I('info')}<span>Ticked items are removed. <b>Trash</b> items can be put back from the Trash. <b>Delete</b> items are caches and logs that apps rebuild; they are removed for good.</span></div>
+   ${f==='tasks'?'':cats.map(groupHTML).join('')}
+   ${showTasks?`<div class="grp open"><div class="gh" style="cursor:default"><span style="width:14px"></span>${I('chev','chev')}<span class="ico" style="width:22px;height:22px">${I('gauge')}</span><span style="flex:1">Maintenance tasks <span class="badge b-info">${I('lock')}Admin</span></span></div>
+    ${S.tasks.map((t,k)=>`<label class="irow" style="grid-template-columns:22px 1fr 160px"><input type="checkbox" data-a="task" data-v="${k}" ${t.on?'checked':''}><span class="nm"><div>${t.name}</div><div class="small muted" style="white-space:normal">${t.desc}</div></span><span class="small muted" style="text-align:right">${t.time}</span></label>`).join('')}</div>`:''}
+  </div>
+  <footer><span class="ssum">${sumLine(T,tk)}</span><button class="btn lg" data-a="close">Done</button><button class="btn lg pri" data-a="clean" data-v="smart" ${T.n||tk?'':'disabled'}>${T.n?`Clean ${fmt(T.all)}`:'Clean'}</button></footer></div>`},
+ uninstall(){
+  const a=APPS[S.appSel],fs=appFiles(a);const on=S.appFileOn;const sum=fs.filter((_,k)=>on[k]).reduce((x,f)=>x+f.s,0);
+  return `<div class="sheet r" style="width:620px"><header><span class="appi" style="background:${a.c};width:40px;height:40px;font-size:17px">${a.n[0]}</span><h3>Uninstall ${a.n}?<br><small class="muted" style="font-weight:400;font-size:12px">These ${fs.length} items move to the Trash. You can put them back until you empty it.</small></h3></header>
+   <div class="body">${fs.map((f,k)=>`<label class="irow" style="grid-template-columns:22px 1fr 80px;padding-left:4px"><input type="checkbox" data-a="afile" data-v="${k}" ${on[k]?'checked':''} ${k===0?'disabled':''}><span class="nm"><div>${f.g}</div><div class="mono">${esc(f.p)}</div></span><span class="num" style="text-align:right">${fmt(f.s)}</span></label>`).join('')}</div>
+   <footer><span class="ssum"><b>${fmt(sum)}</b> to Trash</span><button class="btn lg" data-a="close">Cancel</button><button class="btn lg pri" data-a="douninstall">Move to Trash</button></footer></div>`}
+};
+
+function dialog(){const d=S.dialog;return `<div class="alert" role="alertdialog"><img src="${ICON}" alt=""><h4>${d.title}</h4><p>${d.body}</p><div class="bt"><button class="btn" data-a="dcancel">Cancel</button><button class="btn ${d.danger?'dest':'pri'}" data-a="dok">${d.ok}</button></div></div>`}
+
+/* ---------- Cleanup ---------- */
+function cleanup(){
+ const cats=S.cats.filter(c=>c.area!=='apps');const sel=cats.find(c=>c.id===S.cleanSel)||cats[0];
+ const T=totals(cats);
+ const list=cats.map(c=>{const on=c.items.filter(i=>i.on).reduce((a,i)=>a+i.s,0),f=c.items.reduce((a,i)=>a+i.s,0);
+  return `<button class="row ${c.id===sel.id?'on':''}" data-a="csel" data-v="${c.id}"><span class="ico">${I(c.icon)}</span><span class="grow"><div class="t">${c.name}</div><div class="small muted">${!c.items.length?'Nothing to remove':c.review?'Review only':c.id==='trash'?'Emptying is permanent':c.risk==='safe'?'Safe to remove':'Costs a rebuild'}</div></span><span class="num small" style="text-align:right">${c.items.length?fmt(f):I('ok','" style="color:var(--green-f)')}${on?`<br><span style="color:var(--accent)">${fmt(on)} ticked</span>`:''}</span></button>`}).join('');
+ const allOn=sel.items.every(i=>i.on);
+ return{title:'Cleanup',sub:`${fmt(found(cats))} found in ${cats.length} categories`,
+ tools:`<div class="search">${I('search')}<input id="q-clean" placeholder="Search"></div><button class="tb" data-a="toast" data-v="Ignore list: 3 folders are skipped">${I('list')}Ignore List</button><button class="tb icon" title="Scan again" aria-label="Scan again" data-a="toast" data-v="Scanned again">${I('refresh')}</button>`,
+ body:`<div class="split"><div class="pane"><div class="list">${list}</div></div>
+ <div class="pane detail">
+  <h3><span class="ico">${I(sel.icon)}</span>${sel.name} ${badge(sel.risk)}</h3>
+  <dl class="kv"><dt>Removes</dt><dd>${sel.removes}</dd><dt>Keeps</dt><dd>${sel.keeps}</dd><dt>Goes to</dt><dd>${sel.act==='trash'?'The Trash, so you can put it back':'Deleted permanently'}${sel.helper?' · needs your admin password':''}</dd><dt>Rule source</dt><dd class="muted">${sel.src}</dd></dl>
+  ${sel.risk==='risky'?`<div class="note warn">${I('warn')}<span>Tick each item on its own. There is no select-all here, and these items never appear in Smart Care.</span></div>`:''}
+  ${sel.id==='trash'?`<div class="note warn">${I('warn')}<span>Emptying the Trash cannot be undone. Listing it needs Full Disk Access.</span></div>`:''}
+  ${!sel.items.length?`<div class="hero" style="padding-top:40px"><svg class="i" style="width:48px;height:48px;color:var(--fg3)"><use href="#i-ok"/></svg><p>Nothing left to remove in ${sel.name}.</p><button class="btn" data-a="toast" data-v="Scanned again">Scan Again</button></div>`:`<div class="list">
+   <div class="thead">${sel.risk==='risky'?'<span style="width:14px"></span>':`<input type="checkbox" data-a="gall" data-v="${sel.id}" ${allOn?'checked':''} aria-label="Select all">`}<span style="flex:1">Name</span><span style="width:84px">Risk</span><span style="width:70px;text-align:right">Size</span></div>
+   ${sel.items.map((i,k)=>`<label class="row"><input type="checkbox" data-a="item" data-v="${sel.id}:${k}" ${i.on?'checked':''}><span class="grow"><div class="t">${esc(i.n)}</div><div class="mono">${esc(i.p)}</div></span><span style="width:84px">${badge(i.risk)}</span><span class="num" style="width:70px;text-align:right">${fmt(i.s)}</span></label>`).join('')}
+  </div>`}</div></div>`,
+ foot:`<span class="sum">${sumLine(T)}</span><button class="btn lg pri" data-a="clean" data-v="cleanup" ${T.n?'':'disabled'}>${T.n?`Clean ${fmt(T.all)}`:'Clean'}</button>`};
+}
+
+/* ---------- My Clutter ---------- */
+function clutter(){
+ const tab=S.clutter;let body='',foot='',sub='';
+ const seg=`<div class="seg">${[['large','Large & Old'],['dups','Duplicates'],['dl','Downloads']].map(([v,l])=>`<button class="${tab===v?'on':''}" data-a="clt" data-v="${v}">${l}</button>`).join('')}</div>`;
+ if(tab==='large'){
+  const sum=LARGE.filter((_,k)=>S.largeOn.has(k)).reduce((a,x)=>a+x.s,0);
+  sub=`${LARGE.length} files over 1 GB or not opened in a year`;
+  body=`<div style="display:flex;gap:10px;align-items:center;margin:4px 0 12px;flex-wrap:wrap"><span class="small muted">Kind</span><select class="popup" aria-label="Kind"><option>All kinds</option><option>Movies</option><option>Disk images</option><option>Archives</option></select><span class="small muted">Larger than</span><select class="popup" aria-label="Size"><option>1 GB</option><option>500 MB</option><option>100 MB</option></select><span class="small muted">Not opened in</span><select class="popup" aria-label="Age"><option>1 year</option><option>6 months</option><option>Any time</option></select><span style="flex:1"></span><span class="small muted">Nothing is ticked for you. These are your files.</span></div>
+  <div class="list"><div class="thead"><span style="width:14px"></span><span style="flex:1">Name</span><span style="width:110px">Kind</span><span style="width:120px">Last opened</span><span style="width:70px;text-align:right">Size</span></div>
+  ${LARGE.map((f,k)=>`<label class="row"><input type="checkbox" data-a="lg" data-v="${k}" ${S.largeOn.has(k)?'checked':''}><span class="ico" style="background:var(--hover);color:var(--fg2)">${I(f.k)}</span><span class="grow"><div class="t">${f.n}</div><div class="mono">${f.p}</div></span><span class="small muted" style="width:110px">${f.kind}</span><span class="small muted" style="width:120px">${f.o}</span><span class="num" style="width:70px;text-align:right">${fmt(f.s)}</span></label>`).join('')}</div>`;
+  foot=`<span class="sum">${S.largeOn.size?`<b>${S.largeOn.size} files</b> · <b>${fmt(sum)}</b> to Trash`:'Tick files to move them to the Trash'}</span><button class="btn lg" data-a="toast" data-v="Shown in Finder" ${S.largeOn.size?'':'disabled'}>Show in Finder</button><button class="btn lg pri" data-a="trashsel" data-v="large" ${S.largeOn.size?'':'disabled'}>Move to Trash</button>`;
+ }
+ if(tab==='dups'){
+  if(!S.dupOn)autoDup();
+  let n=0,sum=0;DUPS.forEach((d,g)=>d.f.forEach((_,k)=>{if(S.dupOn[g][k]){n++;sum+=d.s}}));
+  sub=`${DUPS.length} sets of identical files · ${fmt(DUPS.reduce((a,d)=>a+d.s*(d.f.length-1),0))} in extra copies`;
+  body=`<div style="display:flex;gap:10px;align-items:center;margin:4px 0 12px"><span class="small muted">Keep in each set</span><div class="seg">${[['newest','Newest'],['oldest','Oldest'],['none','Choose myself']].map(([v,l])=>`<button class="${S.dupKeep===v?'on':''}" data-a="dupkeep" data-v="${v}">${l}</button>`).join('')}</div><span style="flex:1"></span><span class="small muted">Files match byte for byte. One copy is always kept.</span></div>
+  ${DUPS.map((d,g)=>`<div class="list" style="margin-bottom:10px"><div class="thead" style="font-size:12px;color:var(--fg)"><span style="flex:1">${d.n}</span><span class="muted">${d.f.length} copies · ${fmt(d.s)} each</span></div>
+   ${d.f.map(([p,dt],k)=>`<label class="row"><input type="checkbox" data-a="dup" data-v="${g}:${k}" ${S.dupOn[g][k]?'checked':''}><span class="grow mono" style="color:var(--fg)">${p}/${d.n}</span><span class="small muted" style="width:110px">${dt}</span>${S.dupOn[g][k]?dest('trash'):'<span class="badge b-acc">Keep</span>'}</label>`).join('')}</div>`).join('')}`;
+  foot=`<span class="sum">${n?`<b>${n} copies</b> · <b>${fmt(sum)}</b> to Trash`:'Nothing ticked'}</span><button class="btn lg pri" data-a="trashsel" data-v="dups" ${n?'':'disabled'}>Move ${n||''} to Trash</button>`;
+ }
+ if(tab==='dl'){
+  const sum=DOWNLOADS.filter((_,k)=>S.dlOn.has(k)).reduce((a,x)=>a+x.s,0);
+  sub='Files in ~/Downloads, grouped by where they came from';
+  body=['Safari','Chrome','Slack'].map(src=>`<div class="sect">${src}</div><div class="list">${DOWNLOADS.map((f,k)=>f.src!==src?'':`<label class="row"><input type="checkbox" data-a="dl" data-v="${k}" ${S.dlOn.has(k)?'checked':''}><span class="grow"><div class="t">${f.n}</div></span>${DUPS.some(d=>d.n===f.n)?'<span class="badge b-caution">Also elsewhere</span>':''}<span class="small muted" style="width:110px">${f.d}</span><span class="num" style="width:70px;text-align:right">${fmt(f.s)}</span></label>`).join('')}</div>`).join('');
+  foot=`<span class="sum">${S.dlOn.size?`<b>${S.dlOn.size} files</b> · <b>${fmt(sum)}</b> to Trash`:'Tick downloads you no longer need'}</span><button class="btn lg pri" data-a="trashsel" data-v="dl" ${S.dlOn.size?'':'disabled'}>Move to Trash</button>`;
+ }
+ return{title:'My Clutter',sub,tools:seg,body,foot};
+}
+function autoDup(){S.dupOn=DUPS.map(d=>{const keep=S.dupKeep==='newest'?d.f.length-1:S.dupKeep==='oldest'?0:-1;return d.f.map((_,k)=>keep>=0&&k!==keep)})}
+
+/* ---------- Space Lens ---------- */
+function lensNode(){let n=LENS0;S.lens.forEach(i=>n=n.k[i]);return n}
+function lens(){
+ const node=lensNode();const path=[LENS0];let n=LENS0;S.lens.forEach(i=>{n=n.k[i];path.push(n)});
+ const kids=[...node.k].map((c,i)=>({c,i})).sort((a,b)=>b.c.s-a.c.s);
+ let sum=0;S.lensOn.forEach(key=>{const [p,i]=key.split('|');if(p===S.lens.join('.'))sum+=node.k[+i].s});
+ const onHere=[...S.lensOn].filter(k=>k.split('|')[0]===S.lens.join('.')).length;
+ return{title:'Space Lens',sub:`${fmt(node.s)} in ${node.n}`,
+ tools:`<select class="popup" style="height:30px;border-radius:15px;padding:0 10px" aria-label="Disk"><option>Macintosh HD</option><option>Backup SSD</option></select><button class="tb" data-a="toast" data-v="Choose a folder to map">${I('folder')}Choose Folder…</button>`,
+ body:`<div style="display:flex;align-items:center;gap:10px;margin:2px 0 10px"><div class="crumbs">${path.map((p,k)=>`${k?I('chev'):''}<button data-a="lup" data-v="${k}">${k===0?I('disk')+' ':''}${p.n}</button>`).join('')}</div><span style="flex:1"></span><span class="small muted">Click a folder to open it · tick items in the list to remove</span></div>
+ <div style="display:grid;grid-template-columns:1fr 290px;gap:14px">
+  <div class="tmap" id="tmap"></div>
+  <div class="list" style="max-height:510px;overflow:auto">${kids.map(({c,i})=>{const key=S.lens.join('.')+'|'+i;return `<div class="row" style="flex-wrap:wrap;row-gap:4px">${c.lock?`<span title="Protected by macOS" style="width:14px;color:var(--fg3)">${I('lock','" style="width:13px;height:13px')}</span>`:`<input type="checkbox" data-a="lon" data-v="${key}" ${S.lensOn.has(key)?'checked':''} aria-label="Select ${c.n}">`}
+   <button class="grow" style="border:0;background:none;text-align:left;padding:0;cursor:${c.k?'pointer':'default'}" ${c.k?`data-a="ldown" data-v="${i}"`:''}><div class="t">${c.k?I('folder','" style="width:14px;height:14px;color:var(--accent);margin-right:4px'):''}${c.n}</div></button><span class="num small">${fmt(c.s)}</span>
+   <div class="bar" style="width:100%;margin-left:24px"><i style="width:${c.s/kids[0].c.s*100}%;${c.lock?'background:var(--fg3)':''}"></i></div></div>`}).join('')}</div>
+ </div>`,
+ foot:`<span class="sum">${onHere?`<b>${onHere} items</b> · <b>${fmt(sum)}</b> to Trash`:'System folders are protected and cannot be selected'}</span><button class="btn lg" data-a="toast" data-v="Shown in Finder">Show in Finder</button><button class="btn lg pri" data-a="trashsel" data-v="lens" ${onHere?'':'disabled'}>Move to Trash</button>`};
+}
+function squarify(items,x,y,w,h){
+ const out=[];const total=items.reduce((a,b)=>a+b.v,0);if(!total)return out;
+ let rest=items.map(it=>({...it,a:it.v/total*w*h}));
+ while(rest.length){
+  const side=Math.min(w,h);let row=[],best=Infinity;
+  for(const it of rest){const t=[...row,it];const s=t.reduce((a,b)=>a+b.a,0);const mx=Math.max(...t.map(r=>r.a)),mn=Math.min(...t.map(r=>r.a));
+   const worst=Math.max(side*side*mx/(s*s),(s*s)/(side*side*mn));if(worst<=best){best=worst;row=t}else break}
+  const s=row.reduce((a,b)=>a+b.a,0);
+  if(w>=h){const cw=s/h;let cy=y;row.forEach(r=>{const ch=r.a/cw;out.push({...r,x,y:cy,w:cw,h:ch});cy+=ch});x+=cw;w-=cw}
+  else{const rh=s/w;let cx=x;row.forEach(r=>{const cw=r.a/rh;out.push({...r,x:cx,y,w:cw,h:rh});cx+=cw});y+=rh;h-=rh}
+  rest=rest.slice(row.length)}
+ return out}
+function drawLens(){
+ const el=document.getElementById('tmap');if(!el)return;const node=lensNode();
+ const W=el.clientWidth,H=el.clientHeight;
+ const items=node.k.map((c,i)=>({v:c.s,c,i})).sort((a,b)=>b.v-a.v);
+ const max=items[0].v;
+ el.innerHTML=squarify(items,0,0,W,H).map((r,rank)=>{const key=S.lens.join('.')+'|'+r.i;const t=.25+.75*Math.sqrt(r.v/max);
+  const bg=r.c.lock?'color-mix(in srgb,var(--fg3) 35%,var(--card))':`color-mix(in srgb,var(--tile-hi) ${Math.round(t*100)}%,var(--tile-lo))`;
+  const fg=r.c.lock||t<.55?'var(--fg)':'var(--on-accent)';
+  const small=r.w<70||r.h<40;
+  const tile=`<div class="tile ${S.lensOn.has(key)?'sel':''}" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;background:${bg};color:${fg}" ${r.c.k?`data-a="ldown" data-v="${r.i}"`:r.c.lock?'':`data-a="lon" data-v="${key}"`} title="${esc(r.c.n)} · ${fmt(r.c.s)}">${r.c.lock?I('lock'):r.c.k?I('folder'):''}${small?'':`<b>${esc(r.c.n)}</b><span>${fmt(r.c.s)}</span>`}</div>`;
+  if(!r.c.k||r.w<150||r.h<120)return tile;
+  const inner=squarify(r.c.k.map((c,j)=>({v:c.s,c,j})).sort((a,b)=>b.v-a.v),r.x+6,r.y+6,r.w-12,r.h-52);
+  return tile+inner.map(q=>{const tt=.2+.6*Math.sqrt(q.v/max);const sm=q.w<64||q.h<34;
+   return `<div class="tile" style="left:${q.x}px;top:${q.y}px;width:${q.w}px;height:${q.h}px;background:color-mix(in srgb,var(--tile-hi) ${Math.round(tt*100)}%,var(--tile-lo));color:${tt<.5?'var(--fg)':'var(--on-accent)'};border-width:1px" data-a="ldown" data-v="${r.i}${q.c.k?'.'+q.j:''}" title="${esc(q.c.n)} · ${fmt(q.c.s)}">${q.c.k?I('folder'):''}${sm?'':`<b>${esc(q.c.n)}</b><span>${fmt(q.c.s)}</span>`}</div>`}).join('')}).join('');
+}
+
+/* ---------- Applications ---------- */
+function apps(){
+ const tab=S.appsTab;
+ const seg=`<div class="seg">${[['uninstall','Uninstaller'],['unused','Unused'],['left','Leftovers'],['inst','Installers'],['upd','Updates']].map(([v,l])=>`<button class="${tab===v?'on':''}" data-a="apt" data-v="${v}">${l}</button>`).join('')}</div>`;
+ const icon=a=>`<span class="appi" style="background:${a.c}">${a.n[0]}</span>`;
+ if(tab==='uninstall'){const a=APPS[S.appSel],fs=appFiles(a),tot=fs.reduce((x,f)=>x+f.s,0);
+  return{title:'Applications',sub:`${APPS.length} apps · ${fmt(APPS.reduce((x,a)=>x+a.s,0))}`,tools:seg,
+  body:`<div class="split"><div class="pane"><div class="list">${APPS.map((x,k)=>`<button class="row ${k===S.appSel?'on':''}" data-a="asel" data-v="${k}">${icon(x)}<span class="grow"><div class="t">${x.n}</div><div class="small muted">${x.last}</div></span><span class="num small">${fmt(x.s)}</span></button>`).join('')}</div></div>
+  <div class="pane detail"><div style="display:flex;gap:14px;align-items:center;margin:4px 0 14px"><span class="appi" style="background:${a.c};width:64px;height:64px;border-radius:15px;font-size:28px">${a.n[0]}</span><div style="flex:1"><h3 style="margin:0">${a.n}</h3><div class="small muted">Version ${a.v} · ${a.dev} · last opened ${a.last.toLowerCase()}</div></div><button class="btn lg pri" data-a="uninstall">Uninstall…</button></div>
+  <div class="grid3" style="margin-bottom:14px"><div class="card"><div class="small muted">App and its files</div><div style="font:600 20px var(--round)">${fmt(tot)}</div></div><div class="card"><div class="small muted">Files outside the app</div><div class="v" style="font:600 20px var(--round)">${fs.length-1}</div></div><div class="card"><div class="small muted">Update</div><div style="font:600 20px var(--round)">${a.up?a.up:'Up to date'}</div></div></div>
+  <div class="list"><div class="thead"><span style="flex:1">Item</span><span style="width:70px;text-align:right">Size</span></div>${fs.map(f=>`<div class="row"><span class="grow"><div class="t">${f.g}</div><div class="mono">${esc(f.p)}</div></span><span class="num" style="width:70px;text-align:right">${fmt(f.s)}</span></div>`).join('')}</div>
+  <p class="small muted">Removing an app moves it and these files to the Trash. Apps from other developers can be trashed but not edited, which macOS enforces (App Management).</p></div></div>`};}
+ if(tab==='unused'){const un=APPS.filter(a=>a.unused);return{title:'Applications',sub:`${un.length} apps not opened in 6 months or more`,tools:seg,
+  body:`<div class="note">${I('info')}<span>Based on when each app was last opened. Nothing is selected for you.</span></div><div class="list">${un.map(a=>`<div class="row">${icon(a)}<span class="grow"><div class="t">${a.n}</div><div class="small muted">Last opened ${a.last}</div></span><span class="num small" style="width:70px;text-align:right">${fmt(a.s)}</span><button class="btn" data-a="asel2" data-v="${APPS.indexOf(a)}">Uninstall…</button></div>`).join('')}</div>`};}
+ if(tab==='left'){const c=S.cats.find(c=>c.id==='leftovers');S.cleanSel='leftovers';const T=totals([c]);return{title:'Applications',sub:`Leftovers from ${c.items.length} deleted apps · ${fmt(found([c]))}`,tools:seg,
+  body:`<div class="note">${I('info')}<span>Files that belonged to apps you already removed. ${c.removes} They go to the Trash.</span></div><div class="list">${c.items.map((i,k)=>`<label class="row"><input type="checkbox" data-a="item" data-v="leftovers:${k}" ${i.on?'checked':''}><span class="grow"><div class="t">${i.n}</div><div class="mono">${i.p}</div></span>${badge(i.risk)}<span class="num" style="width:70px;text-align:right">${fmt(i.s)}</span></label>`).join('')}</div>`,
+  foot:`<span class="sum">${sumLine(T)}</span><button class="btn lg pri" data-a="clean" data-v="leftovers" ${T.n?'':'disabled'}>Move to Trash</button>`};}
+ if(tab==='inst')return{title:'Applications',sub:`${INSTALLERS.length} installer files · ${fmt(INSTALLERS.reduce((a,x)=>a+x[2],0))}`,tools:seg,
+  body:`<div class="note">${I('info')}<span>Disk images and packages you already installed from. Safe to remove once the app is installed.</span></div><div class="list">${INSTALLERS.map(([n,p,s,d])=>`<label class="row"><input type="checkbox"><span class="ico" style="background:var(--hover);color:var(--fg2)">${I('box')}</span><span class="grow"><div class="t">${n}</div><div class="mono">${p}</div></span><span class="small muted" style="width:110px">${d}</span><span class="num" style="width:70px;text-align:right">${fmt(s)}</span></label>`).join('')}</div>`,
+  foot:`<span class="sum">Tick installers to move them to the Trash</span><button class="btn lg pri" data-a="toast" data-v="Moved to the Trash">Move to Trash</button>`};
+ const ups=APPS.filter(a=>a.up);
+ return{title:'Applications',sub:`${ups.length} updates found · checked just now`,tools:seg,
+  body:`<div class="note">${I('info')}<span>TidyMyMac checks each app's update feed but does not install anything. Open the app to update it.</span></div>
+  <div class="list">${ups.map(a=>`<div class="row">${icon(a)}<span class="grow"><div class="t">${a.n}</div><div class="small muted num">${a.v} → <b style="color:var(--fg)">${a.up}</b> · from the app's Sparkle feed</div></span><button class="btn" data-a="toast" data-v="Opened ${a.n}">Open App</button></div>`).join('')}
+  <div class="row"><span class="appi" style="background:linear-gradient(135deg,#8e9aa6,#5c6670)">${I('gear','" style="width:16px;height:16px;color:#fff')}</span><span class="grow"><div class="t">macOS Tahoe 26.8</div><div class="small muted">Available in System Settings › General › Software Update</div></span><button class="btn" data-a="toast" data-v="Opened Software Update">Open Software Update</button></div></div>`};
+}
+
+/* ---------- Performance ---------- */
+function perf(){
+ const tab=S.perf;const seg=`<div class="seg">${[['maint','Maintenance'],['login','Login Items'],['bg','Background Items']].map(([v,l])=>`<button class="${tab===v?'on':''}" data-a="pft" data-v="${v}">${l}</button>`).join('')}</div>`;
+ if(tab==='maint')return{title:'Performance',sub:'Maintenance tasks run through the admin helper',tools:seg,
+  body:`<div class="list">${S.tasks.map(t=>`<div class="row" style="padding:14px 14px;align-items:flex-start"><span class="ico">${I(t.icon)}</span><span class="grow"><div style="font-weight:600">${t.name}</div><div class="small muted" style="margin:2px 0 4px">${t.desc}</div><div class="small muted">${I('clock','" style="width:12px;height:12px')} ${t.time} · last run ${t.last} · ${I('lock','" style="width:12px;height:12px')} admin password</div></span><button class="btn" data-a="runtask" data-v="${t.id}">Run</button></div>`).join('')}</div>
+  <p class="small muted" style="margin-top:12px">Free up RAM, maintenance scripts and repair permissions are left out on purpose: modern macOS does these itself, and some can do harm.</p>`};
+ if(tab==='login')return{title:'Performance',sub:`${S.login.filter(l=>l.on).length} of ${S.login.length} apps open at login`,tools:seg,
+  body:`<div class="list">${S.login.map((l,k)=>`<div class="row"><span class="appi" style="background:${l.c}">${l.n[0]}</span><span class="grow"><div class="t">${l.n}</div><div class="small muted">Opens when you log in</div></span><button class="sw ${l.on?'on':''}" role="switch" aria-checked="${l.on}" aria-label="Open ${l.n} at login" data-a="login" data-v="${k}"></button></div>`).join('')}</div>`};
+ return{title:'Performance',sub:`${S.bg.length} launch agents and daemons`,tools:seg,
+  body:`<div class="note">${I('info')}<span>Background items start helpers and updaters without a window. Turning one off stops it at next login; turning off a system-wide one needs your password.</span></div>
+  <div class="list">${S.bg.map((b,k)=>`<div class="row"><span class="ico" style="background:var(--hover);color:var(--fg2)">${I('gear')}</span><span class="grow"><div class="t">${b.n} ${b.broken?'<span class="badge b-caution">'+I('warn')+'App missing</span>':''}${b.root?' <span class="badge b-info">'+I('lock')+'System-wide</span>':''}</div><div class="mono">${b.p}</div></span><span class="small muted" style="width:130px">${b.dev}</span><button class="btn link" data-a="toast" data-v="Shown in Finder">Show</button><button class="sw ${b.on?'on':''}" role="switch" aria-checked="${b.on}" aria-label="Enable ${b.n}" data-a="bg" data-v="${k}"></button></div>`).join('')}</div>`};
+}
+
+/* ---------- Protection ---------- */
+function prot(){const p=PERMS.find(x=>x.id===S.prot);
+ return{title:'Protection',sub:'App permissions, read only',
+ tools:`<button class="tb" data-a="toast" data-v="Opened System Settings › Privacy & Security">${I('ext')}Privacy & Security</button>`,
+ body:`<div class="split"><div class="pane"><div class="list">${PERMS.map(x=>`<button class="row ${x.id===S.prot?'on':''}" data-a="psel" data-v="${x.id}"><span class="ico">${I(x.i)}</span><span class="grow t">${x.n}</span><span class="small muted num">${x.apps.length}</span></button>`).join('')}</div></div>
+ <div class="pane detail"><h3><span class="ico">${I(p.i)}</span>${p.n}</h3><p class="muted" style="margin:0 0 12px">${p.apps.length} apps can use this. TidyMyMac only shows the list; you change it in System Settings.</p>
+ <div class="list">${p.apps.map(a=>`<div class="row"><span class="appi" style="background:${a==='TidyMyMac'?'var(--accent)':'#7a8590'}">${a[0]}</span><span class="grow t">${a}</span>${a==='TidyMyMac'?'<span class="badge b-acc">This app</span>':''}</div>`).join('')}</div>
+ <div style="margin-top:12px"><button class="btn lg" data-a="toast" data-v="Opened System Settings › ${p.n}">${I('ext')}Open in System Settings</button></div></div></div>`};}
+
+/* ---------- Health ---------- */
+function health(){
+ const used=862e9,cap=994e9,purg=18.2e9;
+ return{title:'Health',sub:'Updated just now',tools:`<button class="tb pri" data-a="nav" data-v="smart">${I('sparkles')}Run Smart Care</button>`,
+ body:`<div class="card health" style="margin:4px 0 12px"><svg class="i" style="width:44px;height:44px;color:var(--green-f)"><use href="#i-ok"/></svg><div style="flex:1"><div style="font-size:17px;font-weight:600">Your Mac looks good</div><div class="muted">Storage is 87% full. Smart Care last ran 3 days ago. The helper and Full Disk Access are working.</div></div></div>
+ <div class="grid3">
+  <div class="card"><div class="small muted">Storage · Macintosh HD</div><div style="font:600 22px var(--round);margin:4px 0 8px" class="num">${fmt(cap-used)} free</div><div class="diskbar" style="width:100%"><i style="width:${(used-purg)/cap*100}%;background:var(--accent)"></i><i style="width:${purg/cap*100}%;background:color-mix(in srgb,var(--accent) 35%,transparent)"></i></div><div class="small muted" style="margin-top:6px">Includes ${fmt(purg)} purgeable, which macOS frees on its own.</div></div>
+  <div class="card"><div class="small muted">Trash</div><div style="font:600 22px var(--round);margin:4px 0 8px">2.8 GB</div><div class="small muted">In 2 Trash bins. You'll get an alert above 5 GB.</div></div>
+  <div class="card"><div class="small muted">Setup</div><div style="margin:6px 0 2px;display:flex;flex-direction:column;gap:4px"><span>${I('ok','" style="color:var(--green-f)')} Full Disk Access</span><span>${I('ok','" style="color:var(--green-f)')} Admin helper</span><span>${I('ok','" style="color:var(--green-f)')} Notifications</span></div></div>
+ </div>
+ <div class="sect">Run history</div>
+ <div class="list"><div class="thead"><span style="width:150px">Date</span><span style="flex:1">What ran</span><span style="width:80px;text-align:right">Freed</span><span style="width:90px;text-align:right">Items</span><span style="width:80px;text-align:right">To Trash</span><span style="width:80px;text-align:right">Deleted</span><span style="width:40px"></span></div>
+ ${(S.lastFreed?[['Today, 09:41','Smart Care',fmt(S.lastFreed),'—',fmt(S.doneT),fmt(S.lastFreed-S.doneT)]]:[]).concat(HISTORY).map(r=>`<div class="row"><span class="small num" style="width:150px">${r[0]}</span><span class="grow t">${r[1]}</span><span class="num" style="width:80px;text-align:right">${r[2]}</span><span class="num small muted" style="width:90px;text-align:right">${r[3]}</span><span class="num small" style="width:80px;text-align:right">${r[4]}</span><span class="num small" style="width:80px;text-align:right">${r[5]}</span><button class="btn link" style="width:40px" data-a="toast" data-v="Opened the run log">Log</button></div>`).join('')}</div>
+ <div class="sect">Reminders</div>
+ <div class="list"><div class="row"><span class="ico">${I('bell')}</span><span class="grow"><div class="t">Remind me to run Smart Care</div><div class="small muted">A notification only. TidyMyMac never cleans on its own.</div></span><select class="popup" aria-label="How often" ${S.remind?'':'disabled'}><option>Every week</option><option>Every 2 weeks</option><option>Every month</option></select><button class="sw ${S.remind?'on':''}" role="switch" aria-checked="${S.remind}" aria-label="Reminders" data-a="remind"></button></div></div>`};}
+
+/* ---------- My Tools ---------- */
+function tools(){const T=[
+ ['cleanup','User & System Caches','Clear rebuildable caches','cleanup','ucache'],['list','Logs','Old logs and crash reports','cleanup','ulogs'],['hammer','Xcode Junk','DerivedData, simulators','cleanup','xcode'],['cube','AI Tool Caches','Leftover AI caches','cleanup','ai'],
+ ['cube','Local AI Models','Review big model files','cleanup','models'],['phone','iOS Backups','Review old backups','cleanup','ios'],['trash','Empty Trash','All Trash bins','cleanup','trash'],['power','Broken Login Items','Launch items with no app','cleanup','broken'],
+ ['apps','Uninstaller','Remove apps completely','apps','uninstall'],['clock','Unused Apps','Not opened in months','apps','unused'],['clutter','App Leftovers','Files of deleted apps','apps','left'],['box','Installers','Old .dmg and .pkg files','apps','inst'],
+ ['update','Update Check','Sparkle apps and macOS','apps','upd'],['big','Large & Old Files','Big or forgotten files','clutter','large'],['dup','Duplicates','Identical copies','clutter','dups'],['down','Downloads','Review by source','clutter','dl'],
+ ['pie','Space Lens','Map a disk or folder','lens',''],['globe','Flush DNS','Reset name lookups','perf','maint'],['search','Reindex Spotlight','Rebuild the search index','perf','maint'],['tm','Time Machine Snapshots','Thin local snapshots','perf','maint'],
+ ['power','Login Items','Apps that open at login','perf','login'],['gear','Background Items','Agents and daemons','perf','bg'],['shield','App Permissions','Who can use what','prot',''],['health','Run History','What was cleaned','health','']];
+ return{title:'My Tools',sub:`${T.length} single-purpose tools`,tools:`<div class="search">${I('search')}<input id="q-tools" placeholder="Search tools"></div>`,
+ body:`<p class="muted" style="margin:4px 0 14px">Each tool opens the part of a module that does just that one job, so you can skip the full scan.</p><div class="tools">${T.map(([i,n,d,m,v])=>`<button class="tool" data-a="tool" data-v="${m}:${v}"><span class="ico">${I(i)}</span><b>${n}</b><span>${d}</span></button>`).join('')}</div>`};}
+
+const MODS={smart,cleanup,clutter,lens,apps,perf,prot,health,tools};
+
+/* ---------- menu bar + onboarding ---------- */
+function spark(pts){const w=240,h=28,mx=Math.max(...pts);const d=pts.map((p,i)=>`${i?'L':'M'}${(i/(pts.length-1)*w).toFixed(1)},${(h-2-p/mx*(h-6)).toFixed(1)}`).join(' ');return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><path d="${d} L${w},${h} L0,${h} Z" fill="var(--sel)"/><path d="${d}" fill="none" stroke="var(--accent)" stroke-width="1.5"/></svg>`}
+function mbPop(){return `<div class="mbpop" role="dialog" aria-label="TidyMyMac menu">
+ <div style="display:flex;align-items:center;gap:8px;padding:2px 4px"><img src="${ICON}" alt="" style="width:22px;height:22px"><b style="flex:1">TidyMyMac</b><span class="badge b-safe">${I('ok')}Looks good</span></div>
+ <div class="m">${I('cpu')}<span>CPU</span><b class="num">18%</b><small>${spark([12,18,9,22,30,14,11,26,19,15,21,18])}</small></div>
+ <div class="m">${I('mem')}<span>Memory</span><b class="num">11.2 / 16 GB</b><small>Memory pressure normal</small></div>
+ <div class="m">${I('disk')}<span>Storage</span><b class="num">132 GB free</b><small><div class="bar"><i style="width:87%"></i></div></small></div>
+ <div class="m">${I('net')}<span>Network</span><b class="num small">↓ 4.2 MB/s ↑ 310 KB/s</b><small>Wi-Fi</small></div>
+ <h5>Alerts</h5>
+ <div class="al">${I('disk')}<span>Low disk space (under 20 GB)</span><button class="sw on" aria-label="Low disk alert" data-a="noop"></button></div>
+ <div class="al">${I('trash')}<span>Trash over 5 GB</span><button class="sw on" aria-label="Full Trash alert" data-a="noop"></button></div>
+ <div style="display:flex;gap:8px;margin-top:2px"><button class="btn" style="flex:1;justify-content:center" data-a="nav" data-v="smart">Open TidyMyMac</button><button class="btn pri" style="flex:1;justify-content:center" data-a="mbscan">Run Smart Care</button></div></div>`}
+function onboarding(){const [a,b]=S.onbStep;return `<div class="sheet r" style="width:560px"><div class="body" style="padding-top:22px;text-align:center"><img src="${ICON}" alt="" style="width:84px;height:84px"><h3 style="font-size:20px;margin:6px 0 4px">Welcome to TidyMyMac</h3><p class="muted" style="margin:0 auto 14px;max-width:44ch">Two one-time steps let TidyMyMac see your whole disk and clean system folders. You stay in control: nothing is removed without your review.</p>
+ <div class="steps" style="text-align:left">
+  <div class="step"><span class="n ${a?'done':''}">${a?'✓':'1'}</span><div style="flex:1"><b>Allow Full Disk Access</b><p>Needed to size the Trash, Mail and other protected folders. In System Settings, switch on TidyMyMac in the list, then come back here.</p>${a?'<span class="badge b-safe">'+I('ok')+'Allowed</span>':`<button class="btn" data-a="onb" data-v="0">${I('ext')}Open System Settings</button>`}</div></div>
+  <div class="step"><span class="n ${b?'done':''}">${b?'✓':'2'}</span><div style="flex:1"><b>Approve the TidyMyMac helper</b><p>A small helper does the jobs that need administrator rights, such as system caches and DNS. macOS asks you to allow it under Login Items & Extensions.</p>${b?'<span class="badge b-safe">'+I('ok')+'Helper ready</span>':`<button class="btn" data-a="onb" data-v="1" ${a?'':'disabled'}>${I('lock')}Install Helper</button>`}</div></div>
+ </div></div>
+ <footer><span class="small muted" style="flex:1">You can do this later from Health.</span><button class="btn lg" data-a="onbclose">Later</button><button class="btn lg pri" data-a="onbclose" ${a&&b?'':'disabled'}>Get Started</button></footer></div>`}
+
+/* ---------- actions ---------- */
+let timer=null,toastT=null;
+function toast(m){S.toast=m;render();clearTimeout(toastT);toastT=setTimeout(()=>{S.toast=null;render()},2200)}
+function animate(kind,ms,done){clearInterval(timer);S.sc=kind;S.prog=0;const t0=performance.now();render();
+ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ timer=setInterval(()=>{S.prog=reduce?1:Math.min(1,(performance.now()-t0)/ms);render();if(S.prog>=1){clearInterval(timer);done()}},reduce?10:90)}
+function removeChecked(cats){cats.forEach(c=>{c.items=c.items.filter(i=>!i.on)})}
+function askClean(scope){
+ let cats,tk=0;
+ if(scope==='smart'){cats=smartCats();tk=S.tasks.filter(t=>t.on).length}else if(scope==='cleanup'){cats=S.cats.filter(c=>c.area!=='apps')}else cats=S.cats.filter(c=>c.id===scope);
+ const T=totals(cats);
+ const parts=[];if(T.t)parts.push(`${fmt(T.t)} moves to the Trash.`);if(T.d)parts.push(`${fmt(T.d)} of caches, logs${cats.some(c=>c.id==='trash'&&c.items.some(i=>i.on))?' and Trash contents':''} is deleted permanently.`);if(tk)parts.push(`${tk} maintenance task${tk>1?'s':''} will run.`);
+ const helper=cats.some(c=>c.helper&&c.items.some(i=>i.on))||tk;
+ if(helper)parts.push('macOS will ask for your administrator password once.');
+ S.sheet=null;S.dialog={title:`Clean ${n0(T.n)} items?`,body:parts.join(' '),ok:T.d&&!T.t?`Delete ${fmt(T.all)}`:`Clean ${fmt(T.all)}`,danger:!!T.d,run:()=>{
+  if(scope==='smart'){S.freed=T.all;S.doneT=T.t;S.doneTasks=tk;animate('cleaning',2200,()=>{removeChecked(cats);S.lastFreed=T.all;S.sc='done';render()})}
+  else{removeChecked(cats);toast(`Cleaned ${fmt(T.all)}${T.t?` · ${fmt(T.t)} is in the Trash`:''}`)}}};
+ render()}
+function act(a,v,el){
+ switch(a){
+ case'theme':v?document.documentElement.setAttribute('data-theme',v):document.documentElement.removeAttribute('data-theme');document.querySelectorAll('#themeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));render();return;
+ case'reset':clearInterval(timer);fresh();break;
+ case'nav':S.mod=v;S.mb=false;S.sheet=null;if(v==='smart'&&S.sc==='done')S.sc='idle';break;
+ case'mb':S.mb=!S.mb;break;
+ case'mbscan':S.mb=false;S.mod='smart';startScan();return;
+ case'onboard':S.onb=true;S.onbStep=[false,false];S.mb=false;break;
+ case'onb':S.onbStep[+v]=true;break;
+ case'onbclose':S.onb=false;break;
+ case'scan':case'rescan':startScan();return;
+ case'stop':clearInterval(timer);S.sc=S.scanned?'results':'idle';break;
+ case'scdone':S.sc='idle';break;
+ case'review':S.sheet='review';S.reviewFilter=v==='all'?'all':v;break;
+ case'rfilter':S.reviewFilter=v;break;
+ case'close':S.sheet=null;break;
+ case'gtog':S.openGroups.has(v)?S.openGroups.delete(v):S.openGroups.add(v);break;
+ case'gall':{const c=S.cats.find(c=>c.id===v);const to=!c.items.every(i=>i.on);c.items.forEach(i=>i.on=to);break}
+ case'item':{const [id,k]=v.split(':');const c=S.cats.find(c=>c.id===id);c.items[+k].on=el.checked;break}
+ case'task':S.tasks[+v].on=el.checked;break;
+ case'clean':askClean(v);return;
+ case'dcancel':S.dialog=null;break;
+ case'dok':{const r=S.dialog.run;S.dialog=null;r();return}
+ case'csel':S.cleanSel=v;break;
+ case'clt':S.clutter=v;break;
+ case'lg':el.checked?S.largeOn.add(+v):S.largeOn.delete(+v);break;
+ case'dl':el.checked?S.dlOn.add(+v):S.dlOn.delete(+v);break;
+ case'dupkeep':S.dupKeep=v;autoDup();break;
+ case'dup':{const [g,k]=v.split(':').map(Number);S.dupOn[g][k]=el.checked;if(S.dupOn[g].every(Boolean)){S.dupOn[g][k]=false;toast('One copy in each set is always kept');return}break}
+ case'trashsel':{const m={large:[S.largeOn,'files'],dl:[S.dlOn,'files'],lens:[S.lensOn,'items']};
+  if(v==='dups'){let n=0;S.dupOn.forEach(g=>g.forEach(x=>{if(x)n++}));S.dialog={title:`Move ${n} copies to the Trash?`,body:'One copy of each file stays where it is. You can put these back from the Trash.',ok:'Move to Trash',run:()=>{S.dupKeep='none';S.dupOn=DUPS.map(d=>d.f.map(()=>false));toast(`Moved ${n} copies to the Trash`)}};break}
+  const [set,w]=m[v];const n=v==='lens'?[...set].filter(k=>k.split('|')[0]===S.lens.join('.')).length:set.size;
+  S.dialog={title:`Move ${n} ${w} to the Trash?`,body:'You can put them back from the Trash until you empty it.',ok:'Move to Trash',run:()=>{set.clear();toast(`Moved ${n} ${w} to the Trash`)}};break}
+ case'lon':S.lensOn.has(v)?S.lensOn.delete(v):S.lensOn.add(v);break;
+ case'ldown':String(v).split('.').forEach(x=>S.lens.push(+x));break;
+ case'lup':S.lens=S.lens.slice(0,+v);break;
+ case'apt':S.appsTab=v;break;
+ case'asel':S.appSel=+v;break;
+ case'asel2':S.appSel=+v;S.appsTab='uninstall';S.appFileOn=appFiles(APPS[+v]).map(()=>true);S.sheet='uninstall';break;
+ case'uninstall':S.appFileOn=appFiles(APPS[S.appSel]).map(()=>true);S.sheet='uninstall';break;
+ case'afile':S.appFileOn[+v]=el.checked;break;
+ case'douninstall':S.sheet=null;toast(`${APPS[S.appSel].n} moved to the Trash`);return;
+ case'pft':S.perf=v;break;
+ case'runtask':{const t=S.tasks.find(t=>t.id===v);S.dialog={title:`${t.name}?`,body:`${t.desc} macOS will ask for your administrator password.`,ok:'Run',run:()=>{t.last='Today';toast(`${t.name}: done`)}};break}
+ case'login':S.login[+v].on=!S.login[+v].on;break;
+ case'bg':S.bg[+v].on=!S.bg[+v].on;break;
+ case'psel':S.prot=v;break;
+ case'remind':S.remind=!S.remind;break;
+ case'tool':{const [m,x]=v.split(':');S.mod=m;if(m==='cleanup')S.cleanSel=x;if(m==='apps')S.appsTab=x;if(m==='clutter')S.clutter=x;if(m==='perf')S.perf=x;break}
+ case'toast':toast(v);return;
+ case'noop':el.classList.toggle('on');return;
+ }
+ render()}
+function startScan(){S.sheet=null;S.dialog=null;animate('scan',3200,()=>{S.sc='results';S.scanned=true;render()})}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||t.disabled)return;if(t.type==='checkbox')return;e.preventDefault();act(t.dataset.a,t.dataset.v,t)});
+document.addEventListener('change',e=>{const t=e.target;if(t.type==='checkbox'&&t.dataset.a)act(t.dataset.a,t.dataset.v,t)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(S.dialog)S.dialog=null;else if(S.sheet)S.sheet=null;else if(S.onb)S.onb=false;else if(S.mb)S.mb=false;else return;render()}});
+const _r=render;render=function(){_r();document.querySelectorAll('[data-mixed]').forEach(c=>c.indeterminate=true)};
+render();
+</script>
