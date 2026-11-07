@@ -38,6 +38,13 @@ for f, lines in runs:
     done += ok
 deleted = [i["path"] for i in done if i["action"] == "delete"]
 def gone_later(t): return any(t == d or t.startswith(d + "/") for d in deleted)
+# ~/.Trash is privacy-protected: without Full Disk Access for the terminal it reads as empty.
+try:
+    os.listdir(home / ".Trash"); trash_readable = True
+except PermissionError:
+    trash_readable = False
+    print("NOTE can't read ~/.Trash: give your terminal app Full Disk Access in this account to check trashed items")
+unchecked = 0
 for i in done:
     p = i["path"]
     if i["action"] == "delete":
@@ -45,6 +52,10 @@ for i in done:
     elif i["action"] == "trash":
         t = i.get("trashPath") or ""
         # A later Trash-bins run may have emptied it.
+        if not trash_readable and not gone_later(t):
+            unchecked += 1
+            report(not os.path.lexists(p) and ".Trash" in t, f"moved out (Trash not readable) {p} -> {t}")
+            continue
         report(not os.path.lexists(p) and ".Trash" in t and (os.path.lexists(t) or gone_later(t)), f"trashed {p} -> {t}")
 
 removed = [i["path"] for i in done]
@@ -73,6 +84,8 @@ for line in snap.read_text().splitlines():
         if tripwire == "yes": report(False, f"tripwire changed: {p}")
         else: print(f"WARN content changed (not seeded by us, may be the system): {p}")
 print(f"Checked {checked} untouched paths.")
-print("RESULT: PASS" if fails == 0 else f"RESULT: FAIL ({fails})")
+if fails: print(f"RESULT: FAIL ({fails})")
+elif unchecked: print(f"RESULT: PASS, but {unchecked} trashed items weren't confirmed in the Trash (see NOTE)")
+else: print("RESULT: PASS")
 sys.exit(1 if fails else 0)
 PY
