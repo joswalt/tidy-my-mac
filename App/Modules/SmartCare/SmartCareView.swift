@@ -71,7 +71,7 @@ struct SmartCareView: View {
                     TrashCard(session: session)
                     ApplicationsCard()
                     MaintenanceCard(flushDNS: $flushDNS)
-                    LaterCard(title: "My Clutter", symbol: "doc.on.doc", note: "Large and old files arrive in a later build. Smart Care never cleans personal files.")
+                    ClutterCard()
                     LaterCard(title: "Protection", symbol: "lock.shield", note: "Review app permissions (later build).")
                 }
             }
@@ -174,6 +174,38 @@ struct LaterCard: View {
             .padding(8)
         }
         .opacity(0.6)
+    }
+}
+
+/// Look only (spec 007 §3): the large and old files count, opening My Clutter. Smart Care
+/// never cleans personal files.
+struct ClutterCard: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        let clutter = app.clutter
+        GroupBox {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Label("My Clutter", systemImage: "doc.on.doc").font(.headline)
+                    Spacer()
+                    if clutter.largeFiles != nil {
+                        Text(sizeString(clutter.visibleLarge.reduce(0) { $0 + $1.allocatedBytes })).monospacedDigit().foregroundStyle(.secondary)
+                    }
+                }
+                Text("Your own files. Smart Care never cleans them; you choose in My Clutter.").font(.callout).foregroundStyle(.secondary)
+                if clutter.largeFiles == nil {
+                    Text(clutter.scanningLarge ? "Looking for large and old files…" : "Large and old files not checked yet").font(.callout)
+                } else {
+                    let n = clutter.visibleLarge.count
+                    Text("\(n) large or old \(n == 1 ? "file" : "files")").font(.callout.monospacedDigit())
+                }
+                Button("Open My Clutter…") { clutter.tab = .largeOld; app.selectedModule = .myClutter }
+            }
+            .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
+            .padding(8)
+        }
+        .onAppear { if clutter.largeFiles == nil { clutter.scanLarge() } }
     }
 }
 

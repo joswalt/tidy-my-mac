@@ -23,6 +23,8 @@ final class AppModel {
     let cleanup: ScanSession
     let smartCare: ScanSession
     let applications: ApplicationsModel
+    let clutter = ClutterModel()
+    let spaceLens = SpaceLensModel()
 
     init() {
         var ctx: CleanupContext?
@@ -37,6 +39,8 @@ final class AppModel {
         smartCare.app = self
         applications.app = self
         applications.installers.app = self
+        clutter.app = self
+        spaceLens.app = self
         reloadIgnoreList()
         reloadRuns()
         NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
@@ -52,6 +56,8 @@ final class AppModel {
         if defaults.bool(forKey: "TidyScan") { (selectedModule == .cleanup ? cleanup : smartCare).scan() }
         // -TidyAppsTab updates|leftovers|… opens that Applications tab (read-only, like scans).
         if let t = defaults.string(forKey: "TidyAppsTab"), let tab = ApplicationsModel.Tab(rawValue: t) { applications.tab = tab }
+        // -TidyClutterTab largeOld|duplicates|downloads opens that My Clutter tab (read-only).
+        if let t = defaults.string(forKey: "TidyClutterTab"), let tab = ClutterModel.Tab(rawValue: t) { clutter.tab = tab }
         #endif
     }
 

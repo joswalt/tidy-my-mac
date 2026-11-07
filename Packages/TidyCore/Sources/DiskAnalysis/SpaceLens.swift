@@ -60,6 +60,21 @@ public final class SpaceNode: @unchecked Sendable, Identifiable {
         return chain
     }
 
+    /// Takes removed items out of the tree and their sizes off every folder above them.
+    public func prune(_ paths: Set<String>) {
+        for path in paths {
+            guard let node = find(path), let parent = node.parent else { continue }
+            parent.children.removeAll { $0 === node }
+            var p: SpaceNode? = parent
+            while let n = p {
+                n.allocatedBytes -= node.allocatedBytes
+                n.itemCount -= 1 + node.itemCount
+                p = n.parent
+            }
+            node.parent = nil
+        }
+    }
+
     public func find(_ path: String) -> SpaceNode? {
         if self.path == path { return self }
         guard PathNormalizer.isInside(path, self.path) else { return nil }

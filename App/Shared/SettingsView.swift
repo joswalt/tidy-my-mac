@@ -4,6 +4,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppModel.self) private var app
     @AppStorage("checkAppUpdatesAutomatically") private var checkUpdates = true
+    @AppStorage(ClutterModel.minimumMBKey) private var duplicateMinimumMB = 1
 
     var body: some View {
         TabView {
@@ -22,9 +23,15 @@ struct SettingsView: View {
                     Toggle("Check for app updates automatically", isOn: $checkUpdates)
                     Text("At most once a day, when Applications › Updates or Smart Care opens. TidyMyMac never installs updates.")
                         .font(.caption).foregroundStyle(.secondary)
+                    Picker("Duplicates: smallest file", selection: $duplicateMinimumMB) {
+                        ForEach([1, 5, 10, 50, 100], id: \.self) { Text("\($0) MB").tag($0) }
+                    }
+                    LabeledContent("Hash cache") {
+                        Button("Clear Hash Cache") { app.clutter.clearHashCache() }
+                    }
                 }
                 .formStyle(.grouped)
-                .frame(height: 110)
+                .frame(height: 200)
             }
             .tabItem { Label("Cleanup", systemImage: "bubbles.and.sparkles") }
 

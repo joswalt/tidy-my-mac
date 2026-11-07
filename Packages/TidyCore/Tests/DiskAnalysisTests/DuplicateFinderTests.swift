@@ -53,6 +53,7 @@ struct DuplicateFinderTests {
         try t.file("Library/Mobile Documents/com~apple~CloudDocs/a.bin", contents: a)  // iCloud Drive never
         try t.file("Documents/.hidden.bin", contents: a)                   // hidden never
         try t.file("Documents/proj/.git/objects/a.bin", contents: a)       // .git never
+        try t.file("Documents/proj/node_modules/x/a.bin", contents: a)     // node_modules never
         try t.file("Documents/Thing.app/Contents/a.bin", contents: a)      // inside a package never
         try t.file("Projects/a.bin", contents: a)                          // outside the default scope
         let small = Self.data(Self.mb - 1)

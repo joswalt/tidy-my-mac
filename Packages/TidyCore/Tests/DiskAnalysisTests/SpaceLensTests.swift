@@ -112,3 +112,18 @@ struct SpaceLensTests {
         #expect(SpaceScanner.containmentRoot(for: t.path("Documents/report.pdf"), scanRoot: t.home.root.path) == t.home.root.path)
     }
 }
+
+extension SpaceLensTests {
+    @Test func pruneTakesSizesOffEveryFolderAbove() throws {
+        let t = try TestHome("lens-prune")
+        defer { t.cleanUp() }
+        let root = try fixture(t)
+        let tree = try #require(SpaceScanner(floor: ProtectedFloor(home: t.home)).scan(root))
+        let three = try #require(tree.find(root + "/a/deeper/three.bin"))
+        let before = (tree.allocatedBytes, try #require(tree.find(root + "/a")).allocatedBytes)
+        tree.prune([three.path])
+        #expect(tree.find(three.path) == nil)
+        #expect(tree.allocatedBytes == before.0 - three.allocatedBytes)
+        #expect(tree.find(root + "/a")?.allocatedBytes == before.1 - three.allocatedBytes)
+    }
+}

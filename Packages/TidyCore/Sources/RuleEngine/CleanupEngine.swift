@@ -60,6 +60,12 @@ public struct CleanupSummary: Equatable, Sendable {
         }
     }
 
+    /// Hand-picked items, which always go to the Trash.
+    public init(itemCount: Int, trashBytes: Int64) {
+        self.itemCount = itemCount
+        self.trashBytes = trashBytes
+    }
+
     public static func size(_ bytes: Int64) -> String { ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file) }
 
     /// "1,284 items · 1.3 GB to Trash · 7.7 GB deleted permanently"

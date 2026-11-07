@@ -56,7 +56,7 @@ public struct ClutterScope: Sendable, Equatable {
 }
 
 /// Walks the My Clutter scope with the duplicate finder's skips (spec 014 §4): never `~/Library`
-/// (so never iCloud Drive or `~/Library/CloudStorage`), never hidden items or `.git`, packages as
+/// (so never iCloud Drive or `~/Library/CloudStorage`), never hidden items, `.git` or `node_modules`, packages as
 /// opaque units, iCloud placeholders never read, nothing on the protected floor, no symlinks
 /// followed, no other volume entered. Hard links are returned once.
 public struct ClutterWalker: Sendable {
@@ -94,6 +94,10 @@ public struct ClutterWalker: Sendable {
         PathNormalizer.isInside(path, PathNormalizer.realPath(home.library.path) ?? home.library.path)
     }
 
+    /// Folders other tools manage: removing a copy inside one breaks the project it belongs to.
+    /// `node_modules` is skipped as well as `.git` (a narrowing of spec 014 §4, flagged for John).
+    static let skippedFolderNames: Set<String> = [".git", "node_modules"]
+
     static func isHidden(_ name: String, _ st: FileStatus) -> Bool {
         name.hasPrefix(".") || st.flags & UInt32(UF_HIDDEN) != 0
     }
@@ -112,7 +116,7 @@ public struct ClutterWalker: Sendable {
             guard let st = FileStatus.lstat(path), !st.isSymlink, !Self.isHidden(name, st) else { continue }
             if st.device != device { continue }
             if st.isDirectory {
-                if name == ".git" || skipsFolder(path) { continue }
+                if Self.skippedFolderNames.contains(name) || skipsFolder(path) { continue }
                 if Self.isPackage(name) {
                     guard includePackages, state.seen.insert(st.identity).inserted else { continue }
                     let bytes = TreeMeasure.allocatedBytes(path, device: device, seen: &state.seen)
