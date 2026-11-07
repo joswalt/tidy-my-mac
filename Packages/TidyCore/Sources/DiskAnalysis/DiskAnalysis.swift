@@ -1,5 +1,5 @@
-// Space Lens tree, Large & Old, duplicates (spec 014).
-// Empty in milestone 0; filled in by the milestone that owns it (docs/spec/README.md §7).
+// My Clutter (Large & Old, duplicates, Downloads review) and Space Lens (spec 014, build spec §6.6–6.8).
+// Finds and measures only; removal goes through RuleEngine's ManualRemover with a run log.
 
 /// Namespace marker for the DiskAnalysis library.
 public enum DiskAnalysis {

@@ -63,29 +63,9 @@ public final class Sizer: @unchecked Sendable {
     private func countedBytes(_ path: String, _ st: FileStatus) -> Int64 {
         guard st.isRegularFile else { return st.allocatedBytes }
         if st.linkCount > 1, !seenLinks.insert(st.identity).inserted { return 0 }
-        if let clone = Self.cloneID(path), !seenClones.insert(ItemIdentity(device: st.device, inode: clone)).inserted {
+        if let clone = FileStatus.cloneID(path), !seenClones.insert(ItemIdentity(device: st.device, inode: clone)).inserted {
             return 0
         }
         return st.allocatedBytes
-    }
-
-    /// The APFS clone family id, only for files that share blocks with a clone.
-    static func cloneID(_ path: String) -> UInt64? {
-        var al = attrlist()
-        al.bitmapcount = u_short(ATTR_BIT_MAP_COUNT)
-        al.commonattr = attrgroup_t(ATTR_CMN_RETURNED_ATTRS)
-        al.forkattr = attrgroup_t(ATTR_CMNEXT_CLONEID | ATTR_CMNEXT_EXT_FLAGS)
-        var buf = [UInt8](repeating: 0, count: 64)
-        guard getattrlist(path, &al, &buf, buf.count, UInt32(FSOPT_NOFOLLOW | FSOPT_ATTR_CMN_EXTENDED)) == 0 else { return nil }
-        return buf.withUnsafeBytes { raw -> UInt64? in
-            var off = 4
-            let returned = raw.loadUnaligned(fromByteOffset: off, as: attribute_set_t.self)
-            off += MemoryLayout<attribute_set_t>.size
-            guard returned.forkattr & attrgroup_t(ATTR_CMNEXT_CLONEID) != 0,
-                  returned.forkattr & attrgroup_t(ATTR_CMNEXT_EXT_FLAGS) != 0 else { return nil }
-            let clone = raw.loadUnaligned(fromByteOffset: off, as: UInt64.self)
-            let flags = raw.loadUnaligned(fromByteOffset: off + 8, as: UInt64.self)
-            return flags & UInt64(EF_MAY_SHARE_BLOCKS) != 0 ? clone : nil
-        }
     }
 }
