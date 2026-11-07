@@ -5,11 +5,12 @@ struct MainWindow: View {
     static let id = "main"
 
     @SceneStorage("selectedModule") private var selectedRaw = SidebarModule.smartCare.rawValue
+    @Environment(AppModel.self) private var app
 
     private var selection: Binding<SidebarModule?> {
         Binding(
-            get: { SidebarModule(rawValue: selectedRaw) ?? .smartCare },
-            set: { selectedRaw = ($0 ?? .smartCare).rawValue }
+            get: { app.selectedModule },
+            set: { app.selectedModule = $0 ?? .smartCare; selectedRaw = app.selectedModule.rawValue }
         )
     }
 
@@ -26,9 +27,21 @@ struct MainWindow: View {
             }
             .navigationSplitViewColumnWidth(min: 200, ideal: 220)
         } detail: {
-            ModuleDetail(module: selection.wrappedValue ?? .smartCare)
+            ModuleDetail(module: app.selectedModule)
         }
         .frame(minWidth: 900, minHeight: 600)
+        .toast(app.toast)
+        .onAppear {
+            #if DEBUG
+            if UserDefaults.standard.string(forKey: "TidyModule") != nil { return }
+            #endif
+            app.selectedModule = SidebarModule(rawValue: selectedRaw) ?? .smartCare
+        }
+        .alert("TidyMyMac can't start cleaning", isPresented: .constant(app.loadError != nil)) {
+            Button("Quit") { NSApplication.shared.terminate(nil) }
+        } message: {
+            Text(app.loadError ?? "")
+        }
     }
 
     private func rows(_ modules: [SidebarModule]) -> some View {

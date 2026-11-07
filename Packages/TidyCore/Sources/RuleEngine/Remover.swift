@@ -15,10 +15,13 @@ public protocol TrashMover: Sendable {
 public struct Remover: Sendable {
     public let scanner: RuleScanner
     public let trash: TrashMover
+    /// Unloads launch agents before trashing them; nil in tests (they never call launchctl).
+    public let unloader: LaunchItemUnloader?
 
-    public init(scanner: RuleScanner, trash: TrashMover) {
+    public init(scanner: RuleScanner, trash: TrashMover, unloader: LaunchItemUnloader? = nil) {
         self.scanner = scanner
         self.trash = trash
+        self.unloader = unloader
     }
 
     public struct Outcome: Sendable {
@@ -82,6 +85,9 @@ public struct Remover: Sendable {
                 return RunItem(ruleID: c.ruleID, path: c.path, allocatedBytes: c.allocatedBytes, action: .delete, result: .done)
             case .trash:
                 try TestFence.check(c.path)
+                if rule.category == .launchItem, let unloader {
+                    try unloader.unload(plist: c.path, userID: scanner.home.userID)
+                }
                 let dest = try trash.moveToTrash(c.path)
                 return RunItem(ruleID: c.ruleID, path: c.path, allocatedBytes: c.allocatedBytes, action: .trash, result: .done, trashPath: dest)
             case .operation:
