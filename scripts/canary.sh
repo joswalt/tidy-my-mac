@@ -16,6 +16,7 @@ setup)
   head -c 65536 /dev/urandom > "/Library/Caches/TidyCanary-$d-A/data"
   head -c 65536 /dev/urandom > "/Library/Caches/TidyCanary-$d-B/data"
   echo "canary log" > "/Library/Logs/TidyCanary-$d/canary.log"
+  rm -f "/Library/LaunchAgents/io.github.joswalt.TidyTest.Dummy.plist"
   /usr/libexec/PlistBuddy -c "Add :Label string io.github.joswalt.TidyTest.Dummy" \
     -c "Add :Program string /Library/TidyTest/missing-program" "/Library/LaunchAgents/io.github.joswalt.TidyTest.Dummy.plist" >/dev/null
   : > "$LIST"
