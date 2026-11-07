@@ -53,7 +53,7 @@ For v1.0 there is no previous release, so the full form applies.
 
 ### 5. Throwaway-account real run (spec 017 §5)
 - [ ] `scripts/seed-tidytest.sh` run as `tidytest`.
-- [ ] Tidy Up with defaults, Uninstaller on the dummy app, Trash bins.
+- [ ] Tidy Up with defaults, Uninstaller on "TidyTest Dummy" (in `~/Applications`), Trash bins.
 - [ ] `scripts/verify-tidytest.sh`: all PASS.
 - [ ] Note whether the helper answered `tidytest`: ____
 
