@@ -53,12 +53,14 @@ tidy-my-mac/
 | `SafetyFloor` | library | none | protected floor paths, deny-list names, path normalization and validation (symlinks, bundles). Shared by app and helper so they cannot drift (spec 005 §5, 006 §5) |
 | `HelperProtocol` | library | none | Codable requests/replies, operation enum, protocol version, XPC `@objc` protocol |
 | `HelperCore` | library | `SafetyFloor`, `HelperProtocol` | zones, handles, operations, Trash-to-user + restore ledger; testable without XPC |
-| `RuleEngine` | library | `SafetyFloor` | rule model + loader (from a folder URL), schema/lint checks, matcher, sizing, dry run; Cleanup and Smart Care |
+| `RuleEngine` | library | `SafetyFloor`, `RunLog` | rule model + loader (from a folder URL), schema/lint checks, matcher, sizing, dry run; Cleanup and Smart Care |
 | `AppInventory` | library | `SafetyFloor`, `RuleEngine` | installed apps, leftovers, unused apps, installers, update-feed checks (ticket 013) |
 | `DiskAnalysis` | library | `SafetyFloor` | Space Lens tree, Large & Old, duplicates (ticket 014) |
 | `SystemTasks` | library | `HelperProtocol` | maintenance tasks, login and background items |
 | `Monitors` | library | none | CPU, memory, storage, network sampling (ticket 011), FDA detection (ticket 015) |
 | `RunLog` | library | none | run history and the user-side record of what went where |
+| `TestSupport` | test-only library | `SafetyFloor`, `RuleEngine` | `TestHome`, snapshots, fake guards (added in milestone 1; never linked by the app) |
+| `tidy-rule-lint` | command-line tool | `RuleEngine` | runs the rule loader + linter for `scripts/lint-rules.sh` (added in milestone 1) |
 
 Rules for the split:
 - UI never touches the file system directly; it calls a library.

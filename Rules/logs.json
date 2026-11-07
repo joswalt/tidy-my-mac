@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "log.user",
+      "title": "User logs",
+      "module": "cleanup",
+      "category": "log",
+      "risk": "safe",
+      "removes": "Log files apps write to your Library's Logs folder, including crash reports.",
+      "keeps": "TidyMyMac's own logs.",
+      "notes": "Includes DiagnosticReports. TidyMyMac's log folder is on the protected floor.",
+      "targets": [
+        {
+          "root": "~/Library/Logs",
+          "match": "children"
+        }
+      ],
+      "action": "delete",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "evidence": [
+        "Logs in ~/Library/Logs are diagnostic text written by apps and the system; apps don't read them back to work (observed, macOS 26.7.1)."
+      ],
+      "reviewed": "2026-11-07"
+    }
+  ]
+}

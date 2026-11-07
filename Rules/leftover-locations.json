@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "leftover.user.application-scripts",
+      "root": "~/Library/Application Scripts",
+      "match": "bundleId",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "action": "trash",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "leftover.user.application-support",
+      "root": "~/Library/Application Support",
+      "match": "bundleId",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "action": "trash",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "leftover.user.caches",
+      "root": "~/Library/Caches",
+      "match": "bundleId",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "action": "trash",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "leftover.user.containers",
+      "root": "~/Library/Containers",
+      "match": "bundleId",
+      "privilege": "user",
+      "needsFullDiskAccess": true,
+      "action": "trash",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "leftover.user.group-containers",
+      "root": "~/Library/Group Containers",
+      "match": "bundleId",
+      "privilege": "user",
+      "needsFullDiskAccess": true,
+      "action": "trash",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "leftover.user.httpstorages",
+      "root": "~/Library/HTTPStorages",
+      "match": "bundleId",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "action": "trash",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "leftover.user.launchagents",
+      "root": "~/Library/LaunchAgents",
+      "match": "bundleId",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "action": "trash",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "leftover.user.logs",
+      "root": "~/Library/Logs",
+      "match": "bundleId",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "action": "trash",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "leftover.user.preferences",
+      "root": "~/Library/Preferences",
+      "match": "bundleId",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "action": "trash",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "leftover.user.preferences-byhost",
+      "root": "~/Library/Preferences/ByHost",
+      "match": "bundleId",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "action": "trash",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "leftover.user.saved-application-state",
+      "root": "~/Library/Saved Application State",
+      "match": "bundleId",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "action": "trash",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "leftover.user.webkit",
+      "root": "~/Library/WebKit",
+      "match": "bundleId",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "action": "trash",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    }
+  ]
+}

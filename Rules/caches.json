@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "cache.user.apps",
+      "title": "App caches",
+      "module": "cleanup",
+      "category": "cache",
+      "risk": "safe",
+      "removes": "Cached data apps keep in your Library's Caches folder, such as downloaded images and temporary indexes.",
+      "keeps": "Caches of apps that are running now, Apple's own caches and TidyMyMac's own files.",
+      "notes": "Apps re-create caches as needed. Apple caches are excluded until each one is reviewed on a real Mac.",
+      "targets": [
+        {
+          "root": "~/Library/Caches",
+          "match": "children"
+        }
+      ],
+      "conditions": {
+        "excludeNames": [
+          "com.apple.*",
+          "CloudKit",
+          "FamilyCircle",
+          "GeoServices",
+          "io.github.joswalt.TidyMyMac*"
+        ]
+      },
+      "guards": {
+        "skipIfOwnerAppRunning": true
+      },
+      "action": "delete",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "evidence": [
+        "Apple, File System Programming Guide, 'The Library Directory Stores App-Specific Files': the Caches folder holds data an app can re-create; the system may delete it to free space."
+      ],
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "cache.user.containers",
+      "title": "Sandboxed app caches",
+      "module": "cleanup",
+      "category": "cache",
+      "risk": "safe",
+      "removes": "Cached data sandboxed apps keep inside their containers.",
+      "keeps": "Everything else in each app's container, including its documents and settings.",
+      "notes": "Each container has its own Library/Caches folder. Reading containers needs Full Disk Access.",
+      "targets": [
+        {
+          "root": "~/Library/Containers/*/Data/Library/Caches",
+          "match": "children"
+        }
+      ],
+      "conditions": {
+        "excludeNames": [
+          "com.apple.*",
+          "CloudKit"
+        ]
+      },
+      "action": "delete",
+      "privilege": "user",
+      "needsFullDiskAccess": true,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "evidence": [
+        "Apple, File System Programming Guide, 'The Library Directory Stores App-Specific Files': the Caches folder holds data an app can re-create; the system may delete it to free space."
+      ],
+      "reviewed": "2026-11-07"
+    }
+  ]
+}

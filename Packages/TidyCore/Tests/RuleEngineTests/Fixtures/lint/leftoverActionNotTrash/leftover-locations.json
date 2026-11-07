@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "test.leftover",
+      "root": "~/Library/Caches",
+      "match": "bundleId",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "action": "delete",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    }
+  ]
+}

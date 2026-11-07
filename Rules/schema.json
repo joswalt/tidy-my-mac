@@ -1,0 +1,423 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/joswalt/tidy-my-mac/Rules/schema.json",
+  "title": "TidyMyMac rule file (spec 006 §2-3)",
+  "description": "Documents the format. The app's loader enforces the same shape in code (unknown fields are load errors) and a test keeps this file's enums in step with the Swift enums.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "rules"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "rules": {
+      "type": "array"
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "origin",
+        "license"
+      ],
+      "properties": {
+        "origin": {
+          "type": "string"
+        },
+        "license": {
+          "enum": [
+            "own",
+            "MIT",
+            "Apache-2.0"
+          ]
+        },
+        "ref": {
+          "type": "string"
+        },
+        "changes": {
+          "type": "string"
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "root",
+        "match"
+      ],
+      "properties": {
+        "root": {
+          "type": "string",
+          "pattern": "^(/|~|\\$TMPDIR|\\$DARWIN_USER_CACHE_DIR)"
+        },
+        "match": {
+          "enum": [
+            "self",
+            "children",
+            "glob",
+            "types"
+          ]
+        },
+        "pattern": {
+          "type": "string",
+          "not": {
+            "pattern": "\\*\\*"
+          }
+        },
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "maxDepth": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "kind": {
+          "enum": [
+            "file",
+            "directory",
+            "any"
+          ]
+        }
+      }
+    },
+    "cleanRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "module",
+        "category",
+        "risk",
+        "removes",
+        "keeps",
+        "targets",
+        "action",
+        "privilege",
+        "needsFullDiskAccess",
+        "status",
+        "source"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "module": {
+          "enum": [
+            "cleanup",
+            "applications",
+            "clutter",
+            "performance"
+          ]
+        },
+        "category": {
+          "enum": [
+            "cache",
+            "log",
+            "developer",
+            "ai-model",
+            "backup",
+            "installer",
+            "launch-item"
+          ]
+        },
+        "risk": {
+          "enum": [
+            "safe",
+            "caution",
+            "risky"
+          ]
+        },
+        "removes": {
+          "type": "string"
+        },
+        "keeps": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/target"
+          }
+        },
+        "conditions": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "minAgeDays": {
+              "type": "integer"
+            },
+            "minSizeBytes": {
+              "type": "integer"
+            },
+            "excludeNames": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "owner": {
+              "enum": [
+                "currentUser",
+                "root"
+              ]
+            },
+            "launchProgramMissing": {
+              "type": "boolean"
+            }
+          }
+        },
+        "guards": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "appsNotRunning": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "processesNotRunning": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "skipIfOwnerAppRunning": {
+              "type": "boolean"
+            },
+            "onlyIfAppMissing": {
+              "type": "string"
+            }
+          }
+        },
+        "action": {
+          "enum": [
+            "delete",
+            "trash",
+            "operation"
+          ]
+        },
+        "operationId": {
+          "type": "string"
+        },
+        "privilege": {
+          "enum": [
+            "user",
+            "helper"
+          ]
+        },
+        "zone": {
+          "enum": [
+            "systemCaches",
+            "systemLogs",
+            "rotatedLogs",
+            "launchItems",
+            "libraryLeftovers",
+            "rootApps"
+          ]
+        },
+        "needsFullDiskAccess": {
+          "type": "boolean"
+        },
+        "macOS": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min"
+          ],
+          "properties": {
+            "min": {
+              "type": "string"
+            },
+            "max": {
+              "type": "string"
+            }
+          }
+        },
+        "status": {
+          "enum": [
+            "experimental",
+            "verified"
+          ]
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reviewed": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "leftoverLocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "root",
+        "match",
+        "privilege",
+        "needsFullDiskAccess",
+        "action",
+        "source"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "root": {
+          "type": "string",
+          "pattern": "^(/|~|\\$TMPDIR|\\$DARWIN_USER_CACHE_DIR)"
+        },
+        "match": {
+          "enum": [
+            "bundleId",
+            "appName",
+            "teamId"
+          ]
+        },
+        "maxDepth": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "privilege": {
+          "enum": [
+            "user",
+            "helper"
+          ]
+        },
+        "zone": {
+          "enum": [
+            "systemCaches",
+            "systemLogs",
+            "rotatedLogs",
+            "launchItems",
+            "libraryLeftovers",
+            "rootApps"
+          ]
+        },
+        "needsFullDiskAccess": {
+          "type": "boolean"
+        },
+        "action": {
+          "const": "trash"
+        },
+        "notes": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        },
+        "reviewed": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "protect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "root",
+        "match",
+        "reason",
+        "source"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "root": {
+          "type": "string",
+          "pattern": "^(/|~|\\$TMPDIR|\\$DARWIN_USER_CACHE_DIR)"
+        },
+        "match": {
+          "enum": [
+            "self",
+            "children",
+            "glob"
+          ]
+        },
+        "pattern": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/source"
+        }
+      }
+    },
+    "appOverride": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bundleId"
+      ],
+      "properties": {
+        "bundleId": {
+          "type": "string"
+        },
+        "extraTerms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "excludeTerms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extraPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "excludePaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sharedWith": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

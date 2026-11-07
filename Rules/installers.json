@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "installer.leftovers",
+      "title": "Installer files",
+      "module": "cleanup",
+      "category": "installer",
+      "risk": "caution",
+      "removes": "Disk images and installer packages in your Downloads folder.",
+      "keeps": "Apps you installed from them.",
+      "notes": "Spec 006 also lists ~/Desktop, but the Desktop is on the protected floor for rule-found items, so v1 only looks in Downloads.",
+      "targets": [
+        {
+          "root": "~/Downloads",
+          "match": "types",
+          "types": [
+            "com.apple.disk-image",
+            "com.apple.installer-package-archive"
+          ],
+          "maxDepth": 2
+        }
+      ],
+      "action": "trash",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    }
+  ]
+}
