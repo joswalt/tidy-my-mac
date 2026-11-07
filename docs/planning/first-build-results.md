@@ -2,17 +2,17 @@
 
 Fill in with the first build that includes the helper (milestone 3). Date, macOS version and build number first.
 
-- Date:
-- macOS:
-- TidyMyMac build:
+- Date: 2026-11-07
+- macOS: 26.7.1
+- TidyMyMac build: 1.0 (1), milestone 3 branch
 
 ## 1. Helper (005 §11)
 
 | Check | Result |
 |---|---|
-| Install Helper → Login Items approval → Settings › Helper says "Helper ready" | |
+| Install Helper → Login Items approval → Settings › Helper says "Helper ready" | Pass |
 | Dry run of every zone: Cleanup › Scan shows System caches, System logs, Old system log archives, Broken system login items | |
-| Canary run on systemCaches: `sudo /Users/Shared/TidyMyMacTest/canary.sh setup`, tick only the A canary, the canary log folder and the TidyTest Dummy agent, Clean, then `sudo …/canary.sh check` | |
+| Canary run on systemCaches: `sudo /Users/Shared/TidyMyMacTest/canary.sh setup`, tick only the A canary, the canary log folder and the TidyTest Dummy agent, Clean, then `sudo …/canary.sh check` | Run 1: B was also ticked (a category tick), and the check caught it; the helper removed exactly the 4 items it was sent. Run 2 (16:08): exactly 3 items removed, B untouched, RESULT: PASS. Follow-ups: the confirm now names every admin-rights item; `canary.sh check` no longer reports Data Vault folders (root can't stat them) as gone. |
 | Password dialog: shown once per run? Offers Touch ID? | |
 | Restore the Dummy agent from Health › Run History (it went to your Trash) | |
 | Rebuild + reinstall: helper restarts silently (no new approval) | |

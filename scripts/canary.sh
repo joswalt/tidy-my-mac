@@ -33,7 +33,9 @@ check)
   if [ -e "/Library/Caches/TidyCanary-$d-B/data" ]; then echo "PASS untouched: TidyCanary-$d-B"; else echo "FAIL removed without being ticked: TidyCanary-$d-B"; fail=1; fi
   while IFS= read -r p; do
     case "$p" in *TidyCanary-$d-A|*TidyCanary-$d|*TidyTest.Dummy.plist) continue;; esac
-    [ -e "$p" ] || { echo "CHECK gone since setup (system churn or the run?): $p"; }
+    # Some Apple folders are Data Vaults: even root can't stat them, so look them up in the listing.
+    [ -e "$p" ] || ls -1A "$(dirname "$p")" 2>/dev/null | grep -qxF "$(basename "$p")" \
+      || echo "CHECK gone since setup (system churn or the run?): $p"
   done < "$LIST"
   [ $fail = 0 ] && echo "RESULT: PASS" || echo "RESULT: FAIL"
   ;;
