@@ -30,9 +30,18 @@ struct ShippedRuleSetTests {
         #expect(set.updateOverrides.allSatisfy { !$0.reason.isEmpty })
     }
 
-    @Test func everyRuleShipsExperimental() {
+    /// The rules John verified after a dry run on his Mac (spec 006 §6 step 3; v1.0 release gate).
+    /// Verifying another rule means adding it here in the same reviewed PR.
+    static let verifiedByJohn: Set<String> = [
+        "cache.user.apps", "cache.user.containers", "cache.system", "log.user", "log.system", "log.system.rotated",
+        "dev.xcode.derived-data", "installer.leftovers", "launch.system.broken", "ai.models.ollama",
+    ]
+
+    @Test func onlyReviewedRulesAreVerified() {
         // New rules stay unticked until a dry run on John's Mac (spec 006 §6 step 3).
-        for r in set.cleanRules { #expect(r.status == .experimental, "\(r.id)") }
+        for r in set.cleanRules {
+            #expect(r.status == (Self.verifiedByJohn.contains(r.id) ? .verified : .experimental), "\(r.id)")
+        }
     }
 
     @Test func protectedJSONDenyNamesMatchCode() {

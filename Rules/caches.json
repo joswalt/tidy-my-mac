@@ -34,7 +34,7 @@
       "macOS": {
         "min": "14.0"
       },
-      "status": "experimental",
+      "status": "verified",
       "source": {
         "origin": "own",
         "license": "own"
@@ -71,7 +71,7 @@
       "macOS": {
         "min": "14.0"
       },
-      "status": "experimental",
+      "status": "verified",
       "source": {
         "origin": "own",
         "license": "own"
@@ -108,7 +108,7 @@
       "macOS": {
         "min": "14.0"
       },
-      "status": "experimental",
+      "status": "verified",
       "source": {
         "origin": "own",
         "license": "own"

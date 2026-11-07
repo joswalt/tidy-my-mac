@@ -61,7 +61,8 @@ struct RuleFixtureTests {
         let found = Set(result.candidates.map { relative($0.path, t) })
         for m in spec.mustMatch { #expect(found.contains(m), "\(id) should match \(m); found \(found)") }
         for m in spec.mustNotMatch { #expect(!found.contains(m), "\(id) must not match \(m)") }
-        for c in result.candidates { #expect(!c.selectedByDefault, "experimental rules are never ticked") }
+        // Only safe, verified rules start ticked; experimental ones never do.
+        for c in result.candidates { #expect(c.selectedByDefault == (rule.status == .verified && rule.risk == .safe), "\(id)") }
     }
 }
 
