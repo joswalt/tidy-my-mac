@@ -5,6 +5,7 @@ import SwiftUI
 /// tri-state tick, item rows, a filter and the same live summary as the footer.
 struct ReviewSheet: View {
     @Bindable var session: ScanSession
+    var onDryRun: (() -> Void)? = nil
     let onClean: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var filter = Filter.all
@@ -56,6 +57,11 @@ struct ReviewSheet: View {
             }
             FooterBar(summary: session.summary.line) {
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+                if let onDryRun {
+                    Button("Dry Run") { dismiss(); onDryRun() }
+                        .help("List exactly what would be removed, without changing anything")
+                        .disabled(session.summary.itemCount == 0)
+                }
                 Button(session.summary.itemCount == 0 ? "Clean" : "Clean \(sizeString(session.summary.totalBytes))") { dismiss(); onClean() }
                     .buttonStyle(.borderedProminent)
                     .disabled(session.summary.itemCount == 0)

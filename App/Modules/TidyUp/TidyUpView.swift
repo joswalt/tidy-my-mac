@@ -33,9 +33,14 @@ struct TidyUpView: View {
                 .keyboardShortcut("r")
                 .disabled(session.phase == .scanning || session.phase == .running)
         }
-        .sheet(isPresented: $showReview) { ReviewSheet(session: session) { showConfirm = true } }
+        .sheet(isPresented: $showReview) {
+            ReviewSheet(session: session, onDryRun: { dryRun() }) { showConfirm = true }
+        }
         .cleanConfirm($showConfirm, summary: session.summary, adminItems: session.selected.filter(\.viaHelper)) { session.run(dryRun: false, flushDNS: flushDNS && app.helper.state.isReady) }
     }
+
+    /// Same items and DNS choice as Clean, nothing changed (build spec §2.5).
+    func dryRun() { session.run(dryRun: true, flushDNS: flushDNS && app.helper.state.isReady) }
 
     var idle: some View {
         VStack(spacing: 18) {
@@ -87,6 +92,9 @@ struct TidyUpView: View {
             .padding(20)
         }
         FooterBar(summary: session.summary.line) {
+            Button("Dry Run") { dryRun() }
+                .help("List exactly what Clean would do, without changing anything")
+                .disabled(session.summary.itemCount == 0)
             Button("Review All…") { showReview = true }.disabled(session.candidates.isEmpty)
             Button(session.summary.itemCount == 0 ? "Clean" : "Clean \(sizeString(session.summary.totalBytes))") { showConfirm = true }
                 .buttonStyle(.borderedProminent)

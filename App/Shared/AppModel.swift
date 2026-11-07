@@ -416,7 +416,10 @@ final class ScanSession {
         phase = .running
         Task {
             var extra = extraItems
-            if flushDNS && !dryRun {
+            if flushDNS && dryRun {
+                // Listed so the dry run shows everything Clean would do; the helper isn't asked.
+                extra.append(RunItem(ruleID: "task.flushDNS", path: "", allocatedBytes: 0, action: .operation("flushDNS"), result: .done))
+            } else if flushDNS {
                 var r: RunResult = .done
                 var why: String?
                 do { _ = try await app.helper.send(.flushDNS) } catch { r = .failed; why = "\(error)" }
