@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "test.rule",
+      "title": "Test",
+      "module": "cleanup",
+      "category": "developer",
+      "risk": "caution",
+      "removes": "Test items.",
+      "keeps": "Everything else.",
+      "targets": [],
+      "action": "operation",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "launch.user.broken",
+      "title": "Broken login items",
+      "module": "cleanup",
+      "category": "launch-item",
+      "risk": "caution",
+      "removes": "Launch agents in your Library whose program no longer exists.",
+      "keeps": "Launch agents whose program is still installed, and Apple's own.",
+      "notes": "The plist is moved to the Trash; the app unloads it first (milestone 2).",
+      "targets": [
+        {
+          "root": "~/Library/LaunchAgents",
+          "match": "glob",
+          "pattern": "*.plist",
+          "kind": "file"
+        }
+      ],
+      "conditions": {
+        "launchProgramMissing": true,
+        "excludeNames": [
+          "com.apple.*"
+        ]
+      },
+      "action": "trash",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    }
+  ]
+}

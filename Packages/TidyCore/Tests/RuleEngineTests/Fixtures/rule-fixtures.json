@@ -1,0 +1,283 @@
+{
+  "cache.user.apps": {
+    "create": [
+      {
+        "path": "Library/Caches/com.example.Editor/Cache.db",
+        "size": 4096
+      },
+      {
+        "path": "Library/Caches/org.example.Running/data",
+        "size": 100
+      },
+      {
+        "path": "Library/Caches/com.apple.Safari/x"
+      },
+      {
+        "path": "Library/Caches/io.github.joswalt.TidyMyMac/x"
+      },
+      {
+        "symlink": "Library/Caches/escape",
+        "to": "Documents"
+      },
+      {
+        "path": "Documents/secret.txt"
+      }
+    ],
+    "running": [
+      "org.example.Running"
+    ],
+    "mustMatch": [
+      "Library/Caches/com.example.Editor"
+    ],
+    "mustNotMatch": [
+      "Library/Caches/org.example.Running",
+      "Library/Caches/com.apple.Safari",
+      "Library/Caches/io.github.joswalt.TidyMyMac",
+      "Library/Caches/escape",
+      "Documents/secret.txt"
+    ]
+  },
+  "cache.user.containers": {
+    "create": [
+      {
+        "path": "Library/Containers/com.example.Sandboxed/Data/Library/Caches/blob",
+        "size": 2048
+      },
+      {
+        "path": "Library/Containers/com.example.Sandboxed/Data/Documents/mine.txt"
+      },
+      {
+        "path": "Library/Containers/com.apple.Notes/Data/Library/Caches/x"
+      }
+    ],
+    "mustMatch": [
+      "Library/Containers/com.example.Sandboxed/Data/Library/Caches/blob"
+    ],
+    "mustNotMatch": [
+      "Library/Containers/com.example.Sandboxed/Data/Documents/mine.txt",
+      "Library/Containers/com.apple.Notes/Data/Library/Caches/x"
+    ]
+  },
+  "log.user": {
+    "create": [
+      {
+        "path": "Library/Logs/DiagnosticReports/App.crash"
+      },
+      {
+        "path": "Library/Logs/TidyMyMac/run.log"
+      },
+      {
+        "path": "Library/Preferences/com.example.plist"
+      }
+    ],
+    "mustMatch": [
+      "Library/Logs/DiagnosticReports"
+    ],
+    "mustNotMatch": [
+      "Library/Logs/TidyMyMac",
+      "Library/Preferences/com.example.plist"
+    ]
+  },
+  "dev.xcode.derived-data": {
+    "create": [
+      {
+        "path": "Library/Developer/Xcode/DerivedData/MyApp-abc/Build/x",
+        "size": 8192
+      },
+      {
+        "path": "Library/Developer/Xcode/Archives/2026-11-07/MyApp.xcarchive/Info.plist"
+      }
+    ],
+    "mustMatch": [
+      "Library/Developer/Xcode/DerivedData/MyApp-abc"
+    ],
+    "mustNotMatch": [
+      "Library/Developer/Xcode/Archives/2026-11-07"
+    ]
+  },
+  "dev.xcode.previews": {
+    "create": [
+      {
+        "path": "Library/Developer/Xcode/UserData/Previews/Simulator Devices/x"
+      },
+      {
+        "path": "Library/Developer/Xcode/UserData/KeyBindings/custom.idekeybindings"
+      }
+    ],
+    "mustMatch": [
+      "Library/Developer/Xcode/UserData/Previews/Simulator Devices"
+    ],
+    "mustNotMatch": [
+      "Library/Developer/Xcode/UserData/KeyBindings/custom.idekeybindings"
+    ]
+  },
+  "dev.xcode.device-support": {
+    "create": [
+      {
+        "path": "Library/Developer/Xcode/iOS DeviceSupport/iPhone15,2 18.0/Symbols/x"
+      },
+      {
+        "path": "Library/Developer/Xcode/watchOS DeviceSupport/Watch 11.0/Symbols/x"
+      },
+      {
+        "path": "Library/Developer/Xcode/Templates/My.xctemplate/x"
+      }
+    ],
+    "mustMatch": [
+      "Library/Developer/Xcode/iOS DeviceSupport/iPhone15,2 18.0",
+      "Library/Developer/Xcode/watchOS DeviceSupport/Watch 11.0"
+    ],
+    "mustNotMatch": [
+      "Library/Developer/Xcode/Templates/My.xctemplate"
+    ]
+  },
+  "dev.xcode.archives": {
+    "create": [
+      {
+        "path": "Library/Developer/Xcode/Archives/2026-11-07/MyApp.xcarchive/Info.plist"
+      },
+      {
+        "path": "Library/Developer/Xcode/DerivedData/MyApp-abc/x"
+      }
+    ],
+    "mustMatch": [
+      "Library/Developer/Xcode/Archives/2026-11-07"
+    ],
+    "mustNotMatch": [
+      "Library/Developer/Xcode/DerivedData/MyApp-abc"
+    ]
+  },
+  "ai.models.ollama": {
+    "create": [
+      {
+        "path": ".ollama/models/blobs/sha256-1",
+        "size": 4096
+      },
+      {
+        "path": ".ollama/id_ed25519"
+      }
+    ],
+    "mustMatch": [
+      ".ollama/models"
+    ],
+    "mustNotMatch": [
+      ".ollama/id_ed25519",
+      ".ollama/models/blobs"
+    ]
+  },
+  "ai.models.lmstudio": {
+    "create": [
+      {
+        "path": ".lmstudio/models/org/model.gguf",
+        "size": 4096
+      },
+      {
+        "path": ".lmstudio/settings.json"
+      }
+    ],
+    "mustMatch": [
+      ".lmstudio/models"
+    ],
+    "mustNotMatch": [
+      ".lmstudio/settings.json"
+    ]
+  },
+  "ai.models.huggingface": {
+    "create": [
+      {
+        "path": ".cache/huggingface/hub/models--org--name/blobs/x",
+        "size": 4096
+      },
+      {
+        "path": ".cache/huggingface/hub/version.txt"
+      },
+      {
+        "path": ".cache/huggingface/token"
+      }
+    ],
+    "mustMatch": [
+      ".cache/huggingface/hub/models--org--name"
+    ],
+    "mustNotMatch": [
+      ".cache/huggingface/hub/version.txt",
+      ".cache/huggingface/token"
+    ]
+  },
+  "backup.ios": {
+    "create": [
+      {
+        "path": "Library/Application Support/MobileSync/Backup/00008110-ABC/Manifest.db",
+        "size": 4096
+      },
+      {
+        "path": "Library/Application Support/MobileSync/Backup/.DS_Store"
+      }
+    ],
+    "mustMatch": [
+      "Library/Application Support/MobileSync/Backup/00008110-ABC"
+    ],
+    "mustNotMatch": [
+      "Library/Application Support/MobileSync/Backup/.DS_Store"
+    ]
+  },
+  "installer.leftovers": {
+    "create": [
+      {
+        "path": "Downloads/Tool-1.2.dmg",
+        "size": 4096
+      },
+      {
+        "path": "Downloads/Older/Setup.pkg",
+        "size": 4096
+      },
+      {
+        "path": "Downloads/a/b/c/Deep.dmg"
+      },
+      {
+        "path": "Downloads/report.pdf"
+      },
+      {
+        "path": "Desktop/Other.dmg"
+      }
+    ],
+    "mustMatch": [
+      "Downloads/Tool-1.2.dmg",
+      "Downloads/Older/Setup.pkg"
+    ],
+    "mustNotMatch": [
+      "Downloads/report.pdf",
+      "Downloads/a/b/c/Deep.dmg",
+      "Desktop/Other.dmg"
+    ]
+  },
+  "launch.user.broken": {
+    "create": [
+      {
+        "path": "Library/LaunchAgents/com.example.gone.plist",
+        "plistProgram": "Applications/Gone.app/Contents/MacOS/Gone"
+      },
+      {
+        "path": "Library/LaunchAgents/com.example.present.plist",
+        "plistProgram": "bin/present-tool"
+      },
+      {
+        "path": "bin/present-tool"
+      },
+      {
+        "path": "Library/LaunchAgents/com.apple.something.plist",
+        "plistProgram": "missing/apple"
+      },
+      {
+        "path": "Library/LaunchAgents/readme.txt"
+      }
+    ],
+    "mustMatch": [
+      "Library/LaunchAgents/com.example.gone.plist"
+    ],
+    "mustNotMatch": [
+      "Library/LaunchAgents/com.example.present.plist",
+      "Library/LaunchAgents/com.apple.something.plist",
+      "Library/LaunchAgents/readme.txt"
+    ]
+  }
+}

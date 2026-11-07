@@ -1,5 +1,4 @@
-// Rule model and loader, lint checks, matcher, sizing, dry run (spec 006).
-// Empty in milestone 0; filled in by the milestone that owns it (docs/spec/README.md §7).
+// RuleEngine: rule model and loader, lint, matcher, sizing, dry run and the remover (spec 006).
 
 /// Namespace marker for the RuleEngine library.
 public enum RuleEngine {

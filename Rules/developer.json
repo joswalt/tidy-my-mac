@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "dev.xcode.derived-data",
+      "title": "Xcode build data",
+      "module": "cleanup",
+      "category": "cache",
+      "risk": "safe",
+      "removes": "Intermediate build products and indexes for Xcode projects.",
+      "keeps": "Your projects, archives and simulators.",
+      "notes": "Xcode rebuilds this on the next build. Skipped while Xcode is open.",
+      "targets": [
+        {
+          "root": "~/Library/Developer/Xcode/DerivedData",
+          "match": "children"
+        }
+      ],
+      "guards": {
+        "appsNotRunning": [
+          "com.apple.dt.Xcode"
+        ]
+      },
+      "action": "delete",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "evidence": [
+        "Xcode re-creates DerivedData on the next build; 'Clean Build Folder' removes the same data."
+      ],
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "dev.xcode.previews",
+      "title": "Xcode preview data",
+      "module": "cleanup",
+      "category": "cache",
+      "risk": "caution",
+      "removes": "Data Xcode keeps to show SwiftUI previews.",
+      "keeps": "Your projects and their source files.",
+      "notes": "Xcode rebuilds previews on demand, which takes time.",
+      "targets": [
+        {
+          "root": "~/Library/Developer/Xcode/UserData/Previews",
+          "match": "children"
+        }
+      ],
+      "guards": {
+        "appsNotRunning": [
+          "com.apple.dt.Xcode"
+        ]
+      },
+      "action": "delete",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "dev.xcode.device-support",
+      "title": "Device support files",
+      "module": "cleanup",
+      "category": "cache",
+      "risk": "caution",
+      "removes": "Debug symbols Xcode copied from iPhones, iPads, watches and other devices you connected.",
+      "keeps": "Everything else in Xcode's folder.",
+      "notes": "Xcode copies them again the next time you connect that device, which can take several minutes.",
+      "targets": [
+        {
+          "root": "~/Library/Developer/Xcode/* DeviceSupport",
+          "match": "children"
+        }
+      ],
+      "guards": {
+        "appsNotRunning": [
+          "com.apple.dt.Xcode"
+        ]
+      },
+      "action": "delete",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "dev.xcode.archives",
+      "title": "Xcode archives",
+      "module": "cleanup",
+      "category": "developer",
+      "risk": "risky",
+      "removes": "Archived builds of your apps.",
+      "keeps": "Your projects.",
+      "notes": "Archives hold the symbols needed to read crash reports for shipped builds; only remove ones you no longer need.",
+      "targets": [
+        {
+          "root": "~/Library/Developer/Xcode/Archives",
+          "match": "children"
+        }
+      ],
+      "action": "trash",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "dev.simulators.unavailable",
+      "title": "Unavailable simulators",
+      "module": "cleanup",
+      "category": "developer",
+      "risk": "caution",
+      "removes": "Simulators for runtimes that are no longer installed.",
+      "keeps": "Simulators you can still run.",
+      "notes": "Runs 'xcrun simctl delete unavailable' through the operation allow-list.",
+      "targets": [],
+      "guards": {
+        "appsNotRunning": [
+          "com.apple.dt.Xcode",
+          "com.apple.iphonesimulator"
+        ]
+      },
+      "action": "operation",
+      "operationId": "simctl.deleteUnavailable",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "protect.deny.apple",
+      "root": "/Library",
+      "match": "glob",
+      "pattern": "*/Apple",
+      "reason": "Apple folders in /Library belong to macOS (spec 005 \u00a75.1)",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    },
+    {
+      "id": "protect.deny.developer",
+      "root": "/Library",
+      "match": "glob",
+      "pattern": "*/Developer",
+      "reason": "Developer folders in /Library belong to macOS (spec 005 \u00a75.1)",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    },
+    {
+      "id": "protect.deny.crashreporter",
+      "root": "/Library",
+      "match": "glob",
+      "pattern": "*/CrashReporter",
+      "reason": "CrashReporter folders in /Library belong to macOS (spec 005 \u00a75.1)",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    },
+    {
+      "id": "protect.deny.ipod",
+      "root": "/Library",
+      "match": "glob",
+      "pattern": "*/iPod",
+      "reason": "iPod folders in /Library belong to macOS (spec 005 \u00a75.1)",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    },
+    {
+      "id": "protect.deny.script-editor",
+      "root": "/Library",
+      "match": "glob",
+      "pattern": "*/Script Editor",
+      "reason": "Script Editor folders in /Library belong to macOS (spec 005 \u00a75.1)",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    },
+    {
+      "id": "protect.deny.audio",
+      "root": "/Library",
+      "match": "glob",
+      "pattern": "*/Audio",
+      "reason": "Audio folders in /Library belong to macOS (spec 005 \u00a75.1)",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    },
+    {
+      "id": "protect.deny.colorsync",
+      "root": "/Library",
+      "match": "glob",
+      "pattern": "*/ColorSync",
+      "reason": "ColorSync folders in /Library belong to macOS (spec 005 \u00a75.1)",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    },
+    {
+      "id": "protect.deny.fonts",
+      "root": "/Library",
+      "match": "glob",
+      "pattern": "*/Fonts",
+      "reason": "Fonts folders in /Library belong to macOS (spec 005 \u00a75.1)",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    },
+    {
+      "id": "protect.deny.keyboard-layouts",
+      "root": "/Library",
+      "match": "glob",
+      "pattern": "*/Keyboard Layouts",
+      "reason": "Keyboard Layouts folders in /Library belong to macOS (spec 005 \u00a75.1)",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    },
+    {
+      "id": "protect.deny.input-methods",
+      "root": "/Library",
+      "match": "glob",
+      "pattern": "*/Input Methods",
+      "reason": "Input Methods folders in /Library belong to macOS (spec 005 \u00a75.1)",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    }
+  ]
+}

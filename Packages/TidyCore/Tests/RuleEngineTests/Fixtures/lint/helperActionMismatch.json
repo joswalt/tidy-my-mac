@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "test.rule",
+      "title": "Test",
+      "module": "cleanup",
+      "category": "cache",
+      "risk": "caution",
+      "removes": "Test items.",
+      "keeps": "Everything else.",
+      "targets": [
+        {
+          "root": "/Library/LaunchAgents",
+          "match": "children"
+        }
+      ],
+      "action": "delete",
+      "privilege": "helper",
+      "needsFullDiskAccess": false,
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "zone": "launchItems"
+    }
+  ]
+}

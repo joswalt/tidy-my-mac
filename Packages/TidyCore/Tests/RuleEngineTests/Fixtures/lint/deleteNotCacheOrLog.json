@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "test.rule",
+      "title": "Test",
+      "module": "cleanup",
+      "category": "developer",
+      "risk": "caution",
+      "removes": "Test items.",
+      "keeps": "Everything else.",
+      "targets": [
+        {
+          "root": "~/Library/Caches",
+          "match": "children"
+        }
+      ],
+      "action": "delete",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "test.protect",
+      "root": "/Library",
+      "match": "glob",
+      "reason": "test",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "rules": [
+    {
+      "id": "ai.models.ollama",
+      "title": "Ollama models",
+      "module": "cleanup",
+      "category": "ai-model",
+      "risk": "risky",
+      "removes": "All models downloaded by Ollama.",
+      "keeps": "Ollama itself and its settings.",
+      "notes": "Models can be large and slow to download again. Review only.",
+      "targets": [
+        {
+          "root": "~/.ollama/models",
+          "match": "self"
+        }
+      ],
+      "action": "trash",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "ai.models.lmstudio",
+      "title": "LM Studio models",
+      "module": "cleanup",
+      "category": "ai-model",
+      "risk": "risky",
+      "removes": "All models downloaded by LM Studio.",
+      "keeps": "LM Studio itself and its settings.",
+      "notes": "Models can be large and slow to download again. Review only.",
+      "targets": [
+        {
+          "root": "~/.lmstudio/models",
+          "match": "self"
+        }
+      ],
+      "action": "trash",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "ai.models.huggingface",
+      "title": "Hugging Face models",
+      "module": "cleanup",
+      "category": "ai-model",
+      "risk": "risky",
+      "removes": "Models and datasets cached by Hugging Face tools, one item per model.",
+      "keeps": "Your Hugging Face settings and tokens.",
+      "notes": "Each folder is one downloaded model or dataset. Review only.",
+      "targets": [
+        {
+          "root": "~/.cache/huggingface/hub",
+          "match": "children",
+          "kind": "directory"
+        }
+      ],
+      "action": "trash",
+      "privilege": "user",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
+    }
+  ]
+}
