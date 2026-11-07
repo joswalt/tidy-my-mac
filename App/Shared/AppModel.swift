@@ -33,6 +33,7 @@ final class AppModel {
     /// Opens (or brings forward) the main window; set by a view that has `openWindow`.
     var openMainWindow: (() -> Void)?
     var healthTab: HealthView.Tab = .overview
+    var performanceTab: PerformanceView.Tab = .maintenance
     /// A Cleanup category to show when Cleanup opens (the Trash notification uses it).
     var cleanupFocus: String?
 
@@ -173,6 +174,22 @@ final class AppModel {
     func open(_ module: SidebarModule) {
         selectedModule = module
         showWindow()
+    }
+
+    /// Opens a module at a tab or Cleanup category (My Tools, spec 007 §2). Cleanup scans first if it
+    /// has nothing to show; scans are read-only. Nothing here removes anything.
+    func go(to destination: ToolDestination) {
+        switch destination {
+        case .cleanup(let ruleID):
+            cleanupFocus = ruleID
+            if cleanup.report == nil && cleanup.phase == .idle { cleanup.scan() }
+        case .applications(let tab): applications.tab = tab
+        case .clutter(let tab): clutter.tab = tab
+        case .performance(let tab): performanceTab = tab
+        case .health(let tab): healthTab = tab
+        case .spaceLens, .protection: break
+        }
+        selectedModule = destination.module
     }
 
     /// Opens Smart Care and starts the scan (scans delete nothing).

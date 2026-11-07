@@ -11,18 +11,19 @@ struct PerformanceView: View {
         var id: String { rawValue }
     }
 
-    @State private var tab = Tab.maintenance
+    @Environment(AppModel.self) private var app
 
     var body: some View {
+        @Bindable var app = app
         Group {
-            switch tab {
+            switch app.performanceTab {
             case .maintenance: MaintenanceView()
             case .loginItems: LoginItemsView()
             case .backgroundItems: BackgroundItemsView()
             }
         }
         .toolbar {
-            Picker("View", selection: $tab) { ForEach(Tab.allCases) { Text($0.rawValue).tag($0) } }
+            Picker("View", selection: $app.performanceTab) { ForEach(Tab.allCases) { Text($0.rawValue).tag($0) } }
                 .pickerStyle(.segmented)
         }
     }
