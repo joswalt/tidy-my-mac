@@ -54,6 +54,8 @@ public struct RuleScanResult: Sendable {
 
 public struct ScanReport: Sendable {
     public let results: [RuleScanResult]
+
+    public init(results: [RuleScanResult]) { self.results = results }
     public var candidates: [Candidate] { results.flatMap(\.candidates) }
     public var skipped: [SkippedItem] { results.flatMap(\.skipped) }
     public var totalBytes: Int64 { results.reduce(0) { $0 + $1.totalBytes } }
