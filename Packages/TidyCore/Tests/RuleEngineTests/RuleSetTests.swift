@@ -24,6 +24,12 @@ struct ShippedRuleSetTests {
         #expect(!set.cleanRules.isEmpty)
     }
 
+    @Test func updateOverridesLoad() {
+        // MySQL Workbench reports 8.0.47.CE; the cask's 8.0.47 read as a false update.
+        #expect(set.updateOverrides.map(\.bundleId).contains("com.oracle.workbench.MySQLWorkbench"))
+        #expect(set.updateOverrides.allSatisfy { !$0.reason.isEmpty })
+    }
+
     @Test func everyRuleShipsExperimental() {
         // New rules stay unticked until a dry run on John's Mac (spec 006 §6 step 3).
         for r in set.cleanRules { #expect(r.status == .experimental, "\(r.id)") }

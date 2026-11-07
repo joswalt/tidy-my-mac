@@ -48,7 +48,8 @@ enum CompositionRoot {
         let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         return AppServices(catalog: AppCatalog(home: home, signatures: SystemAppSignatures(), usage: SpotlightAppUsage()),
                            signatures: SystemAppSignatures(), receipts: SystemPackageReceipts(),
-                           fetcher: URLSessionFeedFetcher(appVersion: short), cache: UpdateCache(home: home))
+                           fetcher: URLSessionFeedFetcher(appVersion: short), cache: UpdateCache(home: home),
+                           caskroom: URL(fileURLWithPath: "/opt/homebrew/Caskroom", isDirectory: true))
     }
 }
 
@@ -59,6 +60,8 @@ struct AppServices: Sendable {
     let receipts: PackageReceipts
     let fetcher: FeedFetcher
     let cache: UpdateCache
+    /// Homebrew's Caskroom (Apple Silicon prefix), read for the `brew upgrade` hint.
+    let caskroom: URL
 }
 
 

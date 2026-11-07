@@ -53,4 +53,4 @@ Homebrew catalogue: `https://formulae.brew.sh/api/cask.json`, cached in `~/Libra
 
 ## 7. Display
 
-Row: icon, name, `current → available` (short versions), source badge (Sparkle / Electron / Homebrew / App Store), release-notes link when present, **Open App**. Health shows the count only (spec 012). Smart Care's Applications card links the count.
+Row: icon, name, `current → available` (short versions), source badge (Sparkle / Electron / Homebrew / App Store), release-notes link when present, **Open App**. When Homebrew installed the app (its cask token is a folder in `/opt/homebrew/Caskroom`) and an update is available, the row also shows "Update with `brew upgrade --cask <token>`" with a copy button. TidyMyMac never runs it. Health shows the count only (spec 012). Smart Care's Applications card links the count.

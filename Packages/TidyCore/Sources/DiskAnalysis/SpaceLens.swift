@@ -86,14 +86,25 @@ public final class SpaceNode: @unchecked Sendable, Identifiable {
 /// Measures a folder or volume for Space Lens: allocated sizes, hard links once, packages as
 /// leaves, never following links and never entering another mounted volume. Runs as the user,
 /// so unreadable folders become one "Not readable" block per folder, never an error.
+///
+/// Fast on big folders: each folder is read with `getattrlistbulk` (no `lstat` per file), and a
+/// small pool of threads reads folders and packages side by side, at any depth. A folder is
+/// finished (sorted, small files lumped) once all its subfolders are. Hard links are settled
+/// after the walk, so the result never depends on thread timing: the first path keeps the bytes.
 public struct SpaceScanner: Sendable {
     public let floor: ProtectedFloor
     /// Files kept one by one per folder; the rest become one "smaller files" block.
     public let filesPerFolder: Int
+    /// Threads reading folders at once. Reading metadata waits on the disk more than the CPU,
+    /// so a few more than the core count.
+    public let threads: Int
 
-    public init(floor: ProtectedFloor, filesPerFolder: Int = 200) {
+    public static var defaultThreads: Int { min(16, max(4, ProcessInfo.processInfo.activeProcessorCount * 2)) }
+
+    public init(floor: ProtectedFloor, filesPerFolder: Int = 200, threads: Int = SpaceScanner.defaultThreads) {
         self.floor = floor
         self.filesPerFolder = filesPerFolder
+        self.threads = max(1, threads)
     }
 
     public struct Progress: Sendable {
@@ -101,24 +112,47 @@ public struct SpaceScanner: Sendable {
         public var items: Int
     }
 
-    final class State {
-        var seenLinks: Set<ItemIdentity> = []
-        var progress = Progress(bytes: 0, items: 0)
-        var lastReport = Date.distantPast
+    /// A hard-linked file seen during the walk, and the block that counted its bytes.
+    struct LinkClaim {
+        let path: String
+        let bytes: Int64
+        let holder: SpaceNode
+    }
+
+    /// Shared by the walking threads; every field behind `lock`.
+    final class State: @unchecked Sendable {
+        private let lock = NSLock()
+        private var progress = Progress(bytes: 0, items: 0)
+        private var lastReport = Date.distantPast
+        private var links: [ItemIdentity: [LinkClaim]] = [:]
         let report: (@Sendable (Progress) -> Void)?
         let isCancelled: @Sendable () -> Bool
         init(report: (@Sendable (Progress) -> Void)?, isCancelled: @escaping @Sendable () -> Bool) {
             self.report = report
             self.isCancelled = isCancelled
         }
-        func tick(_ bytes: Int64) {
+
+        func tick(bytes: Int64, items: Int) {
+            lock.lock()
             progress.bytes += bytes
-            progress.items += 1
-            if let report, progress.items % 512 == 0, Date().timeIntervalSince(lastReport) > 0.2 {
+            progress.items += items
+            var snapshot: Progress?
+            if report != nil, Date().timeIntervalSince(lastReport) > 0.2 {
                 lastReport = Date()
-                report(progress)
+                snapshot = progress
             }
+            lock.unlock()
+            if let snapshot { report?(snapshot) }
         }
+
+        func claim(_ identity: ItemIdentity, _ claim: LinkClaim) {
+            lock.lock()
+            links[identity, default: []].append(claim)
+            lock.unlock()
+        }
+
+        var current: Progress { lock.withLock { progress } }
+        var allLinks: [ItemIdentity: [LinkClaim]] { lock.withLock { links } }
     }
 
     /// nil when the target isn't a readable folder. With `accountForVolume`, a scan of a volume's
@@ -131,65 +165,203 @@ public struct SpaceScanner: Sendable {
         let state = State(report: progress, isCancelled: isCancelled)
         let name = real == "/" ? "Macintosh HD" : (real as NSString).lastPathComponent
         let root = SpaceNode(name: name, path: real, kind: .folder, identity: st.identity, allocatedBytes: 0)
-        guard fill(root, st, state) else { return nil }
+        let walk = Walk(scanner: self, state: state)
+        guard walk.run(root: Folder(node: root, ownBytes: st.allocatedBytes, device: st.device, parent: nil, index: 0)),
+              !state.isCancelled() else { return nil }
+        Self.settleHardLinks(state.allLinks)
         if accountForVolume, Volumes.isMountPoint(real), let used = Volumes.usedBytes(real) {
             let missing = used - root.allocatedBytes
             if missing > used / 100 { addUnreadable(to: root, bytes: missing, count: 0) }
         }
-        progress?(state.progress)
+        progress?(state.current)
         return state.isCancelled() ? nil : root
     }
 
-    /// Reads a folder into `node`. false when it can't be opened.
-    @discardableResult
-    func fill(_ node: SpaceNode, _ st: FileStatus, _ state: State) -> Bool {
-        guard let names = DirectoryReader.open(node.path) else { return false }
-        node.allocatedBytes = st.allocatedBytes
-        var folders: [SpaceNode] = []
+    /// A folder being filled. Its subfolders and packages are separate jobs; when the last one
+    /// reports back, the folder is finished and reports to its own parent.
+    final class Folder: @unchecked Sendable {
+        let node: SpaceNode
+        let ownBytes: Int64
+        let device: Int32
+        let parent: Folder?
+        /// This folder's place in its parent's `subjobs`.
+        let index: Int
+        // Set while reading, before any subjob starts; then only `opened`/`pending` change, under `lock`.
         var files: [SpaceNode] = []
+        var linked: [(node: SpaceNode, identity: ItemIdentity)] = []
+        var subjobs: [SpaceNode] = []
+        var subjobBytes: [Int64] = []
+        var items = 0
+        var opened: [Bool] = []
+        var pending = 0
+        let lock = NSLock()
+
+        init(node: SpaceNode, ownBytes: Int64, device: Int32, parent: Folder?, index: Int) {
+            self.node = node; self.ownBytes = ownBytes; self.device = device; self.parent = parent; self.index = index
+        }
+    }
+
+    enum Job {
+        case folder(Folder)
+        case package(SpaceNode, ownBytes: Int64, device: Int32, parent: Folder, index: Int)
+    }
+
+    /// The worker pool for one scan: a LIFO stack of jobs (depth first, so memory stays small).
+    final class Walk: @unchecked Sendable {
+        let scanner: SpaceScanner
+        let state: State
+        private let condition = NSCondition()
+        private var stack: [Job] = []
+        private var finished = false
+        private var rootOpened = false
+
+        init(scanner: SpaceScanner, state: State) { self.scanner = scanner; self.state = state }
+
+        /// Runs the walk to the end. false when the root couldn't be read.
+        func run(root: Folder) -> Bool {
+            push([.folder(root)])
+            let group = DispatchGroup()
+            for _ in 0..<scanner.threads {
+                group.enter()
+                let t = Thread { [self] in
+                    work()
+                    group.leave()
+                }
+                t.qualityOfService = .userInitiated
+                t.stackSize = 4 << 20
+                t.start()
+            }
+            group.wait()
+            return rootOpened
+        }
+
+        private func push(_ jobs: [Job]) {
+            guard !jobs.isEmpty else { return }
+            condition.lock()
+            stack.append(contentsOf: jobs.reversed())
+            condition.broadcast()
+            condition.unlock()
+        }
+
+        private func work() {
+            while true {
+                condition.lock()
+                while stack.isEmpty && !finished { condition.wait() }
+                if finished { condition.unlock(); return }
+                let job = stack.removeLast()
+                condition.unlock()
+                switch job {
+                case .folder(let f): read(f)
+                case .package(let leaf, let own, let device, let parent, let index):
+                    var claims: [(ItemIdentity, String, Int64)] = []
+                    leaf.allocatedBytes = own + SpaceScanner.measureContents(leaf.path, device: device, claims: &claims, state: state)
+                    for (identity, path, bytes) in claims { state.claim(identity, LinkClaim(path: path, bytes: bytes, holder: leaf)) }
+                    state.tick(bytes: leaf.allocatedBytes, items: 1)
+                    childDone(parent, index: index, opened: true)
+                }
+            }
+        }
+
+        private func read(_ f: Folder) {
+            guard let entries = state.isCancelled() ? [] : BulkDirectory.read(f.node.path) else {
+                guard let parent = f.parent else { return finish(opened: false) }
+                return childDone(parent, index: f.index, opened: false)
+            }
+            var jobs: [Job] = []
+            var fileBytes: Int64 = 0
+            for e in entries {
+                let path = f.node.path == "/" ? "/" + e.name : f.node.path + "/" + e.name
+                f.items += 1
+                if e.isDirectory {
+                    // Another volume mounted here (/Volumes/…, /System/Volumes/…): not ours to count.
+                    // A firmlink (/Users on the Data volume) changes device without being a mount point.
+                    if e.identity.device != f.device && Volumes.isMountPoint(path) { continue }
+                    let index = f.subjobs.count
+                    if ClutterWalker.isPackage(e.name) {
+                        let leaf = SpaceNode(name: e.name, path: path, kind: .package, identity: e.identity, allocatedBytes: 0)
+                        f.subjobs.append(leaf)
+                        jobs.append(.package(leaf, ownBytes: e.allocatedBytes, device: e.identity.device, parent: f, index: index))
+                    } else {
+                        let child = SpaceNode(name: e.name, path: path, kind: .folder, identity: e.identity, allocatedBytes: 0)
+                        f.subjobs.append(child)
+                        jobs.append(.folder(Folder(node: child, ownBytes: e.allocatedBytes, device: e.identity.device, parent: f, index: index)))
+                    }
+                    f.subjobBytes.append(e.allocatedBytes)
+                } else {
+                    let file = SpaceNode(name: e.name, path: path, kind: .file, identity: e.identity, allocatedBytes: e.allocatedBytes)
+                    f.files.append(file)
+                    fileBytes += e.allocatedBytes
+                    if e.isRegularFile && e.linkCount > 1 { f.linked.append((file, e.identity)) }
+                }
+            }
+            state.tick(bytes: fileBytes, items: f.files.count)
+            f.opened = [Bool](repeating: false, count: jobs.count)
+            f.pending = jobs.count
+            if jobs.isEmpty { complete(f) } else { push(jobs) }
+        }
+
+        private func childDone(_ parent: Folder, index: Int, opened: Bool) {
+            parent.lock.lock()
+            parent.opened[index] = opened
+            parent.pending -= 1
+            let last = parent.pending == 0
+            parent.lock.unlock()
+            if last { complete(parent) }
+        }
+
+        /// All of `f`'s subjobs are done: build its children and report up.
+        private func complete(_ f: Folder) {
+            scanner.finish(f, state: state)
+            if let parent = f.parent { childDone(parent, index: f.index, opened: true) } else { finish(opened: true) }
+        }
+
+        private func finish(opened: Bool) {
+            condition.lock()
+            rootOpened = opened
+            finished = true
+            condition.broadcast()
+            condition.unlock()
+        }
+    }
+
+    /// Builds a folder's children once its subfolders are measured: largest first, files past
+    /// `filesPerFolder` lumped, unreadable subfolders in one block.
+    func finish(_ f: Folder, state: State) {
+        let node = f.node
+        node.allocatedBytes = f.ownBytes
+        var files = f.files
+        var folders: [SpaceNode] = []
         var unreadable = 0
         var unreadableBytes: Int64 = 0
-        var items = 0
-        for name in names {
-            if state.isCancelled() { return true }
-            let path = node.path == "/" ? "/" + name : node.path + "/" + name
-            guard let cst = FileStatus.lstat(path) else { continue }
-            items += 1
-            if cst.isDirectory {
-                // Another volume mounted here (/Volumes/…, /System/Volumes/…): not ours to count.
-                // A firmlink (/Users on the Data volume) changes device without being a mount point.
-                if cst.device != st.device && Volumes.isMountPoint(path) { continue }
-                if ClutterWalker.isPackage(name) {
-                    var seen = state.seenLinks
-                    let bytes = TreeMeasure.allocatedBytes(path, device: cst.device, seen: &seen)
-                    state.seenLinks = seen
-                    let leaf = SpaceNode(name: name, path: path, kind: .package, identity: cst.identity, allocatedBytes: bytes)
-                    files.append(leaf)
-                    state.tick(bytes)
-                    continue
-                }
-                let child = SpaceNode(name: name, path: path, kind: .folder, identity: cst.identity, allocatedBytes: 0)
-                if fill(child, cst, state) {
-                    child.parent = node
-                    folders.append(child)
-                    items += child.itemCount
-                } else {
-                    unreadable += 1
-                    unreadableBytes += cst.allocatedBytes
-                }
+        var items = f.items
+        for (i, child) in f.subjobs.enumerated() {
+            if child.kind == .package {
+                files.append(child)
+            } else if f.opened[i] {
+                child.parent = node
+                folders.append(child)
+                items += child.itemCount
             } else {
-                var bytes = cst.allocatedBytes
-                if cst.isRegularFile && cst.linkCount > 1 && !state.seenLinks.insert(cst.identity).inserted { bytes = 0 }
-                files.append(SpaceNode(name: name, path: path, kind: .file, identity: cst.identity, allocatedBytes: bytes))
-                state.tick(bytes)
+                unreadable += 1
+                unreadableBytes += f.subjobBytes[i]
             }
         }
         files.sort { $0.allocatedBytes > $1.allocatedBytes }
         var kept = Array(files.prefix(filesPerFolder))
         let rest = files.dropFirst(filesPerFolder)
+        var lump: SpaceNode?
         if !rest.isEmpty {
-            kept.append(SpaceNode(name: "\(rest.count.formatted()) smaller files", path: node.path, kind: .smallFiles(count: rest.count),
-                                  identity: nil, allocatedBytes: rest.reduce(0) { $0 + $1.allocatedBytes }))
+            let l = SpaceNode(name: "\(rest.count.formatted()) smaller files", path: node.path, kind: .smallFiles(count: rest.count),
+                              identity: nil, allocatedBytes: rest.reduce(0) { $0 + $1.allocatedBytes })
+            kept.append(l)
+            lump = l
+        }
+        if !f.linked.isEmpty {
+            let keptIDs = Set(kept.map { ObjectIdentifier($0) })
+            for (file, identity) in f.linked {
+                let holder = keptIDs.contains(ObjectIdentifier(file)) ? file : (lump ?? file)
+                state.claim(identity, LinkClaim(path: file.path, bytes: file.allocatedBytes, holder: holder))
+            }
         }
         for k in kept { k.parent = node }
         node.children = folders + kept
@@ -197,7 +369,43 @@ public struct SpaceScanner: Sendable {
         node.itemCount = items
         if unreadable > 0 { addUnreadable(to: node, bytes: unreadableBytes, count: unreadable) }
         node.children.sort { $0.allocatedBytes > $1.allocatedBytes }
-        return true
+        // Free what the walk no longer needs (the tree keeps the nodes).
+        f.files = []; f.linked = []; f.subjobs = []
+    }
+
+    /// Allocated bytes inside a package (not the package folder itself), one volume only.
+    /// Hard-linked files are counted and reported in `claims`, to be settled after the walk.
+    static func measureContents(_ path: String, device: Int32, claims: inout [(ItemIdentity, String, Int64)], state: State) -> Int64 {
+        guard !state.isCancelled(), let entries = BulkDirectory.read(path) else { return 0 }
+        var total: Int64 = 0
+        for e in entries where e.identity.device == device {
+            let child = path + "/" + e.name
+            total += e.allocatedBytes
+            if e.isDirectory {
+                total += measureContents(child, device: device, claims: &claims, state: state)
+            } else if e.isRegularFile && e.linkCount > 1 {
+                claims.append((e.identity, child, e.allocatedBytes))
+            }
+        }
+        return total
+    }
+
+    /// Every hard link was counted where it was found. Keep the bytes on the link with the first
+    /// path and take them off the others (and every folder above them), so the totals match
+    /// `du` whichever thread got there first.
+    static func settleHardLinks(_ links: [ItemIdentity: [LinkClaim]]) {
+        var touched: [ObjectIdentifier: SpaceNode] = [:]
+        for (_, claims) in links where claims.count > 1 {
+            for extra in claims.sorted(by: { $0.path < $1.path }).dropFirst() {
+                var n: SpaceNode? = extra.holder
+                while let node = n {
+                    node.allocatedBytes -= extra.bytes
+                    touched[ObjectIdentifier(node)] = node
+                    n = node.parent
+                }
+            }
+        }
+        for node in touched.values { node.children.sort { $0.allocatedBytes > $1.allocatedBytes } }
     }
 
     func addUnreadable(to node: SpaceNode, bytes: Int64, count: Int) {

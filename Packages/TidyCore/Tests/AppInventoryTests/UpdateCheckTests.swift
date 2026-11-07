@@ -281,6 +281,35 @@ struct UpdateCheckerTests {
         #expect(s.state == .notChecked("Ignored for this app"))
     }
 
+    @Test func mysqlWorkbenchCESuffixReadsAsOlder() {
+        // Why the bundled override exists: the cask's 8.0.47 beats the app's 8.0.47.CE.
+        #expect(VersionComparator.compare("8.0.47", "8.0.47.CE") == .orderedDescending)
+    }
+
+    @Test func brewHintOnlyForCasksHomebrewInstalled() async throws {
+        let casks = try CaskCatalog.parse(fullCatalogue: Fixture.data("cask.json"))
+        let t = try TestHome("caskroom")
+        defer { t.cleanUp() }
+        let caskroom = try t.folder("homebrew/Caskroom")
+        try t.folder("homebrew/Caskroom/tidy-dummy/2.0.0")
+        try t.file("homebrew/Caskroom/.DS_Store")
+        let installed = InstalledCasks(caskroom: caskroom)
+        #expect(installed.tokens == ["tidy-dummy"])
+        #expect(InstalledCasks(caskroom: caskroom.appendingPathComponent("missing")).tokens.isEmpty)
+
+        let c = UpdateChecker(fetcher: feeds, osVersion: "26.7.1", installedCasks: installed)
+        let brew = await c.check(fakeApp(short: "1.9.0", build: "1999"), casks: casks)
+        #expect(brew.state == .updateAvailable && brew.brewUpgradeCommand == "brew upgrade --cask tidy-dummy")
+        // In the catalogue but not installed by Homebrew: no hint.
+        let named = await c.check(fakeApp("Named", bundleID: "com.example.unknown", short: "3.0", build: "3"), casks: casks)
+        #expect(named.state == .updateAvailable && named.brewCask == nil)
+        // A Sparkle app Homebrew installed still gets the hint.
+        let sparkle = await c.check(fakeApp(sparkle: "https://feeds.example.com/dummy.xml"), casks: casks)
+        #expect(sparkle.source == .sparkle(feed: "https://feeds.example.com/dummy.xml") && sparkle.brewCask == "tidy-dummy")
+        // No catalogue (offline first run): no hint.
+        #expect(await c.check(fakeApp(short: "1.9.0"), casks: nil).brewCask == nil)
+    }
+
     @Test func checksManyAppsKeepingOrder() async {
         let apps = (0..<10).map { fakeApp("App\($0)", bundleID: "com.example.app\($0)", sparkle: "https://feeds.example.com/dummy.xml") }
         let results = await checker().check(apps, casks: nil)
