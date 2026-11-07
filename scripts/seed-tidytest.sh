@@ -26,15 +26,37 @@ mkfile ".lmstudio/models/org/model.gguf" 40960
 mkfile ".cache/huggingface/hub/models--org--name/blobs/x" 40960
 mkfile "Downloads/Tool-1.2.dmg" 40960
 mkdir -p Library/LaunchAgents
+rm -f Library/LaunchAgents/com.example.gone.plist
 /usr/libexec/PlistBuddy -c "Add :Label string com.example.gone" -c "Add :Program string $HOME/Applications/Gone.app/Contents/MacOS/Gone" \
   "Library/LaunchAgents/com.example.gone.plist" >/dev/null
+
+# The dummy app for the Uninstaller (spec 017 §5), with one file in each leftover location.
+DUMMY_ID=io.github.joswalt.TidyTest.Dummy
+DUMMY="Applications/TidyTest Dummy.app"
+rm -rf "$DUMMY"
+mkdir -p "$DUMMY/Contents/MacOS"
+printf '#!/bin/sh\nexit 0\n' > "$DUMMY/Contents/MacOS/Dummy"; chmod 755 "$DUMMY/Contents/MacOS/Dummy"
+for kv in "CFBundleIdentifier string $DUMMY_ID" "CFBundleName string TidyTest Dummy" "CFBundleExecutable string Dummy" \
+          "CFBundlePackageType string APPL" "CFBundleShortVersionString string 1.0" "CFBundleVersion string 100"; do
+  /usr/libexec/PlistBuddy -c "Add :$kv" "$DUMMY/Contents/Info.plist" >/dev/null
+done
+DUMMY_FILES=("Library/Application Scripts/$DUMMY_ID/script.scpt" "Library/Application Support/$DUMMY_ID/data.db"
+  "Library/Containers/$DUMMY_ID/Data/Library/Preferences/x.plist" "Library/Group Containers/ABCDE12345.$DUMMY_ID/shared.db"
+  "Library/HTTPStorages/$DUMMY_ID/httpstorages.sqlite" "Library/Logs/$DUMMY_ID/app.log" "Library/Preferences/$DUMMY_ID.plist"
+  "Library/Preferences/ByHost/$DUMMY_ID.12345678-ABCD-1234-ABCD-1234567890AB.plist"
+  "Library/Saved Application State/$DUMMY_ID.savedState/windows.plist" "Library/WebKit/$DUMMY_ID/WebsiteData/x")
+for f in "${DUMMY_FILES[@]}"; do mkfile "$f"; done
+rm -f "Library/LaunchAgents/$DUMMY_ID.agent.plist"
+/usr/libexec/PlistBuddy -c "Add :Label string $DUMMY_ID.agent" -c "Add :Program string $HOME/$DUMMY/Contents/MacOS/Dummy" \
+  "Library/LaunchAgents/$DUMMY_ID.agent.plist" >/dev/null
 
 # Tripwires that must survive byte for byte.
 TRIPWIRES=()
 for f in Documents/tw.txt Desktop/tw.txt Pictures/tw.jpg Movies/tw.mov Music/tw.m4a \
          "Library/Mobile Documents/com~apple~CloudDocs/tw.txt" "Library/Application Support/TidyMyMac/tw.json" \
          "Library/Logs/TidyMyMac/tw.log" "Library/Caches/com.apple.something/tw" \
-         "Applications/Foo.app/Contents/Info.plist" Downloads/report.pdf Documents/linked.bin Documents/cloned.bin; do
+         "Applications/Foo.app/Contents/Info.plist" "Documents/$DUMMY_ID/mine.txt" \
+         "Library/Application Support/com.example.Other/data.db" Downloads/report.pdf Documents/linked.bin Documents/cloned.bin; do
   mkfile "$f" 8192
   TRIPWIRES+=("$HOME/$f")
 done
@@ -54,7 +76,8 @@ is_tripwire() { local t; for t in "${TRIPWIRES[@]}"; do [ "$t" = "$1" ] && retur
 : > "$SNAP"
 AREAS=(Library/Caches Library/Logs Library/Developer Library/LaunchAgents "Library/Mobile Documents" \
        "Library/Application Support/TidyMyMac" .ollama .lmstudio .cache/huggingface Applications \
-       Downloads Documents Desktop Pictures Movies Music)
+       Downloads Documents Desktop Pictures Movies Music "Library/Application Support/com.example.Other")
+for f in "${DUMMY_FILES[@]}"; do AREAS+=("$(cut -d/ -f1-3 <<<"$f")"); done
 for a in "${AREAS[@]}"; do
   find "$HOME/$a" -path "$HOME/Library/Application Support/TidyMyMac/RunLog" -prune -o -print 2>/dev/null
 done | while IFS= read -r p; do
@@ -66,4 +89,4 @@ done | while IFS= read -r p; do
   printf '%s\t%s\t%s\t%s\n' "$p" "$inode" "$tw" "$extra" >> "$SNAP"
 done
 echo "Seeded. Snapshot: $SNAP ($(wc -l < "$SNAP") paths)."
-echo "Now: open TidyMyMac from /Applications, run Cleanup or Tidy Up with what you want ticked, then run scripts/verify-tidytest.sh."
+echo "Now: open TidyMyMac from /Applications; run Tidy Up, then Applications › Uninstaller on 'TidyTest Dummy', then empty the Trash bins; then run verify-tidytest.sh."

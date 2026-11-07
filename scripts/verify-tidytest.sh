@@ -1,6 +1,6 @@
 #!/bin/bash
-# Verify the last real run in the `tidytest` account (spec 017 §5): every item the run log
-# says was done is gone (delete) or in the Trash (trash), and every other path from the
+# Verify the real runs since the seed in the `tidytest` account (spec 017 §5): every item the run logs
+# say were done is gone (delete) or in the Trash (trash), and every other path from the
 # snapshot is still there (tripwires byte for byte). Prints PASS/FAIL per item.
 set -euo pipefail
 if [ "$(id -un)" != "tidytest" ]; then
@@ -12,32 +12,40 @@ import hashlib, json, os, pathlib, stat, sys
 home = pathlib.Path(sys.argv[1])
 snap = home / ".tidytest-snapshot.tsv"
 logs = sorted((home / "Library/Application Support/TidyMyMac/RunLog").glob("*.jsonl"))
+# Every real run since the seed (Tidy Up, Uninstaller, Trash bins), oldest first.
+since = snap.stat().st_mtime
 runs = []
 for f in logs:
+    if f.stat().st_mtime < since: continue
     lines = [json.loads(l) for l in f.read_text().splitlines() if l.strip().startswith("{") and l.strip().endswith("}")]
     if lines and lines[0].get("type") == "header" and not lines[0].get("dryRun"):
         runs.append((f, lines))
 if not runs:
-    sys.exit("No real run found in the run log.")
-f, lines = runs[-1]
-items = [l for l in lines if l.get("type") == "item"]
-done = [i for i in items if i["result"] == "done"]
+    sys.exit("No real run since the seed found in the run log.")
 fails = 0
 def report(ok, msg):
     global fails
     fails += 0 if ok else 1
     print(("PASS " if ok else "FAIL ") + msg)
 
-print(f"Run {f.name}: {len(done)} done, {len(items) - len(done)} skipped or failed")
-if lines[-1].get("type") != "summary":
-    report(False, "run has no summary line (interrupted)")
+done = []
+for f, lines in runs:
+    items = [l for l in lines if l.get("type") == "item"]
+    ok = [i for i in items if i["result"] == "done"]
+    print(f"Run {f.name} ({lines[0].get('module')}): {len(ok)} done, {len(items) - len(ok)} skipped or failed")
+    if lines[-1].get("type") != "summary":
+        report(False, f"{f.name} has no summary line (interrupted)")
+    done += ok
+deleted = [i["path"] for i in done if i["action"] == "delete"]
+def gone_later(t): return any(t == d or t.startswith(d + "/") for d in deleted)
 for i in done:
     p = i["path"]
     if i["action"] == "delete":
         report(not os.path.lexists(p), f"deleted {p}")
     elif i["action"] == "trash":
         t = i.get("trashPath") or ""
-        report(not os.path.lexists(p) and os.path.lexists(t) and ".Trash" in t, f"trashed {p} -> {t}")
+        # A later Trash-bins run may have emptied it.
+        report(not os.path.lexists(p) and ".Trash" in t and (os.path.lexists(t) or gone_later(t)), f"trashed {p} -> {t}")
 
 removed = [i["path"] for i in done]
 def under(p): return any(p == r or p.startswith(r + "/") for r in removed)
