@@ -64,4 +64,4 @@ done | while IFS= read -r p; do
   printf '%s\t%s\t%s\t%s\n' "$p" "$inode" "$tw" "$extra" >> "$SNAP"
 done
 echo "Seeded. Snapshot: $SNAP ($(wc -l < "$SNAP") paths)."
-echo "Now: open TidyMyMac from /Applications, run Cleanup or Smart Care with what you want ticked, then run scripts/verify-tidytest.sh."
+echo "Now: open TidyMyMac from /Applications, run Cleanup or Tidy Up with what you want ticked, then run scripts/verify-tidytest.sh."

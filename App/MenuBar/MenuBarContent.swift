@@ -37,7 +37,7 @@ struct MenuBarContent: View {
                 }
                 MonitorRow(symbol: "internaldrive", title: "Storage",
                            value: status.storage.map { "Free \(MonitorFormat.bytes($0.freeBytes)) of \(MonitorFormat.bytes($0.totalBytes))" } ?? "…",
-                           help: "Open Space Lens", action: { app.open(.spaceLens) }) {
+                           help: "Open Disk Map", action: { app.open(.diskMap) }) {
                     if let s = status.storage {
                         ProgressView(value: s.usedFraction).tint(status.lowDiskActive ? .orange : .accentColor)
                     }
@@ -51,7 +51,7 @@ struct MenuBarContent: View {
             HStack {
                 Button("Open TidyMyMac") { app.showWindow() }
                 Spacer()
-                Button("Run Smart Care") { app.runSmartCare() }.buttonStyle(.borderedProminent)
+                Button("Run Tidy Up") { app.runTidyUp() }.buttonStyle(.borderedProminent)
             }
             HStack {
                 SettingsLink { Text("Settings…") }.buttonStyle(.link)

@@ -59,7 +59,9 @@ struct RunHistoryView: View {
 
 func moduleTitle(_ id: String) -> String {
     switch id {
-    case "smartCare": "Smart Care"
+    case "tidyUp", "smartCare": "Tidy Up"  // older run logs use the old ids
+    case "declutter", "myClutter": "Declutter"
+    case "diskMap", "spaceLens": "Disk Map"
     case "cleanup": "Cleanup"
     default: id.prefix(1).uppercased() + id.dropFirst()
     }

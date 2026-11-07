@@ -219,7 +219,7 @@ Approving the helper in Login Items is a one-time "this app may have a root help
 - The helper checks the right with `AuthorizationCopyRights` and no interaction flag. If it fails, the operation is refused with `needsAuthorization`.
 - Result: one password prompt per cleanup run (or per 5 minutes), never one per item. Whether the dialog offers Touch ID for our right is untested; it makes no difference to the design.
 - Read-only operations and `flushDNS()` need no prompt.
-- A Smart Care run asks for the password once, at the start of the run, and only if the reviewed selection contains a changing helper operation.
+- A Tidy Up run asks for the password once, at the start of the run, and only if the reviewed selection contains a changing helper operation.
 
 ## 8. Trash, undo and logs
 

@@ -1,6 +1,6 @@
 # Spec 014: Duplicate finder
 
-Ticket: [014](../planning/tickets/014-duplicate-finder.md) (agreed with John, 2026-11-07; this file restates its Resolution as a spec for the handoff). Code: `DiskAnalysis` (spec 016 §3). Screen: My Clutter › Duplicates (spec 007 §2, §4).
+Ticket: [014](../planning/tickets/014-duplicate-finder.md) (agreed with John, 2026-11-07; this file restates its Resolution as a spec for the handoff). Code: `DiskAnalysis` (spec 016 §3). Screen: Declutter › Duplicates (spec 007 §2, §4).
 
 1. **Matching:** group by exact size, then SHA-256 of the first and last 16 KB, then full-file SHA-256 (CryptoKit). Only full-hash matches are duplicates. No name or date matching.
 2. **APFS clones:** shown, flagged "Shares space, frees ~0 KB", unticked, and excluded from the "you can free" total (detect via `ATTR_CMNEXT_CLONEID` / allocated-size check). **Hard links** (same inode) count as one file and are never duplicates.

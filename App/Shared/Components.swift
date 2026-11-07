@@ -217,7 +217,7 @@ struct RunResultView: View {
     }
 }
 
-/// The one confirmation before hand-picked items move (My Clutter, Space Lens): count, size and
+/// The one confirmation before hand-picked items move (Declutter, Disk Map): count, size and
 /// destination. These never delete; everything goes to the Trash (spec 014 §5, build spec §6.6–6.8).
 struct TrashConfirm: ViewModifier {
     @Binding var isPresented: Bool

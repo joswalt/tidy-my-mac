@@ -115,7 +115,7 @@ struct HealthTests {
     func inputs(free: Int64? = 100 * GB, lowDisk: Int = 20, last: Date?? = nil, junk: Int64? = nil, trash: Int64? = 1 * GB,
                 fda: Bool = true, helper: Bool = true) -> HealthInputs {
         HealthInputs(now: now, freeBytes: free, lowDiskGB: lowDisk,
-                     lastSmartCare: last ?? now.addingTimeInterval(-3 * 86400), reminderInterval: .twoWeeks,
+                     lastTidyUp: last ?? now.addingTimeInterval(-3 * 86400), reminderInterval: .twoWeeks,
                      junkLeft: junk.map { ($0, now.addingTimeInterval(-86400)) }, trashBytes: trash, trashGB: 5,
                      hasFullDiskAccess: fda, helperReady: helper)
     }
@@ -127,7 +127,7 @@ struct HealthTests {
     @Test func allGood() {
         let s = Health.signals(inputs(), calendar: cal)
         #expect(Health.overall(s) == .good)
-        #expect(s.map(\.id) == [.freeSpace, .lastSmartCare, .junkFound, .trash, .fullDiskAccess, .helper])
+        #expect(s.map(\.id) == [.freeSpace, .lastTidyUp, .junkFound, .trash, .fullDiskAccess, .helper])
     }
 
     @Test func freeSpaceLines() {
@@ -140,14 +140,14 @@ struct HealthTests {
         #expect(level(.freeSpace, inputs(free: 30 * GB, lowDisk: 50)) == .worthALook)
         // Overall is the worst signal.
         #expect(Health.overall(Health.signals(inputs(free: 9 * GB, fda: false), calendar: cal)) == .needsAttention)
-        // The fix is Space Lens.
-        #expect(Health.signals(inputs(free: 9 * GB), calendar: cal).first?.fix == .spaceLens)
+        // The fix is Disk Map.
+        #expect(Health.signals(inputs(free: 9 * GB), calendar: cal).first?.fix == .diskMap)
     }
 
-    @Test func lastSmartCare() {
-        #expect(level(.lastSmartCare, inputs(last: .some(nil))) == .worthALook)
-        #expect(level(.lastSmartCare, inputs(last: now.addingTimeInterval(-27 * 86400))) == .good)
-        #expect(level(.lastSmartCare, inputs(last: now.addingTimeInterval(-29 * 86400))) == .worthALook)
+    @Test func lastTidyUp() {
+        #expect(level(.lastTidyUp, inputs(last: .some(nil))) == .worthALook)
+        #expect(level(.lastTidyUp, inputs(last: now.addingTimeInterval(-27 * 86400))) == .good)
+        #expect(level(.lastTidyUp, inputs(last: now.addingTimeInterval(-29 * 86400))) == .worthALook)
     }
 
     @Test func junkTrashAndSetup() {
@@ -192,13 +192,13 @@ struct ReminderTests {
         #expect(p.pending == [date("2026-03-03T10:00:00Z")])  // due passed, the one repeat remains
         let late = ReminderSchedule.plan(lastRun: date("2026-01-31T10:00:00Z"), firstLaunch: date("2026-01-01T10:00:00Z"), interval: .month,
                                          minutesOfDay: 600, now: date("2026-04-01T00:00:00Z"), calendar: cal)
-        #expect(late.pending.isEmpty)  // then silent until the next Smart Care run
+        #expect(late.pending.isEmpty)  // then silent until the next Tidy Up run
     }
 
     @Test func message() {
         #expect(ReminderSchedule.message(lastRun: date("2026-11-01T18:00:00Z"), at: date("2026-11-17T10:00:00Z"), calendar: cal)
-                == "Time for Smart Care. Last run 16 days ago.")
-        #expect(ReminderSchedule.message(lastRun: nil, at: Date(), calendar: cal) == "Time for Smart Care. You haven't run it yet.")
+                == "Time to Tidy Up. Last run 16 days ago.")
+        #expect(ReminderSchedule.message(lastRun: nil, at: Date(), calendar: cal) == "Time to Tidy Up. You haven't run it yet.")
         #expect(ReminderInterval.default == .twoWeeks && ReminderSchedule.defaultMinutes == 600)
     }
 }

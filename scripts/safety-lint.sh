@@ -61,7 +61,7 @@ REQUIRED_TEST_FILES=(
   Packages/TidyCore/Tests/RuleEngineTests/RemoverTests.swift
   Packages/TidyCore/Tests/RunLogTests/RunLogTests.swift              # 017 §4.4
   Packages/TidyCore/Tests/DiskAnalysisTests/DuplicateFinderTests.swift  # spec 014 rules
-  Packages/TidyCore/Tests/DiskAnalysisTests/SpaceLensTests.swift     # treemap vs du -k
+  Packages/TidyCore/Tests/DiskAnalysisTests/DiskMapTests.swift     # treemap vs du -k
   Packages/TidyCore/Tests/DiskAnalysisTests/ClutterTests.swift       # Large & Old, manual removal
   Packages/TidyCore/Tests/MonitorsTests/MonitorsTests.swift          # spec 011 alerts, spec 012 signals and reminders
   Packages/TidyCore/Tests/SystemTasksTests/SystemTasksTests.swift    # build spec §6.9 background items

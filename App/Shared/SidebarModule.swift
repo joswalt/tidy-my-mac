@@ -2,8 +2,8 @@ import SwiftUI
 
 /// The nine sidebar modules in their three groups (spec 007 §2, style guide §6).
 enum SidebarModule: String, CaseIterable, Identifiable, Hashable {
-    case smartCare, health
-    case cleanup, myClutter, spaceLens
+    case tidyUp, health
+    case cleanup, declutter, diskMap
     case applications, performance, protection
     case myTools
 
@@ -11,11 +11,11 @@ enum SidebarModule: String, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .smartCare: "Smart Care"
+        case .tidyUp: "Tidy Up"
         case .health: "Health"
         case .cleanup: "Cleanup"
-        case .myClutter: "My Clutter"
-        case .spaceLens: "Space Lens"
+        case .declutter: "Declutter"
+        case .diskMap: "Disk Map"
         case .applications: "Applications"
         case .performance: "Performance"
         case .protection: "Protection"
@@ -25,11 +25,11 @@ enum SidebarModule: String, CaseIterable, Identifiable, Hashable {
 
     var symbol: String {
         switch self {
-        case .smartCare: "sparkles"
+        case .tidyUp: "sparkles"
         case .health: "heart.text.square"
         case .cleanup: "bubbles.and.sparkles"
-        case .myClutter: "doc.on.doc"
-        case .spaceLens: "chart.pie"
+        case .declutter: "doc.on.doc"
+        case .diskMap: "chart.pie"
         case .applications: "square.grid.2x2"
         case .performance: "gauge.with.dots.needle.67percent"
         case .protection: "lock.shield"
@@ -50,8 +50,8 @@ enum SidebarModule: String, CaseIterable, Identifiable, Hashable {
 
         var modules: [SidebarModule] {
             switch self {
-            case .top: [.smartCare, .health]
-            case .cleanUp: [.cleanup, .myClutter, .spaceLens]
+            case .top: [.tidyUp, .health]
+            case .cleanUp: [.cleanup, .declutter, .diskMap]
             case .maintain: [.applications, .performance, .protection]
             case .bottom: [.myTools]
             }

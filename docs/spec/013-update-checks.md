@@ -48,9 +48,9 @@ Homebrew catalogue: `https://formulae.brew.sh/api/cask.json`, cached in `~/Libra
 - HTTPS only. `http://` feeds are not fetched; the row shows "Insecure feed, not checked". No ATS exceptions.
 - User-Agent `TidyMyMac/<version> (update check)`. Never impersonate the app.
 - At most 4 feeds at once, 15 s timeout each. Results cached in `Cache/updates.json`.
-- Automatic check at most once per 24 h, when Applications › Updates or Smart Care opens; **Check Now** button forces it. Setting "Check for app updates automatically" (on by default).
+- Automatic check at most once per 24 h, when Applications › Updates or Tidy Up opens; **Check Now** button forces it. Setting "Check for app updates automatically" (on by default).
 - Never write into another app's preferences, never use `SPUUpdater` or `sparkle-cli` on other bundles.
 
 ## 7. Display
 
-Row: icon, name, `current → available` (short versions), source badge (Sparkle / Electron / Homebrew / App Store), release-notes link when present, **Open App**. When Homebrew installed the app (its cask token is a folder in `/opt/homebrew/Caskroom`) and an update is available, the row also shows "Update with `brew upgrade --cask <token>`" with a copy button. TidyMyMac never runs it. Health shows the count only (spec 012). Smart Care's Applications card links the count.
+Row: icon, name, `current → available` (short versions), source badge (Sparkle / Electron / Homebrew / App Store), release-notes link when present, **Open App**. When Homebrew installed the app (its cask token is a folder in `/opt/homebrew/Caskroom`) and an update is available, the row also shows "Update with `brew upgrade --cask <token>`" with a copy button. TidyMyMac never runs it. Health shows the count only (spec 012). Tidy Up's Applications card links the count.

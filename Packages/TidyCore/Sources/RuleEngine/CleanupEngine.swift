@@ -41,8 +41,8 @@ public struct CleanupContext: Sendable {
     /// Rules shown in the Cleanup module (user-level ones scan now; helper ones say so).
     public var cleanupRules: [CleanRule] { rules.cleanRules.filter { $0.module == .cleanup } }
 
-    /// Smart Care never includes risky rules (spec 006 §4).
-    public var smartCareRules: [CleanRule] { cleanupRules.filter { $0.risk != .risky } }
+    /// Tidy Up never includes risky rules (spec 006 §4).
+    public var tidyUpRules: [CleanRule] { cleanupRules.filter { $0.risk != .risky } }
 }
 
 /// The live summary shown in every footer and confirm (spec 007 §1, §3).
@@ -84,7 +84,7 @@ public struct Selection: Equatable, Sendable {
 
     public init(ids: Set<String> = []) { self.ids = ids }
 
-    /// Safe, verified items; never risky ones (and never anything in Smart Care that is risky).
+    /// Safe, verified items; never risky ones (and never anything in Tidy Up that is risky).
     public static func defaults(for candidates: [Candidate]) -> Selection {
         Selection(ids: Set(candidates.filter { $0.selectedByDefault && $0.risk != .risky }.map(\.id)))
     }

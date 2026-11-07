@@ -91,7 +91,7 @@ A seeded **random tree** variant (fixed seeds in CI, a longer run in `check-loca
 
 1. One-time: John creates a standard (not admin) user `tidytest` in System Settings › Users & Groups.
 2. `scripts/seed-tidytest.sh` (run as `tidytest`) builds the same fixture manifest as §4.1 in the real home, records a snapshot, and installs the dummy app in `~/Applications`.
-3. Log in as `tidytest`, open the release build, grant FDA, run Smart Care with defaults, then Uninstaller on the dummy app, then Trash bins.
+3. Log in as `tidytest`, open the release build, grant FDA, run Tidy Up with defaults, then Uninstaller on the dummy app, then Trash bins.
 4. `scripts/verify-tidytest.sh` diffs against the snapshot and the run log, prints PASS/FAIL per item. Reset with the seed script for the next release.
 
 Helper operations from `tidytest` need an admin password, which also tests that a standard user can't skip authentication. Whether a helper approved from John's account answers a second user is untested; the first full run records it, and if it doesn't, helper steps stay in §4.3 and the `tidytest` run covers user-level features only.
@@ -103,7 +103,7 @@ A "release" is a signed build John installs in `/Applications`. Tag `vX.Y`, and 
 **Short form (always):**
 1. CI green on the merge commit.
 2. `scripts/check-local.sh` green (all tests, signed build, `codesign --verify --deep --strict`, hardened runtime on, helper plist label and `BundleProgram` correct).
-3. Manual click-through: first-run sheet, each sidebar module opens, Smart Care dry run on John's account, menu bar popover, Settings.
+3. Manual click-through: first-run sheet, each sidebar module opens, Tidy Up dry run on John's account, menu bar popover, Settings.
 4. Install over the previous build; helper restarts silently (005 §4.3); run history still there.
 
 **Full form (adds), when SafetyFloor, HelperCore, Helper, RuleEngine or `Rules/` changed:**

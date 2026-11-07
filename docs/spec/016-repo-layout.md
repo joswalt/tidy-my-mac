@@ -20,7 +20,7 @@ tidy-my-mac/
   App/                        TidyMyMac app target (SwiftUI only)
     TidyMyMacApp.swift        WindowGroup + MenuBarExtra + Settings scenes
     Modules/                  one folder per sidebar module (spec 007 §2)
-      SmartCare/ Health/ Cleanup/ MyClutter/ SpaceLens/
+      TidyUp/ Health/ Cleanup/ Declutter/ DiskMap/
       Applications/ Performance/ Protection/ MyTools/
     MenuBar/                  menu bar popover views
     Setup/                    first-run sheet (FDA + helper)
@@ -53,9 +53,9 @@ tidy-my-mac/
 | `SafetyFloor` | library | none | protected floor paths, deny-list names, path normalization and validation (symlinks, bundles). Shared by app and helper so they cannot drift (spec 005 §5, 006 §5) |
 | `HelperProtocol` | library | none | Codable requests/replies, operation enum, protocol version, XPC `@objc` protocol |
 | `HelperCore` | library | `SafetyFloor`, `HelperProtocol` | zones, handles, operations, Trash-to-user + restore ledger; testable without XPC |
-| `RuleEngine` | library | `SafetyFloor`, `RunLog` | rule model + loader (from a folder URL), schema/lint checks, matcher, sizing, dry run; Cleanup and Smart Care |
+| `RuleEngine` | library | `SafetyFloor`, `RunLog` | rule model + loader (from a folder URL), schema/lint checks, matcher, sizing, dry run; Cleanup and Tidy Up |
 | `AppInventory` | library | `SafetyFloor`, `RuleEngine` | installed apps, leftovers, unused apps, installers, update-feed checks (ticket 013) |
-| `DiskAnalysis` | library | `SafetyFloor` | Space Lens tree, Large & Old, duplicates (ticket 014) |
+| `DiskAnalysis` | library | `SafetyFloor` | Disk Map tree, Large & Old, duplicates (ticket 014) |
 | `SystemTasks` | library | `HelperProtocol` | maintenance tasks, login and background items |
 | `Monitors` | library | none | CPU, memory, storage, network sampling (ticket 011), FDA detection (ticket 015) |
 | `RunLog` | library | none | run history and the user-side record of what went where |

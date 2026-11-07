@@ -42,7 +42,7 @@ Both are on by default, each with its own switch in the popover and in Settings.
 - Threshold: the shared **low-disk setting**, default **20 GB** (choices 10 / 20 / 50). This same setting is Health's orange free-space line; Health's red line is fixed at 10 GB and appears in Health only (ticket 012).
 - Checked every 5 min (tolerance 60 s), on wake (`NSWorkspace.didWakeNotification`), and after any TidyMyMac cleanup or empty-Trash run.
 - Fires once when free space drops below the line. It re-arms when free space is above line + 5 GB, or after 24 h if still below (one reminder a day at most).
-- Notification: "Your startup disk has 14.8 GB free." Button: **Open Space Lens**.
+- Notification: "Your startup disk has 14.8 GB free." Button: **Open Disk Map**.
 
 **Full Trash**
 - Threshold: the shared **Trash setting**, default **5 GB** (choices 1 / 5 / 10 / 20), also used by Health.
@@ -54,8 +54,8 @@ Both are on by default, each with its own switch in the popover and in Settings.
 
 ## 5. Clicks and buttons
 
-- CPU, Memory and Network rows open Activity Monitor (`com.apple.ActivityMonitor`). The Storage row opens Space Lens.
-- Buttons: **Open TidyMyMac**, **Run Smart Care** (opens the window and starts the scan).
+- CPU, Memory and Network rows open Activity Monitor (`com.apple.ActivityMonitor`). The Storage row opens Disk Map.
+- Buttons: **Open TidyMyMac**, **Run Tidy Up** (opens the window and starts the scan).
 - Status pill: "All good", or the active alert ("Low disk space" / "Trash over 5 GB"); memory pressure Critical also shows here.
 
 ## 6. Units and formatting

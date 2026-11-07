@@ -5,7 +5,7 @@ import RuleEngine
 import RunLog
 import SafetyFloor
 
-/// State for My Clutter (spec 007 §2): Large & Old · Duplicates · Downloads. Finding and measuring
+/// State for Declutter (spec 007 §2): Large & Old · Duplicates · Downloads. Finding and measuring
 /// happen in `DiskAnalysis`, removal in `ManualRemover`; this only orchestrates. Nothing is ever
 /// ticked except duplicate copies chosen by the keep rule, and everything goes to the Trash.
 @MainActor @Observable
@@ -242,7 +242,7 @@ final class ClutterModel {
         phase = .running
         Task {
             do {
-                let run = try await Task.detached { try ManualRemover(context: ctx).run(picks, module: "myClutter", dryRun: dryRun) }.value
+                let run = try await Task.detached { try ManualRemover(context: ctx).run(picks, module: "declutter", dryRun: dryRun) }.value
                 lastRun = run
                 if !dryRun { forget(Set(run.outcome.done.map(\.path))) }
                 phase = .done(dryRun: dryRun)

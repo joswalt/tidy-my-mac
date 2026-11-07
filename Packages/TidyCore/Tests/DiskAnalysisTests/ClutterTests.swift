@@ -134,17 +134,17 @@ struct ClutterTests {
         let picks = [try pick(t, "Documents/old.mov", root: "Documents"), try pick(t, "Downloads/thing.zip", root: "Downloads")]
         let remover = ManualRemover(context: context(t))
 
-        let dry = try remover.run(picks, module: "myClutter", dryRun: true)
+        let dry = try remover.run(picks, module: "declutter", dryRun: true)
         #expect(dry.outcome.done.count == 2)
         #expect(FileStatus.lstat(t.path("Documents/old.mov")) != nil, "a dry run changes nothing")
         #expect(dry.record.header.dryRun)
 
-        let run = try remover.run(picks, module: "myClutter", dryRun: false)
+        let run = try remover.run(picks, module: "declutter", dryRun: false)
         #expect(run.outcome.done.count == 2)
         #expect(run.outcome.done.allSatisfy { $0.ruleID == "manual" && $0.action == .trash && $0.trashPath != nil })
         #expect(FileStatus.lstat(t.path("Documents/old.mov")) == nil)
         #expect(FileStatus.lstat(t.path(".Trash/old.mov")) != nil)
-        #expect(run.record.header.module == "myClutter")
+        #expect(run.record.header.module == "declutter")
     }
 
     @Test func manualRemoverRefusesTheLastCopyAndChangedItems() throws {
@@ -156,7 +156,7 @@ struct ClutterTests {
         let set = ["Documents/a.bin", "Music/a.bin"]
         // Both copies picked (the UI never allows it): the second is refused.
         let both = [try pick(t, "Documents/a.bin", root: "Documents", set: set), try pick(t, "Music/a.bin", root: "Music", set: set)]
-        let run = try ManualRemover(context: context(t)).run(both, module: "myClutter", dryRun: false)
+        let run = try ManualRemover(context: context(t)).run(both, module: "declutter", dryRun: false)
         #expect(run.outcome.done.map(\.path) == [t.path("Documents/a.bin")])
         #expect(run.outcome.skipped.first?.reason == "it is the last copy of this file")
         #expect(FileStatus.lstat(t.path("Music/a.bin")) != nil)
@@ -169,7 +169,7 @@ struct ClutterTests {
         // Protected: a personal folder itself, and anything in ~/Library/Mobile Documents.
         try t.file("Library/Mobile Documents/x.txt", size: 10)
         let floor = [try pick(t, "Library/Mobile Documents/x.txt", root: "Library")]
-        let r2 = try ManualRemover(context: context(t)).run([stale] + floor, module: "spaceLens", dryRun: false)
+        let r2 = try ManualRemover(context: context(t)).run([stale] + floor, module: "diskMap", dryRun: false)
         #expect(r2.outcome.done.isEmpty)
         #expect(r2.outcome.skipped.count == 2)
         #expect(r2.outcome.skipped[0].reason == "the item was replaced since the scan")
@@ -183,7 +183,7 @@ struct ClutterTests {
         try t.symlink("Documents/via", to: t.path("Projects/real"))
         let st = try #require(FileStatus.lstat(t.path("Projects/real/keep.txt")))
         let p = ManualPick(path: t.path("Documents/via/keep.txt"), root: t.path("Documents"), identity: st.identity, allocatedBytes: 10)
-        let run = try ManualRemover(context: context(t)).run([p], module: "spaceLens", dryRun: false)
+        let run = try ManualRemover(context: context(t)).run([p], module: "diskMap", dryRun: false)
         #expect(run.outcome.done.isEmpty)
         #expect(FileStatus.lstat(t.path("Projects/real/keep.txt")) != nil)
     }

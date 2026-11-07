@@ -1,6 +1,6 @@
 import Foundation
 
-/// Why something is being removed. Hand-picked items (Large & Old, duplicates, Space Lens)
+/// Why something is being removed. Hand-picked items (Large & Old, duplicates, Disk Map)
 /// may come from inside the personal folders; rule-found items may not (spec 006 §5).
 public enum RemovalContext: Sendable {
     case rule

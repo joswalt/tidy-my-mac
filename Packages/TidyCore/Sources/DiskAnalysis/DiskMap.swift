@@ -2,7 +2,7 @@ import Darwin
 import Foundation
 import SafetyFloor
 
-/// One block in Space Lens (build spec §6.8). Built once by `SpaceScanner`, read-only afterwards.
+/// One block in Disk Map (build spec §6.8). Built once by `SpaceScanner`, read-only afterwards.
 public final class SpaceNode: @unchecked Sendable, Identifiable {
     public enum Kind: Sendable, Equatable {
         case folder
@@ -83,7 +83,7 @@ public final class SpaceNode: @unchecked Sendable, Identifiable {
     }
 }
 
-/// Measures a folder or volume for Space Lens: allocated sizes, hard links once, packages as
+/// Measures a folder or volume for Disk Map: allocated sizes, hard links once, packages as
 /// leaves, never following links and never entering another mounted volume. Runs as the user,
 /// so unreadable folders become one "Not readable" block per folder, never an error.
 ///
@@ -426,7 +426,7 @@ public struct SpaceScanner: Sendable {
         node.children.sort { $0.allocatedBytes > $1.allocatedBytes }
     }
 
-    /// Can Space Lens offer a tick for this node? Items on the protected floor show none (§6.8).
+    /// Can Disk Map offer a tick for this node? Items on the protected floor show none (§6.8).
     public func canPick(_ node: SpaceNode) -> Bool {
         node.isItem && node.parent != nil && !floor.verdict(for: node.path, context: .manualPick).isProtected
     }
@@ -446,7 +446,7 @@ public struct SpaceScanner: Sendable {
     }
 }
 
-/// Mounted volumes for the Space Lens picker.
+/// Mounted volumes for the Disk Map picker.
 public enum Volumes {
     public struct Volume: Sendable, Hashable, Identifiable {
         public let name: String

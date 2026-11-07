@@ -14,11 +14,11 @@ Status: approved by John (2026-11-07, "Looks good").
 
 | Group | Module | Contents |
 |---|---|---|
-| (top) | Smart Care | One scan → results → review → clean → done |
+| (top) | Tidy Up | One scan → results → review → clean → done |
 | (top) | Health | Health summary, storage (purgeable read-only), Trash size, setup status, run history, reminders (rules in [spec 012](012-health-and-reminders.md); reminder default is every 2 weeks, not the prototype's weekly) |
 | Clean up | Cleanup | Category list + detail (rule's Removes / Keeps / Goes to / source) + item table |
-| Clean up | My Clutter | Tabs: Large & Old · Duplicates · Downloads (duplicate downloads flagged inline as "Also elsewhere") |
-| Clean up | Space Lens | Breadcrumb, disk/folder picker, treemap (two levels deep) + size-ranked list with ticks |
+| Clean up | Declutter | Tabs: Large & Old · Duplicates · Downloads (duplicate downloads flagged inline as "Also elsewhere") |
+| Clean up | Disk Map | Breadcrumb, disk/folder picker, treemap (two levels deep) + size-ranked list with ticks |
 | Maintain | Applications | Tabs: Uninstaller · Unused · Leftovers · Installers · Updates (check only) |
 | Maintain | Performance | Tabs: Maintenance (DNS, Spotlight, TM snapshots) · Login Items · Background Items |
 | Maintain | Protection | App permissions, read-only, with "Open in System Settings" |
@@ -26,26 +26,26 @@ Status: approved by John (2026-11-07, "Looks good").
 
 - After a scan, rows show a trailing figure (Cleanup "35.4 GB", Applications "2 updates").
 - Sidebar footer: setup status ("Full Disk Access on · Helper ready", orange dot when not) that opens first-run setup, and free disk space that opens Health.
-- Symbols per style guide §6. Space Lens is a **treemap**, not a bubble map, to keep the look our own.
+- Symbols per style guide §6. Disk Map is a **treemap**, not a bubble map, to keep the look our own.
 
-## 3. Smart Care flow
+## 3. Tidy Up flow
 
 1. **Idle:** app icon, one line on what it checks, large Scan button, chips naming the areas, last run.
 2. **Scanning:** progress ring + running "found so far" size + per-area checklist. Stop returns to the previous state.
 3. **Results:** hero number (selected to clean) + "free space after cleaning" bar, then six cards:
    - Actionable: **Cleanup** (caches, logs, Xcode junk, AI tool caches, broken login items), **Trash** (starts unticked, permanent), **Applications** (leftovers of deleted apps; update count links to Updates), **Maintenance** (tasks with ticks; DNS on, Spotlight and snapshots off).
-   - Look only: **My Clutter** (large/old files count, opens module), **Protection** (permission counts, opens module). Personal files are never cleaned by Smart Care.
+   - Look only: **Declutter** (large/old files count, opens module), **Protection** (permission counts, opens module). Personal files are never cleaned by Tidy Up.
    - Footer: summary + Review All… + Clean N GB.
 4. **Review sheet:** grouped list with disclosure per category, tri-state group checkbox, item rows (name, path in mono with middle truncation, risk badge, destination Trash/Delete, size), a filter (All · Cleanup · Trash · Leftovers · Tasks) and the same live summary in its footer.
 5. **Confirm alert:** title "Clean 11,724 items?"; body states Trash vs permanent amounts, tasks, and that macOS asks for the admin password once. Button names the effect ("Clean 9.0 GB"; "Delete …" in red when nothing goes to Trash).
 6. **Cleaning:** same ring, "freed so far".
 7. **Done:** green check, amount freed, how much is in the Trash, View Run Log (→ Health) and Done.
 
-Risk handling follows spec 006: safe ticked, caution unticked, risky (iOS backups, local AI models) **never in Smart Care**; in Cleanup a risky category has no select-all and shows a warning note.
+Risk handling follows spec 006: safe ticked, caution unticked, risky (iOS backups, local AI models) **never in Tidy Up**; in Cleanup a risky category has no select-all and shows a warning note.
 
 ## 4. Shared patterns
 
-- **Review before delete everywhere:** every destructive button opens one confirmation that names the count, the size and where it goes. Module footers show the same summary line as Smart Care.
+- **Review before delete everywhere:** every destructive button opens one confirmation that names the count, the size and where it goes. Module footers show the same summary line as Tidy Up.
 - **Destination column:** `trash` (secondary) or `Delete` with a flame symbol (red), from each rule's action.
 - **Admin badge** on categories/tasks that go through the helper.
 - **Empty state:** 48 pt symbol, one line, one action (e.g. "Nothing left to remove in User Caches." + Scan Again).
@@ -56,7 +56,7 @@ Risk handling follows spec 006: safe ticked, caution unticked, risky (iOS backup
 
 ## 5. Menu bar extra
 
-Template glyph of the sweep (monochrome). Popover: status pill, CPU (sparkline), Memory (used / total + pressure), Storage (free + bar), Network (↓/↑). Alerts: low disk space and Trash over a size, each a switch. Buttons: Open TidyMyMac, Run Smart Care.
+Template glyph of the sweep (monochrome). Popover: status pill, CPU (sparkline), Memory (used / total + pressure), Storage (free + bar), Network (↓/↑). Alerts: low disk space and Trash over a size, each a switch. Buttons: Open TidyMyMac, Run Tidy Up.
 
 ## 6. First run
 

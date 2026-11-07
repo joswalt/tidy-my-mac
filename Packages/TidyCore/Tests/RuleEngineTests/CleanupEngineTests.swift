@@ -19,11 +19,11 @@ struct CleanupEngineTests {
                        trash: HomeTrash(home: t.home), unloader: unloader, appVersion: "1.0 (7)")
     }
 
-    @Test func smartCareNeverIncludesRiskyRules() throws {
+    @Test func tidyUpNeverIncludesRiskyRules() throws {
         let t = try TestHome("sc-rules")
         defer { t.cleanUp() }
         let c = context(t)
-        #expect(c.smartCareRules.allSatisfy { $0.risk != .risky })
+        #expect(c.tidyUpRules.allSatisfy { $0.risk != .risky })
         #expect(c.cleanupRules.contains { $0.risk == .risky })
     }
 
