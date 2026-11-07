@@ -25,6 +25,10 @@ public struct HealthSignal: Identifiable, Equatable, Sendable {
     public let level: HealthLevel
     public let reason: String
     public let fix: Fix?
+
+    public init(id: ID, title: String, level: HealthLevel, reason: String, fix: Fix?) {
+        self.id = id; self.title = title; self.level = level; self.reason = reason; self.fix = fix
+    }
 }
 
 public struct HealthInputs: Sendable {

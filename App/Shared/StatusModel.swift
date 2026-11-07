@@ -159,10 +159,15 @@ final class StatusModel {
     }
 
     var signals: [HealthSignal] {
-        Health.signals(HealthInputs(now: Date(), availableBytes: storage?.availableBytes, lowDiskGB: lowDiskGB,
+        let all = Health.signals(HealthInputs(now: Date(), availableBytes: storage?.availableBytes, lowDiskGB: lowDiskGB,
                                     lastSmartCare: app?.lastSmartCare?.header.start, reminderInterval: reminderInterval,
                                     junkLeft: junkLeft, trashBytes: trashBytes, trashGB: trashGB,
                                     hasFullDiskAccess: hasFullDiskAccess, helperReady: app?.helper.state.isReady ?? false))
+        // The helper row says what is actually wrong (not installed, not in Applications, …).
+        return all.map { s in
+            guard s.id == .helper, s.level != .good, let summary = app?.helper.state.summary else { return s }
+            return HealthSignal(id: s.id, title: s.title, level: s.level, reason: "\(summary): system caches and maintenance are off", fix: s.fix)
+        }
     }
 
     var overall: HealthLevel { Health.overall(signals) }
