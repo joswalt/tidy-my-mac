@@ -41,7 +41,7 @@ struct CleanupView: View {
                     .disabled(session.phase == .scanning || session.phase == .running)
             }
         }
-        .sheet(isPresented: $showReview) { ReviewSheet(session: session) { showConfirm = true } }
+        .sheet(isPresented: $showReview) { ReviewSheet(session: session, onDryRun: { session.run(dryRun: true) }) { showConfirm = true } }
         .sheet(isPresented: $showIgnoreList) { IgnoreListView().frame(minWidth: 560, minHeight: 360) }
         .cleanConfirm($showConfirm, summary: session.summary, adminItems: session.selected.filter(\.viaHelper)) { session.run(dryRun: false) }
     }

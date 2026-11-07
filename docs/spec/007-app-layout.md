@@ -35,7 +35,7 @@ Status: approved by John (2026-11-07, "Looks good").
 3. **Results:** hero number (selected to clean) + "free space after cleaning" bar, then six cards:
    - Actionable: **Cleanup** (caches, logs, Xcode junk, AI tool caches, broken login items), **Trash** (starts unticked, permanent), **Applications** (leftovers of deleted apps; update count links to Updates), **Maintenance** (tasks with ticks; DNS on, Spotlight and snapshots off).
    - Look only: **Declutter** (large/old files count, opens module), **Protection** (permission counts, opens module). Personal files are never cleaned by Tidy Up.
-   - Footer: summary + Review All… + Clean N GB.
+   - Footer: summary + Dry Run + Review All… + Clean N GB. The review sheet has Dry Run too; it lists the same items and tasks Clean would do, changing nothing.
 4. **Review sheet:** grouped list with disclosure per category, tri-state group checkbox, item rows (name, path in mono with middle truncation, risk badge, destination Trash/Delete, size), a filter (All · Cleanup · Trash · Leftovers · Tasks) and the same live summary in its footer.
 5. **Confirm alert:** title "Clean 11,724 items?"; body states Trash vs permanent amounts, tasks, and that macOS asks for the admin password once. Button names the effect ("Clean 9.0 GB"; "Delete …" in red when nothing goes to Trash).
 6. **Cleaning:** same ring, "freed so far".

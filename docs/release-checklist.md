@@ -33,7 +33,7 @@ For v1.0 there is no previous release, so the full form applies.
 - [ ] First-run sheet: both steps, Later and Get Started.
 - [ ] Each sidebar module opens: Tidy Up, Health, Cleanup, Declutter, Disk Map, Applications, Performance, Protection, My Tools.
 - [ ] My Tools: every tile opens the module and tab it names; search filters the grid.
-- [ ] Tidy Up dry run on John's account (Cleanup › Dry Run, or Review then a dry run); the list looks right. No real clean.
+- [ ] Tidy Up dry run on John's account (Tidy Up › Dry Run, in the footer or the review sheet); the list looks right. No real clean.
 - [ ] Menu bar popover: four monitors update, alert switches, Open TidyMyMac, Run Tidy Up.
 - [ ] Settings (⌘,): every pane opens and saves.
 - [ ] Keyboard: ⌘R scans in every module that scans; Space quick-looks a highlighted row; ⌘⌫ ticks highlighted rows and removes nothing; ⌘↑ goes up in Disk Map; Esc and Return work in sheets and alerts.

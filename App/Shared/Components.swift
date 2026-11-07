@@ -235,6 +235,8 @@ struct RunResultView: View {
 
     var body: some View {
         let done = run.outcome.done
+        let files = done.filter { if case .operation = $0.action { false } else { true } }
+        let flushesDNS = done.contains { $0.ruleID == "task.flushDNS" }
         let trash = done.filter { $0.action == .trash }.reduce(Int64(0)) { $0 + $1.allocatedBytes }
         let total = done.reduce(Int64(0)) { $0 + $1.allocatedBytes }
         VStack(spacing: 14) {
@@ -245,7 +247,7 @@ struct RunResultView: View {
             Text(dryRun ? "Dry run: nothing was changed" : "Freed \(sizeString(total))")
                 .font(.system(size: 28, weight: .semibold, design: .rounded))
             Text(dryRun
-                 ? "\(done.count) items would be removed (\(sizeString(total))). The list is in Health › Run History."
+                 ? "\(files.count) items would be removed (\(sizeString(total)))\(flushesDNS ? " and the DNS cache flushed" : ""). The list is in Health › Run History."
                  : "\(sizeString(trash)) is in the Trash and can be restored from Health › Run History.")
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
