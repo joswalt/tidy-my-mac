@@ -17,7 +17,38 @@ struct SettingsView: View {
 
             IgnoreListView()
                 .tabItem { Label("Cleanup", systemImage: "bubbles.and.sparkles") }
+
+            HelperSettings()
+                .tabItem { Label("Helper", systemImage: "lock.shield") }
         }
         .frame(width: 560, height: 380)
+    }
+}
+
+/// Settings › Helper (build spec §6.11, 005 §4.4, 015 §5).
+struct HelperSettings: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        Form {
+            LabeledContent("Admin helper") { Text(app.helper.state.summary) }
+            if case .broken(let why) = app.helper.state { Text(why).font(.caption).foregroundStyle(.orange) }
+            HStack {
+                switch app.helper.state {
+                case .notInstalled: Button("Install Helper") { Task { await app.helper.install() } }
+                case .needsApproval: Button("Open Login Items Settings") { app.helper.openLoginItems() }
+                default: Button("Repair Helper") { Task { await app.helper.repair() } }
+                }
+                Button("Remove Helper") { Task { await app.helper.remove() } }
+                    .disabled(app.helper.state == .notInstalled)
+            }
+            Text("Remove the helper before deleting TidyMyMac, so no stale Login Items entry is left behind.")
+                .font(.caption).foregroundStyle(.secondary)
+            LabeledContent("Full Disk Access") { Text(app.fullDiskAccess == .granted ? "On" : (app.fullDiskAccess == .missing ? "Off" : "Can't tell")) }
+            Button("Reset Full Disk Access Entry") { app.resetFullDiskAccess() }
+                .help("Clears TidyMyMac's entry in Privacy & Security, for when the switch is on but access doesn't work")
+        }
+        .formStyle(.grouped)
+        .onAppear { app.refreshSetup() }
     }
 }

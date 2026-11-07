@@ -34,7 +34,7 @@ public struct Remover: Sendable {
     /// Removes (or with `dryRun`, only reports) each selected candidate, logging every item.
     public func run(_ selection: [Candidate], rules: RuleSet, log: RunLogWriter, dryRun: Bool) throws -> Outcome {
         var outcome = Outcome()
-        for c in selection {
+        for c in selection where !c.viaHelper {
             let item = process(c, rule: rules.cleanRule(c.ruleID), dryRun: dryRun)
             try log.append(item)
             switch item.result {
@@ -52,6 +52,7 @@ public struct Remover: Sendable {
             RunItem(ruleID: c.ruleID, path: c.path, allocatedBytes: c.allocatedBytes, action: action, result: .skipped, reason: reason)
         }
         guard let rule else { return skip("its rule is no longer in the rule set") }
+        guard !c.viaHelper else { return skip("removed through the admin helper") }
         guard c.action != .operation else { return skip("operations run elsewhere") }
 
         // Fresh checks (spec 006 §5.4).
@@ -117,6 +118,40 @@ public struct Remover: Sendable {
             if Darwin.rmdir(path) != 0 { throw RemoveError(path: path, message: String(cString: strerror(errno))) }
         } else {
             if Darwin.unlink(path) != 0 { throw RemoveError(path: path, message: String(cString: strerror(errno))) }
+        }
+    }
+}
+
+/// Emptying the Trash bins (build spec §6.4): permanent, so only what the review listed, only
+/// items the user owns, re-checked first. Root-owned items TidyMyMac's helper trashed are emptied
+/// by the helper (the app passes those separately); anything else is left for Finder.
+public enum TrashEmptier {
+    public static func empty(_ items: [Candidate], home: Home, floor: ProtectedFloor, dryRun: Bool) -> [RunItem] {
+        items.map { c in
+            func item(_ r: RunResult, _ why: String? = nil) -> RunItem {
+                RunItem(ruleID: TrashBins.ruleID, path: c.path, allocatedBytes: c.allocatedBytes, action: .delete, result: r, reason: why)
+            }
+            let st: FileStatus
+            do { st = try Containment.validate(item: c.path, root: c.root) } catch {
+                if (error as? ContainmentError) == .symlinkedItem, let link = FileStatus.lstat(c.path), link.identity == c.identity {
+                    st = link  // a symlink in the Trash is removed as a link
+                } else {
+                    return item(.skipped, "\(error)")
+                }
+            }
+            if st.identity != c.identity { return item(.skipped, "the item was replaced since the scan") }
+            if case .protected(let why) = floor.verdict(for: c.path, context: .manualPick) { return item(.skipped, "protected: \(why)") }
+            if st.userID != home.userID { return item(.skipped, "Empty in Finder (needs your password)") }
+            let m = Sizer().measure(c.path)
+            if m.containsLockedItem { return item(.skipped, "it contains a locked item") }
+            if m.crossesVolume { return item(.skipped, "it contains another volume") }
+            if dryRun { return item(.done) }
+            do {
+                try Remover.removeTree(c.path, device: st.device)
+                return item(.done)
+            } catch {
+                return item(.failed, "\(error)")
+            }
         }
     }
 }

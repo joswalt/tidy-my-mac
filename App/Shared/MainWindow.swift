@@ -26,11 +26,13 @@ struct MainWindow: View {
                 }
             }
             .navigationSplitViewColumnWidth(min: 200, ideal: 220)
+            .safeAreaInset(edge: .bottom) { SidebarFooter() }
         } detail: {
             ModuleDetail(module: app.selectedModule)
         }
         .frame(minWidth: 900, minHeight: 600)
         .toast(app.toast)
+        .sheet(isPresented: Binding(get: { app.showSetup }, set: { app.showSetup = $0 })) { SetupSheet() }
         .onAppear {
             #if DEBUG
             if UserDefaults.standard.string(forKey: "TidyModule") != nil { return }
@@ -72,5 +74,23 @@ struct ModuleDetail: View {
             }
         }
         .navigationTitle(module.title)
+    }
+}
+
+/// Setup status and a way back into setup (spec 007 §2).
+struct SidebarFooter: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
+        Button { app.showSetup = true } label: {
+            HStack(alignment: .top, spacing: 6) {
+                Circle().fill(app.isSetUp ? Color.green : Color.orange).frame(width: 8, height: 8).padding(.top, 4)
+                Text(app.setupLine).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                Spacer(minLength: 0)
+            }
+        }
+        .buttonStyle(.plain)
+        .help("Open setup")
+        .padding(12)
     }
 }

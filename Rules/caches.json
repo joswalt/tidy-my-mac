@@ -80,6 +80,40 @@
         "Apple, File System Programming Guide, 'The Library Directory Stores App-Specific Files': the Caches folder holds data an app can re-create; the system may delete it to free space."
       ],
       "reviewed": "2026-11-07"
+    },
+    {
+      "id": "cache.system",
+      "title": "System caches",
+      "module": "cleanup",
+      "category": "cache",
+      "risk": "caution",
+      "removes": "Caches in the computer-wide Library, shared by all users and system services.",
+      "keeps": "Apple's own caches, macOS components and TidyMyMac's own files.",
+      "notes": "Removed by the admin helper. Some apps rebuild these slowly, so items start unticked.",
+      "targets": [
+        {
+          "root": "/Library/Caches",
+          "match": "children"
+        }
+      ],
+      "conditions": {
+        "excludeNames": [
+          "com.apple.*"
+        ]
+      },
+      "action": "delete",
+      "privilege": "helper",
+      "zone": "systemCaches",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "reviewed": "2026-11-07"
     }
   ]
 }

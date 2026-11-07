@@ -31,6 +31,70 @@
         "Logs in ~/Library/Logs are diagnostic text written by apps and the system; apps don't read them back to work (observed, macOS 26.7.1)."
       ],
       "reviewed": "2026-11-07"
+    },
+    {
+      "id": "log.system",
+      "title": "System logs",
+      "module": "cleanup",
+      "category": "log",
+      "risk": "safe",
+      "removes": "Log files apps and services write to the computer-wide Library's Logs folder.",
+      "keeps": "The unified system log, Apple's diagnostic store and TidyMyMac's own helper log.",
+      "notes": "Removed by the admin helper.",
+      "targets": [
+        {
+          "root": "/Library/Logs",
+          "match": "children"
+        }
+      ],
+      "action": "delete",
+      "privilege": "helper",
+      "zone": "systemLogs",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "evidence": [
+        "Files in /Library/Logs are plain-text diagnostics; apps and macOS create them again as needed (observed, macOS 26.7.1)."
+      ],
+      "reviewed": "2026-11-07"
+    },
+    {
+      "id": "log.system.rotated",
+      "title": "Old system log archives",
+      "module": "cleanup",
+      "category": "log",
+      "risk": "safe",
+      "removes": "Compressed and numbered old copies of system logs in /private/var/log.",
+      "keeps": "The current log files and the unified log store.",
+      "notes": "Only rotated archives (.gz, .bz2, .xz or a trailing number); the helper's zone enforces this.",
+      "targets": [
+        {
+          "root": "/private/var/log",
+          "match": "children"
+        }
+      ],
+      "action": "delete",
+      "privilege": "helper",
+      "zone": "rotatedLogs",
+      "needsFullDiskAccess": false,
+      "macOS": {
+        "min": "14.0"
+      },
+      "status": "experimental",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      },
+      "evidence": [
+        "newsyslog rotates these archives and never reads them back (man newsyslog)."
+      ],
+      "reviewed": "2026-11-07"
     }
   ]
 }
