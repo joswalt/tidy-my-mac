@@ -145,7 +145,7 @@ struct CleanupEngineTests {
 struct SelectionIsolationTests {
     @Test func tickingOneItemNeverTicksItsNeighbours() {
         func cand(_ n: String, helper: Bool) -> Candidate {
-            Candidate(ruleID: "cache.system", path: "/Library/Caches/" + n, root: "/Library/Caches", identity: ItemIdentity(device: 0, inode: 0),
+            Candidate(ruleID: "cache.system", path: HelperZone.systemCaches.roots[0] + "/" + n, root: HelperZone.systemCaches.roots[0], identity: ItemIdentity(device: 0, inode: 0),
                       isDirectory: true, allocatedBytes: 1, newestModification: Date(), action: .delete, risk: .caution,
                       status: .experimental, helperHandle: helper ? UUID() : nil)
         }
