@@ -38,11 +38,13 @@ for f in Documents/tw.txt Desktop/tw.txt Pictures/tw.jpg Movies/tw.mov Music/tw.
   mkfile "$f" 8192
   TRIPWIRES+=("$HOME/$f")
 done
-ln -sf "$HOME/Documents" "Library/Caches/escape"
-ln -sf "$HOME/Documents" "Library/Caches/com.example.Editor/docs-link"
+ln -sfn "$HOME/Documents" "Library/Caches/escape"
+ln -sfn "$HOME/Documents" "Library/Caches/com.example.Editor/docs-link"
 mkdir -p Library/Caches/com.example.Links Library/Caches/com.example.Clones Library/Caches/com.example.Locked
 ln -f Documents/linked.bin Library/Caches/com.example.Links/hard.bin
 cp -c Documents/cloned.bin Library/Caches/com.example.Clones/clone.bin
+# A re-seed: clear the lock left by the last run, or the write below is refused.
+[ -e Library/Caches/com.example.Locked/locked ] && chflags nouchg Library/Caches/com.example.Locked/locked
 mkfile Library/Caches/com.example.Locked/locked
 chflags uchg Library/Caches/com.example.Locked/locked
 

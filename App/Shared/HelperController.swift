@@ -15,6 +15,8 @@ final class HelperController {
         case notInApplications
         case notInstalled
         case needsApproval
+        /// The helper only answers admin users (005 §9); a standard account can't use it.
+        case needsAdminAccount
         case ready
         case broken(String)
 
@@ -26,6 +28,7 @@ final class HelperController {
             case .notInApplications: "Move TidyMyMac to Applications"
             case .notInstalled: "Helper not installed"
             case .needsApproval: "Helper waiting for approval"
+            case .needsAdminAccount: "Helper needs an admin account"
             case .ready: "Helper ready"
             case .broken: "Helper needs repair"
             }
@@ -36,6 +39,11 @@ final class HelperController {
     private var client: HelperClient?
     private let service = SMAppService.daemon(plistName: HelperProtocol.launchdPlistName)
     private var authorization: AuthorizationRef?
+    /// Setup polls every second; a check can take seconds, so overlapping ones are skipped.
+    private var refreshing = false
+    /// The silent restart of an old helper (unregister + register) is tried once per launch,
+    /// not on every poll; Install and Repair allow it again.
+    private var restartTried = false
 
     var isInApplications: Bool { Bundle.main.bundlePath.hasPrefix("/Applications/") }
     var appBuild: Int { CompositionRoot.ruleSetVersion }
@@ -43,7 +51,11 @@ final class HelperController {
     // MARK: Status
 
     func refresh() async {
+        guard !refreshing else { return }
+        refreshing = true
+        defer { refreshing = false }
         guard isInApplications else { state = .notInApplications; return }
+        guard Self.currentUserIsAdmin() else { state = .needsAdminAccount; disconnect(); return }
         switch service.status {
         case .notRegistered: state = .notInstalled; disconnect()
         case .requiresApproval: state = .needsApproval; disconnect()
@@ -67,7 +79,7 @@ final class HelperController {
                 // Old helper still running: ask it to exit, then (second time) re-register silently.
                 _ = try? await c.send(.shutdown, timeout: 3)
                 disconnect()
-                if attempt == 1 { try? await service.unregister(); try? service.register() }
+                if attempt == 1 && !restartTried { restartTried = true; try? await service.unregister(); try? service.register() }
                 try? await Task.sleep(for: .seconds(1))
             } catch {
                 disconnect()
@@ -76,6 +88,16 @@ final class HelperController {
             }
         }
         if state != .ready { state = .broken("The helper is out of date and couldn't be restarted.") }
+    }
+
+    /// Same test as the helper's caller check (005 §9): membership of the admin group.
+    private static func currentUserIsAdmin() -> Bool {
+        let uid = getuid()
+        guard let pw = getpwuid(uid), let name = pw.pointee.pw_name, let admin = getgrnam("admin") else { return false }
+        var groups = [Int32](repeating: 0, count: 128)
+        var count = Int32(groups.count)
+        _ = getgrouplist(name, Int32(bitPattern: pw.pointee.pw_gid), &groups, &count)
+        return groups.prefix(Int(count)).contains(Int32(bitPattern: admin.pointee.gr_gid))
     }
 
     private func connection() -> HelperClient {
@@ -93,6 +115,7 @@ final class HelperController {
     // MARK: Install, repair, remove (005 §4.1, §4.4)
 
     func install() async {
+        restartTried = false
         var registerError: Error?
         do {
             try service.register()

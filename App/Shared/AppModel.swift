@@ -85,7 +85,8 @@ final class AppModel {
 
     // MARK: Setup (spec 007 §6, 015)
 
-    var isSetUp: Bool { fullDiskAccess == .granted && helper.state.isReady }
+    /// A standard account can't use the helper, so it counts as set up with Full Disk Access alone.
+    var isSetUp: Bool { fullDiskAccess == .granted && (helper.state.isReady || helper.state == .needsAdminAccount) }
 
     var setupLine: String {
         let fda = switch fullDiskAccess {
