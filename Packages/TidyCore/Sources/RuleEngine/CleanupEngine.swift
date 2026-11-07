@@ -131,6 +131,10 @@ public struct CleanupEngine: Sendable {
         public let outcome: Remover.Outcome
         public let record: RunRecord
         public let logURL: URL
+
+        public init(outcome: Remover.Outcome, record: RunRecord, logURL: URL) {
+            self.outcome = outcome; self.record = record; self.logURL = logURL
+        }
     }
 
     /// Runs the selection (or, with `dryRun`, only reports it). Every run is logged (§6.1).

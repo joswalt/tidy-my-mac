@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sp="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <item>
+      <title>Version 2.0</title>
+      <enclosure url="https://example.com/a.zip" sp:version="200" sp:shortVersionString="2.0" length="1" type="application/octet-stream"/>
+    </item>
+    <item>
+      <title>Version 2.1</title>
+      <sp:version>210</sp:version>
+      <sp:shortVersionString>2.1</sp:shortVersionString>
+      <enclosure url="https://example.com/b.zip" length="1" type="application/octet-stream"/>
+    </item>
+  </channel>
+</rss>

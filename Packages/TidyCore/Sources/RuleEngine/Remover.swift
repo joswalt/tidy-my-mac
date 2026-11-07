@@ -29,6 +29,17 @@ public struct Remover: Sendable {
         public var skipped: [RunItem] = []
         public var failed: [RunItem] = []
         public var all: [RunItem] { done + skipped + failed }
+
+        public init() {}
+
+        /// Files an item under done, skipped or failed by its result.
+        public mutating func add(_ item: RunItem) {
+            switch item.result {
+            case .done: done.append(item)
+            case .skipped: skipped.append(item)
+            case .failed: failed.append(item)
+            }
+        }
     }
 
     /// Removes (or with `dryRun`, only reports) each selected candidate, logging every item.

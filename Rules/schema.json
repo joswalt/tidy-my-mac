@@ -418,6 +418,22 @@
           "type": "string"
         }
       }
+    },
+    "updateOverride": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bundleId",
+        "reason"
+      ],
+      "properties": {
+        "bundleId": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
     }
   }
 }

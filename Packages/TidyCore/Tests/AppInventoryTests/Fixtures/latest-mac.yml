@@ -1,0 +1,9 @@
+version: 4.2.1
+files:
+  - url: Dummy-4.2.1-arm64-mac.zip
+    sha512: abc
+    size: 123
+    version: 9.9.9
+path: Dummy-4.2.1-arm64-mac.zip
+sha512: abc
+releaseDate: '2026-11-01T10:00:00.000Z'

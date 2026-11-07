@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <item>
+      <title>Plain 1.5</title>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+      <enclosure url="https://example.com/1.5.zip" sparkle:version="150" sparkle:shortVersionString="1.5" length="1" type="application/octet-stream"/>
+    </item>
+    <item>
+      <title>Needs macOS 30</title>
+      <sparkle:minimumSystemVersion>30.0</sparkle:minimumSystemVersion>
+      <enclosure url="https://example.com/2.0.zip" sparkle:version="200" sparkle:shortVersionString="2.0" length="1" type="application/octet-stream"/>
+    </item>
+    <item>
+      <title>Only up to macOS 13</title>
+      <sparkle:maximumSystemVersion>13.9</sparkle:maximumSystemVersion>
+      <enclosure url="https://example.com/1.9.zip" sparkle:version="190" sparkle:shortVersionString="1.9" length="1" type="application/octet-stream"/>
+    </item>
+    <item>
+      <title>Beta channel</title>
+      <sparkle:channel>beta</sparkle:channel>
+      <enclosure url="https://example.com/1.8b.zip" sparkle:version="180" sparkle:shortVersionString="1.8b1" length="1" type="application/octet-stream"/>
+    </item>
+    <item>
+      <title>Windows build</title>
+      <enclosure url="https://example.com/1.7.exe" sparkle:version="170" sparkle:shortVersionString="1.7" sparkle:os="windows" length="1" type="application/octet-stream"/>
+    </item>
+    <item>
+      <title>Needs 1.6 first</title>
+      <sparkle:minimumUpdateVersion>160</sparkle:minimumUpdateVersion>
+      <enclosure url="https://example.com/1.6.zip" sparkle:version="165" sparkle:shortVersionString="1.6.5" length="1" type="application/octet-stream"/>
+    </item>
+  </channel>
+</rss>

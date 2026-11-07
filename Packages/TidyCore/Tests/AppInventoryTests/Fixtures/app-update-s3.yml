@@ -1,0 +1,4 @@
+provider: s3
+bucket: dummy-releases
+region: eu-west-1
+path: /mac
