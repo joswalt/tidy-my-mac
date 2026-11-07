@@ -216,3 +216,35 @@ struct RunResultView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
+
+/// The one confirmation before hand-picked items move (My Clutter, Space Lens): count, size and
+/// destination. These never delete; everything goes to the Trash (spec 014 §5, build spec §6.6–6.8).
+struct TrashConfirm: ViewModifier {
+    @Binding var isPresented: Bool
+    let count: Int
+    let bytes: Int64
+    let onConfirm: () -> Void
+
+    func body(content: Content) -> some View {
+        content.alert("Move \(count.formatted()) \(count == 1 ? "item" : "items") to the Trash?", isPresented: $isPresented) {
+            Button("Move \(sizeString(bytes)) to Trash", action: onConfirm)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("\(sizeString(bytes)) moves to the Trash, where you can restore it. Nothing is deleted. Every item is logged in Health › Run History.")
+        }
+    }
+}
+
+extension View {
+    func trashConfirm(_ isPresented: Binding<Bool>, count: Int, bytes: Int64, onConfirm: @escaping () -> Void) -> some View {
+        modifier(TrashConfirm(isPresented: isPresented, count: count, bytes: bytes, onConfirm: onConfirm))
+    }
+}
+
+/// A flag a detached scan polls to stop early.
+final class CancelFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = false
+    var isSet: Bool { lock.withLock { value } }
+    func set() { lock.withLock { value = true } }
+}

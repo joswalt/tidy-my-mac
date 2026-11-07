@@ -60,6 +60,9 @@ REQUIRED_TEST_FILES=(
   Packages/TidyCore/Tests/RuleEngineTests/ScannerTests.swift         # 017 §4.2 sizes
   Packages/TidyCore/Tests/RuleEngineTests/RemoverTests.swift
   Packages/TidyCore/Tests/RunLogTests/RunLogTests.swift              # 017 §4.4
+  Packages/TidyCore/Tests/DiskAnalysisTests/DuplicateFinderTests.swift  # spec 014 rules
+  Packages/TidyCore/Tests/DiskAnalysisTests/SpaceLensTests.swift     # treemap vs du -k
+  Packages/TidyCore/Tests/DiskAnalysisTests/ClutterTests.swift       # Large & Old, manual removal
 )
 for t in ${REQUIRED_TEST_FILES[@]+"${REQUIRED_TEST_FILES[@]}"}; do
   [ -f "$t" ] || report "required test file missing: $t"

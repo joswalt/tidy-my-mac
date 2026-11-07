@@ -40,7 +40,7 @@ let package = Package(
         .testTarget(name: "RuleEngineTests", dependencies: ["RuleEngine", "RunLog", "TestSupport"], exclude: ["Fixtures"]),
         .testTarget(name: "AppInventoryTests", dependencies: ["AppInventory", "RuleEngine", "RunLog", "SafetyFloor", "TestSupport"],
                     exclude: ["Fixtures"]),
-        .testTarget(name: "DiskAnalysisTests", dependencies: ["DiskAnalysis"]),
+        .testTarget(name: "DiskAnalysisTests", dependencies: ["DiskAnalysis", "RuleEngine", "RunLog", "SafetyFloor", "TestSupport"]),
         .testTarget(name: "SystemTasksTests", dependencies: ["SystemTasks"]),
         .testTarget(name: "MonitorsTests", dependencies: ["Monitors", "SafetyFloor"]),
         .testTarget(name: "RunLogTests", dependencies: ["RunLog", "TestSupport"]),
