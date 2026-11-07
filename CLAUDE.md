@@ -14,6 +14,14 @@ scripts/check-local.sh                        # everything + signed Release buil
 
 Signing: John's free Personal Team "Apple Development" (team `26TUUFN7M2`, in `Config/Identity.xcconfig`), hardened runtime, no sandbox. Never ad hoc sign ("Sign to Run Locally"): launchd refuses to start the helper. If `codesign` fails with `errSecInternalComponent`, import Apple's `AppleWWDRCAG3.cer` into the login keychain.
 
+## Xcode plugin
+
+Sessions may have Apple's Xcode plugin (`xcode@claude-plugins-official`): build and test schemes, read structured build issues, render SwiftUI previews, run the app and read its console, profile with xctrace. Keep Xcode open while using it.
+
+- `TidyMyMac.xcodeproj` is generated. Never change build settings, targets or files through the plugin's Xcode tools: put them in `project.yml` and run `xcodegen generate`.
+- It does not replace `swift test` for TidyCore or `scripts/check-local.sh` for the signed Release build and codesign checks.
+- Running the app through it follows the same rule as everywhere: no real (non-dry) cleanup on John's account.
+
 ## Layout (spec 016)
 
 - `App/`: SwiftUI only. `App/TidyMyMacApp.swift` is the composition root, the one place that builds real file-system values (`Home`).
