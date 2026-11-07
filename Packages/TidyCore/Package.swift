@@ -24,7 +24,7 @@ let package = Package(
         .target(name: "RuleEngine", dependencies: ["SafetyFloor", "RunLog"]),
         .target(name: "AppInventory", dependencies: ["SafetyFloor", "RuleEngine", "RunLog"]),
         .target(name: "DiskAnalysis", dependencies: ["SafetyFloor"]),
-        .target(name: "SystemTasks", dependencies: ["HelperProtocol"]),
+        .target(name: "SystemTasks", dependencies: ["SafetyFloor", "HelperProtocol"]),
         .target(name: "Monitors", dependencies: ["SafetyFloor"]),
         .target(name: "RunLog"),
 
@@ -41,8 +41,8 @@ let package = Package(
         .testTarget(name: "AppInventoryTests", dependencies: ["AppInventory", "RuleEngine", "RunLog", "SafetyFloor", "TestSupport"],
                     exclude: ["Fixtures"]),
         .testTarget(name: "DiskAnalysisTests", dependencies: ["DiskAnalysis", "RuleEngine", "RunLog", "SafetyFloor", "TestSupport"]),
-        .testTarget(name: "SystemTasksTests", dependencies: ["SystemTasks"]),
-        .testTarget(name: "MonitorsTests", dependencies: ["Monitors", "SafetyFloor"]),
+        .testTarget(name: "SystemTasksTests", dependencies: ["SystemTasks", "SafetyFloor", "TestSupport"]),
+        .testTarget(name: "MonitorsTests", dependencies: ["Monitors", "SafetyFloor", "TestSupport"]),
         .testTarget(name: "RunLogTests", dependencies: ["RunLog", "TestSupport"]),
         // The core property (spec 017 §4.1): a run removes exactly what was selected, nothing else.
         .testTarget(name: "EndToEndTests", dependencies: [
