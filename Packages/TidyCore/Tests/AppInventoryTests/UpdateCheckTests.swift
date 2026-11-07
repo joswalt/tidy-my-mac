@@ -176,11 +176,14 @@ struct ElectronFeedTests {
 struct HomebrewTests {
     @Test func slimCatalogueMatchesByBundleIDThenName() throws {
         let catalog = try CaskCatalog.parse(fullCatalogue: Fixture.data("cask.json"))
-        #expect(catalog.entries.count == 5)  // the font-only cask has no app
+        #expect(catalog.entries.count == 7)  // the font-only cask has no app
         #expect(catalog.entry(bundleID: "io.github.joswalt.TidyTest.Dummy", appFileName: "Other.app")?.token == "tidy-dummy")
         #expect(catalog.entry(bundleID: "com.example.unknown", appFileName: "Named.app")?.token == "by-name")
         #expect(catalog.entry(bundleID: "com.example.multi.helper", appFileName: "x.app")?.token == "multi-quit")
         #expect(catalog.entry(bundleID: "com.example.unknown", appFileName: "Nope.app") == nil)
+        // Two casks quit the same bundle ID: the one installing this app name wins.
+        #expect(catalog.entry(bundleID: "com.example.shared", appFileName: "Shared.app")?.token == "shared")
+        #expect(catalog.entry(bundleID: "com.example.shared", appFileName: "Shared Beta.app")?.token == "shared@beta")
         #expect(catalog.entry(bundleID: "x", appFileName: "Latest.app")?.versions == nil)
         let v = try #require(catalog.entries.first?.versions)
         #expect(v.short == "2.0.0" && v.build == "2000")
@@ -193,14 +196,14 @@ struct HomebrewTests {
         let fetcher = FixtureFetcher([CaskCatalog.url: "cask.json"])
         let now = Date()
         let first = await cache.casks(fetcher: fetcher, now: now)
-        #expect(first?.entries.count == 5)
+        #expect(first?.entries.count == 7)
         _ = await cache.casks(fetcher: fetcher, now: now.addingTimeInterval(86_400))
         #expect(fetcher.requested.count == 1)  // cached for a week
         _ = await cache.casks(fetcher: fetcher, now: now.addingTimeInterval(8 * 86_400))
         #expect(fetcher.requested.count == 2)
         // A failed refresh keeps the stale copy.
         let offline = FixtureFetcher([:])
-        #expect(await cache.casks(fetcher: offline, now: now.addingTimeInterval(30 * 86_400))?.entries.count == 5)
+        #expect(await cache.casks(fetcher: offline, now: now.addingTimeInterval(30 * 86_400))?.entries.count == 7)
     }
 }
 
@@ -251,11 +254,18 @@ struct UpdateCheckerTests {
         // App Store wins over everything.
         let mas = await checker().check(fakeApp(sparkle: "https://feeds.example.com/dummy.xml", appStore: true), casks: casks)
         #expect(mas.state == .appStore && mas.source == .appStore)
-        // Homebrew `short,build`: build compared with CFBundleVersion.
-        let brew = await checker().check(fakeApp(short: "2.0.0", build: "1999"), casks: casks)
+        // Homebrew `short,build`: short versions first; numeric builds only break a tie.
+        let brew = await checker().check(fakeApp(short: "1.9.0", build: "1999"), casks: casks)
         #expect(brew.source == .homebrew(token: "tidy-dummy") && brew.state == .updateAvailable && brew.availableVersion == "2.0.0")
+        let brewTie = await checker().check(fakeApp(short: "2.0.0", build: "1999"), casks: casks)
+        #expect(brewTie.state == .updateAvailable)
         let brewSame = await checker().check(fakeApp(short: "2.0.0", build: "2000"), casks: casks)
         #expect(brewSame.state == .upToDate)
+        // A build in another format (live check: Claude, Cursor) never makes an update on its own.
+        let otherBuild = await checker().check(fakeApp(short: "2.0.0", build: "2.0.0-abc"), casks: casks)
+        #expect(otherBuild.state == .upToDate)
+        let newerInstalled = await checker().check(fakeApp(short: "2.0.1", build: "1"), casks: casks)
+        #expect(newerInstalled.state == .upToDate)
         // By app file name, short version only.
         let named = await checker().check(fakeApp("Named", bundleID: "com.example.unknown", short: "3.0", build: "3"), casks: casks)
         #expect(named.state == .updateAvailable && named.availableVersion == "3.1")

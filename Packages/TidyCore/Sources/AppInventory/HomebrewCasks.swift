@@ -27,7 +27,7 @@ public struct CaskCatalog: Codable, Sendable {
 
     public let fetched: Date
     public let entries: [CaskEntry]
-    private var byBundleID: [String: Int] = [:]
+    private var byBundleID: [String: [Int]] = [:]
     private var byAppName: [String: Int] = [:]
 
     enum CodingKeys: String, CodingKey { case fetched, entries }
@@ -47,16 +47,20 @@ public struct CaskCatalog: Codable, Sendable {
 
     private mutating func index() {
         for (i, e) in entries.enumerated() {
-            for id in e.bundleIDs where byBundleID[id.lowercased()] == nil { byBundleID[id.lowercased()] = i }
+            for id in Set(e.bundleIDs.map { $0.lowercased() }) { byBundleID[id, default: []].append(i) }
             for n in e.appNames where byAppName[n.lowercased()] == nil { byAppName[n.lowercased()] = i }
         }
     }
 
-    /// Matched by bundle ID, then by the app's file name (spec 013 §2 row 4).
+    /// Matched by bundle ID, then by the app's file name (spec 013 §2 row 4). Several casks can
+    /// quit the same bundle ID (`google-chrome` and `google-chrome@beta`), so among those the one
+    /// that installs an app of this file name wins.
     public func entry(bundleID: String, appFileName: String) -> CaskEntry? {
-        if let i = byBundleID[bundleID.lowercased()] { return entries[i] }
-        if let i = byAppName[appFileName.lowercased()] { return entries[i] }
-        return nil
+        let name = appFileName.lowercased()
+        let byID = byBundleID[bundleID.lowercased()] ?? []
+        if let i = byID.first(where: { entries[$0].appNames.contains { $0.lowercased() == name } }) { return entries[i] }
+        if let i = byAppName[name] { return entries[i] }
+        return byID.first.map { entries[$0] }
     }
 
     /// Reads Homebrew's full `cask.json` (a JSON array) and keeps only what we use.

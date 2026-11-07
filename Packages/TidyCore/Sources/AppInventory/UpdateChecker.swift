@@ -186,18 +186,24 @@ public struct UpdateChecker: Sendable {
         return UpdateStatus(app: app, source: source, state: newer ? .updateAvailable : .upToDate, availableVersion: v)
     }
 
-    /// Cask `short,build`: compare build with CFBundleVersion when both exist, else short with short.
+    /// Cask `short,build`. Spec 013 §4 compared `build` with CFBundleVersion first, but the live
+    /// check showed cask builds are often hashes or dates that don't match the app's own build
+    /// (false updates for Claude and Cursor). So: short with short; the build only breaks a tie,
+    /// and only when both builds are plain numbers.
     func homebrew(_ app: InstalledApp, source: UpdateSource, short: String, build: String?) -> UpdateStatus {
-        let newer: Bool
-        if let build, let installedBuild = app.buildVersion {
-            newer = VersionComparator.isNewer(build, than: installedBuild)
-        } else if let installedShort = app.shortVersion ?? app.buildVersion {
-            newer = VersionComparator.isNewer(short, than: installedShort)
-        } else {
+        guard let installedShort = app.shortVersion ?? app.buildVersion else {
             return UpdateStatus(app: app, source: source, state: .notChecked("The app has no version number"))
         }
-        return UpdateStatus(app: app, source: source, state: newer ? .updateAvailable : .upToDate, availableVersion: short)
+        var result = VersionComparator.compare(short, installedShort)
+        if result == .orderedSame, let build, let installedBuild = app.buildVersion,
+           Self.isNumeric(build), Self.isNumeric(installedBuild) {
+            result = VersionComparator.compare(build, installedBuild)
+        }
+        return UpdateStatus(app: app, source: source, state: result == .orderedDescending ? .updateAvailable : .upToDate,
+                            availableVersion: short)
     }
+
+    static func isNumeric(_ v: String) -> Bool { !v.isEmpty && v.allSatisfy { $0.isNumber || $0 == "." } }
 
     static func describe(_ error: Error) -> String {
         if let e = error as? FetchError { return e.description }
