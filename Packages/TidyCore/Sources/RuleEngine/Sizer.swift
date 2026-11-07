@@ -17,8 +17,15 @@ public final class Sizer: @unchecked Sendable {
     private var seenLinks: Set<ItemIdentity> = []
     private var seenClones: Set<ItemIdentity> = []
     private let lock = NSLock()
+    /// Called now and then with the running total of everything this sizer has measured, so a
+    /// long scan can show its size counting up.
+    private let onProgress: (@Sendable (Int64) -> Void)?
+    private var total: Int64 = 0
+    private var lastReport = Date.distantPast
 
-    public init() {}
+    public init(onProgress: (@Sendable (Int64) -> Void)? = nil) {
+        self.onProgress = onProgress
+    }
 
     public func measure(_ path: String) -> Measure {
         guard let st = FileStatus.lstat(path) else { return Measure() }
@@ -28,10 +35,16 @@ public final class Sizer: @unchecked Sendable {
     }
 
     private func walk(_ path: String, _ st: FileStatus, device: Int32, into m: inout Measure) {
+        if let onProgress, Date().timeIntervalSince(lastReport) > 0.25 {
+            lastReport = Date()
+            onProgress(total)
+        }
         if st.device != device { m.crossesVolume = true; return }
         if st.isLocked { m.containsLockedItem = true }
         if st.modified > m.newestModification { m.newestModification = st.modified }
-        m.allocatedBytes += countedBytes(path, st)
+        let bytes = countedBytes(path, st)
+        m.allocatedBytes += bytes
+        total += bytes
         guard st.isDirectory, let dir = opendir(path) else {
             if !st.isDirectory { m.fileCount += 1 }
             return

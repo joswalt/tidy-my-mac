@@ -187,7 +187,12 @@ final class ScanSession {
     var selection = Selection()
     var lastRun: CleanupEngine.Run?
     var foundSoFar: Int64 = 0
+    /// Bytes measured so far in the area being checked now.
+    var foundInCurrent: Int64 = 0
+    /// Areas in scan order, and which are done (spec 007 §3: per-area checklist).
+    var areas: [(id: String, title: String)] = []
     var progress: [String: Bool] = [:]
+    var currentArea: String?
     var error: String?
     private var scanTask: Task<Void, Never>?
 
@@ -208,16 +213,28 @@ final class ScanSession {
         let previous = phase == .scanning ? .idle : phase
         phase = .scanning
         foundSoFar = 0
-        progress = Dictionary(uniqueKeysWithValues: rules.map { ($0.id, false) })
+        let userRules = rules.filter { $0.privilege == .user }
+        let helperArea = rules.contains { $0.privilege == .helper } ? [("helper", "System files (admin helper)")] : []
+        areas = userRules.map { ($0.id, $0.title) } + helperArea + [("trash", "Trash")]
+        progress = Dictionary(uniqueKeysWithValues: areas.map { ($0.id, false) })
+        foundInCurrent = 0
         scanTask = Task {
             var results: [RuleScanResult] = []
-            for rule in rules {
-                if Task.isCancelled { phase = previous; return }
-                let r = await Task.detached { engine.scan([rule], ignore: ignore).results }.value
+            for rule in userRules {
+                if Task.isCancelled { phase = previous; currentArea = nil; return }
+                currentArea = rule.title
+                foundInCurrent = 0
+                let r = await Task.detached {
+                    engine.scan([rule], ignore: ignore) { bytes in
+                        Task { @MainActor in if self.currentArea == rule.title { self.foundInCurrent = bytes } }
+                    }.results
+                }.value
                 results += r
                 foundSoFar += r.reduce(0) { $0 + $1.totalBytes }
+                foundInCurrent = 0
                 progress[rule.id] = true
             }
+            currentArea = "System files"
             // Helper rules: ask the helper for its zones, then narrow by each rule (005 §5).
             if let app, app.helper.state.isReady {
                 let helperRules = rules.filter { $0.privilege == .helper && $0.zone != nil }
@@ -231,11 +248,15 @@ final class ScanSession {
                     foundSoFar += r.totalBytes
                 }
             }
+            progress["helper"] = true
+            currentArea = "Trash"
             // Trash bins (build spec §6.4).
             let ctx = engine.context
             let bins = await Task.detached { TrashBins.results(home: ctx.home, floor: ctx.floor, hasFullDiskAccess: ctx.hasFullDiskAccess) }.value
             results += bins
             foundSoFar += bins.reduce(0) { $0 + $1.totalBytes }
+            progress["trash"] = true
+            currentArea = nil
             // Categories with items first, safest first, then largest.
             let order: [RuleRisk: Int] = [.safe: 0, .caution: 1, .risky: 2]
             results.sort { a, b in
