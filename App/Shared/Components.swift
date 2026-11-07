@@ -141,6 +141,8 @@ struct ToastOverlay: ViewModifier {
 struct CleanConfirm: ViewModifier {
     @Binding var isPresented: Bool
     let summary: CleanupSummary
+    /// Items removed with administrator rights are named one by one (not just counted).
+    var adminItems: [Candidate] = []
     let onConfirm: () -> Void
 
     func body(content: Content) -> some View {
@@ -160,14 +162,19 @@ struct CleanConfirm: ViewModifier {
         var lines: [String] = []
         if summary.trashBytes > 0 { lines.append("\(sizeString(summary.trashBytes)) moves to the Trash, where you can restore it.") }
         if summary.deleteBytes > 0 { lines.append("\(sizeString(summary.deleteBytes)) of caches and logs is deleted permanently.") }
+        if !adminItems.isEmpty {
+            let names = adminItems.prefix(12).map { "• " + $0.path }
+            let more = adminItems.count > 12 ? ["…and \(adminItems.count - 12) more"] : []
+            lines.append("\nWith your administrator password:\n" + (names + more).joined(separator: "\n") + "\n")
+        }
         lines.append("Every item is logged in Health › Run History.")
         return lines.joined(separator: " ")
     }
 }
 
 extension View {
-    func cleanConfirm(_ isPresented: Binding<Bool>, summary: CleanupSummary, onConfirm: @escaping () -> Void) -> some View {
-        modifier(CleanConfirm(isPresented: isPresented, summary: summary, onConfirm: onConfirm))
+    func cleanConfirm(_ isPresented: Binding<Bool>, summary: CleanupSummary, adminItems: [Candidate] = [], onConfirm: @escaping () -> Void) -> some View {
+        modifier(CleanConfirm(isPresented: isPresented, summary: summary, adminItems: adminItems, onConfirm: onConfirm))
     }
 
     func toast(_ message: String?) -> some View { modifier(ToastOverlay(message: message)) }

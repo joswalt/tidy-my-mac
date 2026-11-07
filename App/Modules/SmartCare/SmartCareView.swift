@@ -30,7 +30,7 @@ struct SmartCareView: View {
                 .disabled(session.phase == .scanning || session.phase == .running)
         }
         .sheet(isPresented: $showReview) { ReviewSheet(session: session) { showConfirm = true } }
-        .cleanConfirm($showConfirm, summary: session.summary) { session.run(dryRun: false, flushDNS: flushDNS && app.helper.state.isReady) }
+        .cleanConfirm($showConfirm, summary: session.summary, adminItems: session.selected.filter(\.viaHelper)) { session.run(dryRun: false, flushDNS: flushDNS && app.helper.state.isReady) }
     }
 
     var idle: some View {
