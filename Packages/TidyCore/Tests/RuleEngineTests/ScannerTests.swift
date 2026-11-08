@@ -54,6 +54,33 @@ struct ScannerTests {
         #expect(scanner(t, guards: FakeGuards(installed: ["com.example.Tool"])).scan(missing).state == .blocked("com.example.Tool is installed"))
     }
 
+    @Test func ruleRootThroughASymlinkIsSkippedNotFollowed() throws {
+        let t = try TestHome("root-symlink")
+        defer { t.cleanUp() }
+        try t.file("Downloads/important.zip", size: 500)
+        try t.folder("Library/Caches")
+        try t.symlink("Library/Caches/Foo", to: t.path("Downloads"))
+        try t.file("Library/Caches/Real/x")
+        try t.symlink("Library/Caches/Linked", to: t.path("Library/Caches/Real"))
+        let s = scanner(t)
+
+        let literal = makeRule(targets: [RuleTarget(root: ruleRoot("Library/Caches/Foo"), match: .children)])
+        let r = s.scan(literal)
+        #expect(r.candidates.isEmpty)
+        #expect(r.skipped.contains { $0.path == t.path("Library/Caches/Foo") && $0.reason.contains("symbolic link") })
+
+        // Also below a wildcard-free parent link, and for `self` targets.
+        let deeper = makeRule(targets: [RuleTarget(root: ruleRoot("Library/Caches/Foo/Sub"), match: .children)])
+        #expect(s.scan(deeper).candidates.isEmpty)
+        let linked = makeRule(targets: [RuleTarget(root: ruleRoot("Library/Caches/Linked/x"), match: .self)])
+        #expect(s.scan(linked).candidates.isEmpty)
+        #expect(FileStatus.lstat(t.path("Downloads/important.zip")) != nil)
+
+        // A real folder still scans, and so does a root under a system-level link (the temp dir).
+        let ok = makeRule(targets: [RuleTarget(root: ruleRoot("Library/Caches/Real"), match: .children)])
+        #expect(s.scan(ok).candidates.map(\.name) == ["x"])
+    }
+
     @Test func symlinksAreNeverFollowed() throws {
         let t = try TestHome("symlinks")
         defer { t.cleanUp() }
@@ -141,5 +168,18 @@ struct SizerTests {
         let d = sizer.measure(t.path("Library/Caches/d")).allocatedBytes
         #expect(c > 290_000)
         #expect(d < 10_000, "a clone of an already-counted file must not count again")
+    }
+
+    @Test func flagsAndDoesNotEnterMediaLibraries() throws {
+        let t = try TestHome("sizer-library")
+        defer { t.cleanUp() }
+        try t.file("Pictures/Stuff/Photos Library.photoslibrary/database/db", size: 300_000)
+        try t.file("Pictures/Stuff/note.txt")
+        try t.file("Pictures/Plain/a.bin", size: 1000)
+        let withLibrary = Sizer().measure(t.path("Pictures/Stuff"))
+        #expect(withLibrary.containsMediaLibrary)
+        #expect(withLibrary.allocatedBytes < 100_000, "the library is not walked")
+        #expect(!Sizer().measure(t.path("Pictures/Plain")).containsMediaLibrary)
+        #expect(Sizer().measure(t.path("Pictures/Stuff/Photos Library.photoslibrary")).containsMediaLibrary)
     }
 }

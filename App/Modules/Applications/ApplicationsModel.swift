@@ -127,7 +127,8 @@ final class ApplicationsModel {
         let installed = listing?.allBundleIDs ?? []
         let helperReady = self.app?.helper.state.isReady == true
         Task {
-            let finder = RelatedFileFinder(context: ctx, installedBundleIDs: installed, receipts: services.receipts)
+            let finder = RelatedFileFinder(context: ctx, installedBundleIDs: installed, receipts: services.receipts,
+                                            installedApps: listing?.apps ?? [])
             var plan = await Task.detached { finder.plan(for: app) }.value
             if helperReady, let items = await zoneItems() {
                 let root = finder.rootRelated(for: plan, items: items)

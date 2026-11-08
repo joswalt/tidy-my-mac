@@ -187,4 +187,18 @@ struct ClutterTests {
         #expect(run.outcome.done.isEmpty)
         #expect(FileStatus.lstat(t.path("Projects/real/keep.txt")) != nil)
     }
+
+    @Test func manualRemoverSkipsAFolderContainingAMediaLibrary() throws {
+        let t = try TestHome("manual-library")
+        defer { t.cleanUp() }
+        try t.file("Downloads/Backup/Photos Library.photoslibrary/database/db", size: 2000)
+        try t.file("Downloads/Backup/readme.txt", size: 10)
+        let p = try pick(t, "Downloads/Backup", root: "Downloads")
+        let run = try ManualRemover(context: context(t)).run([p], module: "diskMap", dryRun: true)
+        #expect(run.outcome.done.isEmpty)
+        #expect(run.outcome.skipped.first?.reason == "it contains a media library")
+        let real = try ManualRemover(context: context(t)).run([p], module: "diskMap", dryRun: false)
+        #expect(real.outcome.done.isEmpty)
+        #expect(FileStatus.lstat(t.path("Downloads/Backup/Photos Library.photoslibrary/database/db")) != nil)
+    }
 }

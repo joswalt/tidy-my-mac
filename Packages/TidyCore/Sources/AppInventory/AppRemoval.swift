@@ -116,6 +116,7 @@ public struct AppRemovalEngine: Sendable {
         let m = Sizer().measure(c.path)
         if m.crossesVolume { return skip(c, "it contains another volume") }
         if m.containsLockedItem { return skip(c, "it contains a locked item") }
+        if m.containsMediaLibrary { return skip(c, "it contains a media library") }
         if dryRun { return RunItem(ruleID: c.ruleID, path: c.path, allocatedBytes: c.allocatedBytes, action: .trash, result: .done) }
         do {
             // A launch agent is unloaded before its plist goes (spec 006 §6, launch.user.broken).

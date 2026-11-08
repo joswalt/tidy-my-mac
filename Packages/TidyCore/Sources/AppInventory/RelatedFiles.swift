@@ -36,10 +36,14 @@ public struct RelatedFileFinder: Sendable {
     /// Bundle IDs of every installed app, Apple's included.
     public let installedBundleIDs: Set<String>
     public let receipts: PackageReceipts?
+    /// Every installed app that can be offered, so a second copy of the same bundle ID is noticed.
+    public let installedApps: [InstalledApp]
 
-    public init(context: CleanupContext, installedBundleIDs: Set<String>, receipts: PackageReceipts?) {
+    public init(context: CleanupContext, installedBundleIDs: Set<String>, receipts: PackageReceipts?,
+                installedApps: [InstalledApp] = []) {
         self.context = context
         self.installedBundleIDs = installedBundleIDs
+        self.installedApps = installedApps
         self.receipts = receipts
     }
 
@@ -56,6 +60,8 @@ public struct RelatedFileFinder: Sendable {
         public let excludePaths: [String]
         /// Installed apps that share files with this one, with their own terms.
         public let sharedWith: [(id: String, terms: [String])]
+        /// Path of another installed app with this exact bundle ID, if any: it still uses these files.
+        public var otherCopyPath: String?
 
         func terms(for match: LeftoverMatch) -> [String] {
             let base: [String] = switch match {
@@ -77,15 +83,20 @@ public struct RelatedFileFinder: Sendable {
         let shared = partners.sorted().filter { installed.contains(PathNormalizer.fold($0)) }.map { id in
             (id: id, terms: [id] + (overrides.first { $0.bundleId == id }?.extraTerms ?? []))
         }
-        return Terms(bundleID: app.bundleID, name: app.name, teamID: app.teamID, extra: own?.extraTerms ?? [],
+        let ownID = PathNormalizer.fold(app.bundleID)
+        let other = installedApps.first { PathNormalizer.fold($0.bundleID) == ownID && PathNormalizer.fold($0.path) != PathNormalizer.fold(app.path) }
+        var result = Terms(bundleID: app.bundleID, name: app.name, teamID: app.teamID, extra: own?.extraTerms ?? [],
                      exclude: own?.excludeTerms ?? [], extraPaths: own?.extraPaths ?? [], excludePaths: own?.excludePaths ?? [],
                      sharedWith: shared)
+        result.otherCopyPath = other?.path
+        return result
     }
 
     /// Why a matching name must be kept, or nil to offer it.
     func keepReason(_ name: String, terms: Terms) -> String? {
         let f = PathNormalizer.fold(name)
         if DenyList.isAppleItem(name) { return "Apple's own item" }
+        if let copy = terms.otherCopyPath { return "another copy of this app is installed (\(copy))" }
         if terms.exclude.contains(where: { f.contains(PathNormalizer.fold($0)) }) { return "excluded for this app" }
         for partner in terms.sharedWith where partner.terms.contains(where: { $0.count >= Self.minimumTermLength && f.contains(PathNormalizer.fold($0)) }) {
             return "also used by \(partner.id)"
@@ -221,6 +232,7 @@ public struct RelatedFileFinder: Sendable {
         let m = sizer.measure(path)
         if m.crossesVolume { return .skipped("it contains another volume") }
         if m.containsLockedItem { return .skipped("it contains a locked item") }
+        if m.containsMediaLibrary { return .skipped("it contains a media library") }
         return .candidate(Candidate(ruleID: ruleID, path: path, root: root, identity: st.identity, isDirectory: st.isDirectory,
                                     allocatedBytes: m.allocatedBytes, newestModification: m.newestModification, action: .trash,
                                     risk: risk, status: .verified))

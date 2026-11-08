@@ -168,6 +168,20 @@ struct HelperServiceTests {
         #expect(FileStatus.lstat(w.root("/Library/Caches/replaced"))?.size == 10)
     }
 
+    @Test func removalRefusesAFolderContainingAMediaLibrary() throws {
+        let x = try world("media-library")
+        defer { x.t.cleanUp() }
+        let w = x.w
+        try w.file("/Library/Caches/holder/Photos Library.photoslibrary/database/db")
+        try w.file("/Library/Caches/plain/x")
+        let scanned = Dictionary(uniqueKeysWithValues: items(try send(x.s, .scan(zone: .systemCaches))).map { (name($0), $0.handle) })
+        let rs = results(try send(x.s, .remove(handles: Array(scanned.values), dryRun: false, jobID: UUID())))
+        let out = Dictionary(uniqueKeysWithValues: rs.map { (($0.path as NSString).lastPathComponent, $0) })
+        #expect(out["holder"]?.outcome == .skipped)
+        #expect(out["plain"]?.outcome == .done)
+        #expect(FileStatus.lstat(w.root("/Library/Caches/holder/Photos Library.photoslibrary/database/db")) != nil)
+    }
+
     @Test func handlesExpireAndAreNotShared() throws {
         let x = try world("expiry")
         defer { x.t.cleanUp() }
