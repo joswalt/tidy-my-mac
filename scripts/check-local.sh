@@ -19,6 +19,7 @@ swift test --package-path Packages/TidyCore
 step "Lints"
 scripts/lint-rules.sh
 scripts/safety-lint.sh
+scripts/test-scripts.sh
 
 step "Signed build"
 xcodegen generate

@@ -3,6 +3,8 @@ name: CI
 on:
   pull_request:
   workflow_dispatch:
+permissions:
+  contents: read
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -11,7 +13,9 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
       - name: Select the newest Xcode
         run: |
           XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
@@ -27,6 +31,8 @@ jobs:
         run: scripts/lint-rules.sh
       - name: Safety lint
         run: scripts/safety-lint.sh
+      - name: Script tests
+        run: scripts/test-scripts.sh
       - name: Unsigned app + helper build
         run: |
           xcodegen generate
