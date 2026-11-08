@@ -46,4 +46,5 @@ Sessions may have Apple's Xcode plugin (`xcode@claude-plugins-official`): build 
 - Tests never touch the real home folder: use `TestHome` fixtures in the temp dir. Never run a real (non-dry) cleanup on John's account.
 - Reach user folders only through an injected `Home`; `scripts/safety-lint.sh` enforces this.
 - Changes land through pull requests on `main`; rule changes always need John's approval.
+- Work on John's Mac in a git worktree at `~/Dev/tidy-my-mac/.worktrees/<name>` (git-ignored), never in sibling folders under `~/Dev`; keep build output (DerivedData) inside that worktree. Remove the worktree after its PR merges.
 - Work milestone by milestone (build spec §7); each milestone ends with a PR. GitHub issues track milestones and tasks.

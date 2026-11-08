@@ -11,3 +11,6 @@ Packages/TidyCore/.build/
 xcuserdata/
 
 .DS_Store
+
+# Thread worktrees (git worktree add .worktrees/<name>)
+/.worktrees/
