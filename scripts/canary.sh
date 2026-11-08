@@ -5,6 +5,8 @@
 #                                   else in those zones changed. Exits 1 (RESULT: FAIL) when a ticked
 #                                   canary is still there, the B canary is gone, or any other entry
 #                                   listed at setup is gone.
+#   sudo scripts/canary.sh cleanup   at the very end: removes what is left (the restored Dummy agent,
+#                                   the TidyKeep canary, the setup records).
 #   sudo scripts/canary.sh check-restored   after `check` passed and the Dummy agent was restored in
 #                                   TidyMyMac: it is back as the same file (same inode), a regular file,
 #                                   owned root:wheel, mode 644.
@@ -21,9 +23,9 @@ case "${1:-}" in
 setup)
   d=$(date +%Y%m%d)
   echo "$d" > "$STAMP_FILE"
-  mkdir -p "$R/Library/Caches/TidyCanary-$d-A" "$R/Library/Caches/TidyCanary-$d-B" "$R/Library/Logs/TidyCanary-$d" "$R/Library/LaunchAgents"
+  mkdir -p "$R/Library/Caches/TidyCanary-$d-A" "$R/Library/Caches/TidyKeep-$d-B" "$R/Library/Logs/TidyCanary-$d" "$R/Library/LaunchAgents"
   head -c 65536 /dev/urandom > "$R/Library/Caches/TidyCanary-$d-A/data"
-  head -c 65536 /dev/urandom > "$R/Library/Caches/TidyCanary-$d-B/data"
+  head -c 65536 /dev/urandom > "$R/Library/Caches/TidyKeep-$d-B/data"
   echo "canary log" > "$R/Library/Logs/TidyCanary-$d/canary.log"
   rm -f "$R/Library/LaunchAgents/io.github.joswalt.TidyTest.Dummy.plist"
   /usr/libexec/PlistBuddy -c "Add :Label string io.github.joswalt.TidyTest.Dummy" \
@@ -31,8 +33,8 @@ setup)
   stat -f %i "$DUMMY" > "$DUMMY_INODE"
   : > "$LIST"
   for z in "${ZONES[@]}"; do ls -1A "$z" | sed "s|^|$z/|" >> "$LIST"; done
-  echo "Canaries created (tick only TidyCanary-$d-A, the TidyCanary log folder and the TidyTest Dummy agent):"
-  ls -d "$R"/Library/Caches/TidyCanary-* "$R"/Library/Logs/TidyCanary-* "$R"/Library/LaunchAgents/io.github.joswalt.TidyTest.Dummy.plist
+  echo "Canaries created. Tick TidyCanary-$d-A, the TidyCanary-$d log folder and the TidyTest Dummy agent; leave TidyKeep-$d-B:"
+  ls -d "$R"/Library/Caches/TidyCanary-* "$R"/Library/Caches/TidyKeep-* "$R"/Library/Logs/TidyCanary-* "$R"/Library/LaunchAgents/io.github.joswalt.TidyTest.Dummy.plist
   ;;
 check)
   d=$(cat "$STAMP_FILE")
@@ -40,7 +42,7 @@ check)
   for p in "$R/Library/Caches/TidyCanary-$d-A" "$R/Library/Logs/TidyCanary-$d" "$R/Library/LaunchAgents/io.github.joswalt.TidyTest.Dummy.plist"; do
     if [ -e "$p" ]; then echo "FAIL still there (was it ticked?): $p"; fail=1; else echo "PASS removed: $p"; fi
   done
-  if [ -e "$R/Library/Caches/TidyCanary-$d-B/data" ]; then echo "PASS untouched: TidyCanary-$d-B"; else echo "FAIL removed without being ticked: TidyCanary-$d-B"; fail=1; fi
+  if [ -e "$R/Library/Caches/TidyKeep-$d-B/data" ]; then echo "PASS untouched: TidyKeep-$d-B"; else echo "FAIL removed without being ticked: TidyKeep-$d-B"; fail=1; fi
   while IFS= read -r p; do
     case "$p" in *TidyCanary-$d-A|*TidyCanary-$d|*TidyTest.Dummy.plist) continue;; esac
     # Some Apple folders are Data Vaults: even root can't stat them, so look them up in the listing.
@@ -65,5 +67,12 @@ check-restored)
   fi
   if [ $fail = 0 ]; then echo "RESULT: PASS"; else echo "RESULT: FAIL"; exit 1; fi
   ;;
-*) echo "usage: sudo $0 setup|check|check-restored" >&2; exit 2 ;;
+cleanup)
+  d=$(cat "$STAMP_FILE" 2>/dev/null || true)
+  rm -f "$DUMMY"
+  [ -n "$d" ] && rm -rf "$R/Library/Caches/TidyKeep-$d-B" "$R/Library/Caches/TidyCanary-$d-A" "$R/Library/Logs/TidyCanary-$d"
+  rm -f "$STAMP_FILE" "$DUMMY_INODE" "$LIST"
+  echo "Canaries cleaned up."
+  ;;
+*) echo "usage: sudo $0 setup|check|check-restored|cleanup" >&2; exit 2 ;;
 esac

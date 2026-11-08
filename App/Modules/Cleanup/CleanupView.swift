@@ -30,7 +30,7 @@ struct CleanupView: View {
                 results(session)
             }
         }
-        .navigationSubtitle(session.report.map { "\(sizeString($0.totalBytes)) found" } ?? "")
+        .navigationSubtitle((ScanSession.canaryRun ? "Canary run: only TidyCanary items start ticked · " : "") + (session.report.map { "\(sizeString($0.totalBytes)) found" } ?? ""))
         .toolbar {
             ToolbarItemGroup {
                 Button { showIgnoreList = true } label: { Label("Ignore List", systemImage: "eye.slash") }

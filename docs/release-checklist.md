@@ -1,6 +1,12 @@
 # Release checklist
 
-The release gate from [spec 017 §6](spec/017-test-plan.md#6-release-gate). Copy this file's checklist into the release commit filled in, then tag `vX.Y` (or `vX.Y.Z`) on that commit. Bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `Config/Shared.xcconfig` for every release: the app only replaces an installed helper when the build number changes (spec 005 §4.3). A failure in steps 5 to 7 blocks the release; there is no override.
+The release gate from [spec 017 §6](spec/017-test-plan.md#6-release-gate).
+
+**Run it with `scripts/release-gate.sh`** on `main`, after the release PR (version bump and `docs/releases/vX.Y.Z.md`) is merged. The script picks the short or full form, checks CI on the merge commit, runs `check-local.sh`, installs the build, runs the canary and `tidytest` scripts, and stops only for the steps below that need you in the app. It writes the filled-in checklist to `build/release-gate-vX.Y.Z.md` and prints the commands to tag (the report becomes the annotated tag's message) and to create the Release. A FAIL stops it; there is no override.
+
+Bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `Config/Shared.xcconfig` for every release: the app only replaces an installed helper when the build number changes (spec 005 §4.3). The script refuses a build number that isn't higher than the last tag's.
+
+The list below is what the script checks, for reference.
 
 | | |
 |---|---|
@@ -51,19 +57,20 @@ For v1.0 there is no previous release, so the full form applies.
 
 ## Full form (adds)
 
-### 5. Throwaway-account real run (spec 017 §5)
-- [ ] `scripts/seed-tidytest.sh` run as `tidytest`.
-- [ ] Tidy Up with defaults, Uninstaller on "TidyTest Dummy" (in `~/Applications`), Trash bins.
-- [ ] `scripts/verify-tidytest.sh`: all PASS.
-- [ ] Note whether the helper answered `tidytest`: ____
+### 5. Real runs (spec 017 §5)
+- [ ] `scripts/user-canary.sh setup` and `sudo scripts/canary.sh setup`, then TidyMyMac opened with `--args -TidyCanaryRun YES` (only `TidyCanary…` items start ticked).
+- [ ] After the canary runs below: Uninstaller on "TidyCanary Dummy", then a Cleanup scan and Clean of the canary items in the Trash.
+- [ ] `scripts/user-canary.sh check`: `RESULT: PASS` (the run logs name only canaries, all canaries gone, `TidyKeep` items unchanged).
+- [ ] Only when SafetyFloor, HelperCore or Helper changed: `sudo scripts/tidytest-account.sh create`, the `tidytest` run (Tidy Up with defaults, Uninstaller on "TidyTest Dummy", Trash bins), `verify-tidytest.sh` all PASS, then `sudo scripts/tidytest-account.sh delete`.
 
 ### 6. Real-helper canary run (spec 017 §4.3)
 In this order (`check` must run before anything is restored, or it reports the restored Dummy as never removed):
 - [ ] `sudo scripts/canary.sh setup` created the canaries (right before the run).
-- [ ] Cleanup run ticking only `TidyCanary-<date>-A`, the `TidyCanary-<date>` log folder and the `TidyTest.Dummy` agent.
+- [ ] The same Cleanup run as step 5: the `TidyCanary` items start ticked; also tick the `TidyTest.Dummy` agent. `TidyKeep-<date>-B` stays unticked.
 - [ ] `sudo scripts/canary.sh check`: `RESULT: PASS` (only the ticked canaries removed, every other canary and zone listing unchanged).
 - [ ] Then restore the Dummy agent from Health › that run › Restore.
 - [ ] `sudo scripts/canary.sh check-restored`: `RESULT: PASS` (same file back, `root wheel`, `-rw-r--r--`; `ls -l /Library/LaunchAgents/io.github.joswalt.TidyTest.Dummy.plist` shows the same).
+- [ ] At the end, `sudo scripts/canary.sh cleanup` and `scripts/user-canary.sh cleanup`.
 
 ### 7. Experimental rules
 - [ ] Dry run of every `experimental` rule on John's account; John reviewed the list.
