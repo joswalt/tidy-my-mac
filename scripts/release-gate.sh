@@ -6,8 +6,8 @@
 #                                             steps 1–4 and starts again at the canaries (allowed
 #                                             only when nothing but scripts/ or docs/ changed since)
 # It runs every check it can, stops only for the steps that need you in the app, writes the
-# filled-in checklist to build/release-gate-vX.Y.Z.md and prints the tag and Release commands.
-# It never pushes a tag or creates a Release itself. Any FAIL stops the gate.
+# filled-in checklist to build/release-gate-vX.Y.Z.md, then asks once before it tags, pushes the tag
+# and creates the GitHub Release (answer N to only print the commands). Any FAIL stops the gate.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 APP=/Applications/TidyMyMac.app
@@ -160,10 +160,25 @@ fi
 
 line ""; line "RESULT: PASS"
 say "Gate passed: $REPORT"
-cat <<EOF
-
-Tag and publish (you run these):
-  git tag -a $tag -F $REPORT $(git rev-parse HEAD)
-  git push origin $tag
-  gh release create $tag --title "TidyMyMac $version" --notes-file docs/releases/$tag.md --latest
-EOF
+sha=$(git rev-parse HEAD)
+publish=(
+  "git tag -a $tag -F $REPORT $sha"
+  "git push origin $tag"
+  "gh release create $tag --title \"TidyMyMac $version\" --notes-file docs/releases/$tag.md --latest"
+)
+echo; echo "Tag and publish:"; printf '  %s\n' "${publish[@]}"
+echo
+echo "A pushed tag is public and is never moved; a mistake means a new version."
+read -r -p "Tag $sha as $tag and publish the Release now? [y/N] " a
+if [ "$a" = y ] || [ "$a" = Y ]; then
+  git tag -a "$tag" -F "$REPORT" "$sha"
+  git push origin "$tag"
+  if command -v gh >/dev/null; then
+    gh release create "$tag" --title "TidyMyMac $version" --notes-file "docs/releases/$tag.md" --latest
+    echo "Published $tag."
+  else
+    echo "Tagged and pushed $tag. gh isn't installed: create the Release on GitHub from docs/releases/$tag.md."
+  fi
+else
+  echo "Not published. Run the commands above when you're ready."
+fi
