@@ -1,10 +1,10 @@
 # Release checklist
 
-The release gate from [spec 017 §6](spec/017-test-plan.md#6-release-gate). Copy this file's checklist into the release commit filled in, then tag `vX.Y` on that commit. A failure in steps 5 to 7 blocks the release; there is no override.
+The release gate from [spec 017 §6](spec/017-test-plan.md#6-release-gate). Copy this file's checklist into the release commit filled in, then tag `vX.Y` (or `vX.Y.Z`) on that commit. Bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `Config/Shared.xcconfig` for every release: the app only replaces an installed helper when the build number changes (spec 005 §4.3). A failure in steps 5 to 7 blocks the release; there is no override.
 
 | | |
 |---|---|
-| Version | 1.0 (build ___) |
+| Version | ___ (build ___) |
 | Commit | `________` |
 | Date | ____-__-__ |
 | Checked by | John |

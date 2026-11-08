@@ -8,7 +8,7 @@ A native Mac cleaner for Apple Silicon Macs on macOS 14 or newer. It finds cache
 
 It is written in Swift 6 and SwiftUI with no third-party Swift packages, and it is free and open source under the [MIT licence](LICENSE).
 
-**Status:** v1.0 is released ([release checklist](docs/releases/v1.0.md)). There is no notarized download yet, so build it from source with your own Apple ID (see below).
+**Status:** v1.0.1 is the current release ([release notes and checklist](docs/releases/v1.0.1.md)): security fixes for v1.0 ([checklist](docs/releases/v1.0.md)). There is no notarized download yet, so build it from source with your own Apple ID (see below).
 
 ## What it is not
 
