@@ -10,7 +10,7 @@ The one property everything here protects: **a run removes exactly the items Joh
 
 | # | Question | Recommended default | Why |
 |---|---|---|---|
-| D1 | Where do destructive tests run? | **Three layers:** (a) fixture folders in a temp dir for all automated tests; (b) a throwaway standard user account `tidytest` on John's Mac for full real runs; (c) John's own account only for **dry runs**, plus real runs he chooses himself after the gate passes. | Fixtures catch logic bugs cheaply. A real second account gives real `~/Library`, Trash, TCC and Spotlight with nothing to lose. |
+| D1 | Where do destructive tests run? | **Three layers:** (a) fixture folders in a temp dir for all automated tests; (b) real runs of script-made canaries in John's own account, plus a temporary `tidytest` account (made and deleted per release) when SafetyFloor, HelperCore or Helper changed (§5, changed 2026-11-08); (c) otherwise John's own account only for **dry runs**, plus real runs he chooses himself after the gate passes. | Fixtures catch logic bugs cheaply. A real second account gives real `~/Library`, Trash, TCC and Spotlight with nothing to lose. |
 | D2 | A VM too? | **No VM in v1.** Root zones are tested with canary files (§4.3) instead. Revisit if a helper bug ever touches a non-canary file. | Apple ID and Personal Team signing inside macOS guests add setup cost for little extra safety, since the helper can only act on its own handles inside 6 fixed zones. |
 | D3 | CI? | **GitHub Actions on every pull request**, macOS runner, no signing: package tests, rule lint, safety lint, unsigned app build. Nothing signed, no secrets. | Catches regressions before John reviews a PR. Private-repo macOS minutes are limited (they count at a multiple of Linux minutes), so CI runs on PRs only, not on every push. |
 | D4 | What runs only on John's Mac? | Anything needing signing, the helper, TCC/FDA, a real home folder or a human eye (§3 table). Packaged as `scripts/check-local.sh` plus a checklist. | These cannot run on a hosted runner. |
@@ -43,7 +43,7 @@ A test suite for a cleaner is itself a cleaner. So:
 | Unsigned app + helper build | ✓ | | |
 | Signed build (Personal Team) + `codesign --verify` + entitlement check | | ✓ | ✓ |
 | Real helper on the machine (§4.3 manual) | | | ✓ full gate |
-| Throwaway-account real run (§5) | | | ✓ full gate |
+| Real runs: user canaries, temporary `tidytest` when helper code changed (§5) | | | ✓ full gate |
 | Dry run of experimental rules on John's account (006 §6 step 3) | | | ✓ when rules changed |
 | Manual UI click-through (§6) | | | ✓ |
 
@@ -87,18 +87,23 @@ A seeded **random tree** variant (fixed seeds in CI, a longer run in `check-loca
 - **SystemTasks**: operation ids map to the allow-list; no shell strings anywhere.
 - **RunLog**: append-only, survives a crash mid-write (truncated last line ignored), never written inside the fixture's removable areas.
 
-## 5. Throwaway-account real run (`tidytest`)
+## 5. Real runs outside the fixtures
 
-1. One-time: John creates a standard (not admin) user `tidytest` in System Settings › Users & Groups.
-2. `scripts/seed-tidytest.sh` (run as `tidytest`) builds the same fixture manifest as §4.1 in the real home, records a snapshot, and installs the dummy app in `~/Applications`.
-3. Log in as `tidytest`, open the release build, grant FDA, run Tidy Up with defaults, then Uninstaller on the dummy app, then Trash bins.
-4. `scripts/verify-tidytest.sh` diffs against the snapshot and the run log, prints PASS/FAIL per item. Reset with the seed script for the next release.
+Changed 2026-11-08 (John): no permanent test account on the Mac.
 
-Helper operations from `tidytest` need an admin password, which also tests that a standard user can't skip authentication. Whether a helper approved from John's account answers a second user is untested; the first full run records it, and if it doesn't, helper steps stay in §4.3 and the `tidytest` run covers user-level features only.
+**Default: user-level canaries in John's account.** `scripts/user-canary.sh setup` makes `TidyCanary-<date>` items (an app cache with a symlink and a hard link to tripwire files, a log folder, a broken login item, a dummy app `TidyCanary Dummy` in `~/Applications` with two leftovers) and `TidyKeep-<date>` items that must survive. TidyMyMac opened with `--args -TidyCanaryRun YES` ticks only items named `TidyCanary…` after a scan (it changes nothing else; the one confirmation still comes first). John cleans them in the same run as the helper canaries (§4.3), uninstalls the dummy app, then empties only the canary items from the Trash. `scripts/user-canary.sh check` passes only when every item the run logs since setup name is a canary, every canary is gone (the Trash too), and every `TidyKeep` file has the same inode and contents. This is the one real removal allowed on John's account, and only of items the script made.
+
+**Temporary `tidytest` account, when SafetyFloor, HelperCore or Helper changed.** `sudo scripts/tidytest-account.sh create` makes a standard user with a random password and puts the scripts in `/Users/Shared/TidyTest`:
+1. Log in as `tidytest`; `seed-tidytest.sh` builds the fixture manifest of §4.1 in the real home, records a snapshot, and installs the dummy app in `~/Applications`.
+2. Open the release build, grant FDA, run Tidy Up with defaults, then Uninstaller on the dummy app, then Trash bins.
+3. `verify-tidytest.sh` diffs against the snapshot and the run log and prints PASS/FAIL per item.
+4. `sudo scripts/tidytest-account.sh delete` removes the account and its home folder.
+
+Helper operations from `tidytest` need an admin password, which also tests that a standard user can't skip authentication.
 
 ## 6. Release gate
 
-A "release" is a signed build John installs in `/Applications`. Tag `vX.Y`, and commit the filled-in `docs/release-checklist.md` with it.
+A "release" is a signed build John installs in `/Applications`. `scripts/release-gate.sh` runs the gate on `main` after the release PR merges, stops only for the steps that need John in the app, and writes the filled-in checklist that becomes the annotated `vX.Y.Z` tag's message.
 
 **Short form (always):**
 1. CI green on the merge commit.
@@ -107,8 +112,8 @@ A "release" is a signed build John installs in `/Applications`. Tag `vX.Y`, and 
 4. Install over the previous build; helper restarts silently (005 §4.3); run history still there.
 
 **Full form (adds), when SafetyFloor, HelperCore, Helper, RuleEngine or `Rules/` changed:**
-5. Throwaway-account real run (§5): all PASS.
-6. Real-helper canary run (§4.3 manual).
+5. Real runs (§5): user canaries PASS; plus the temporary `tidytest` run when SafetyFloor, HelperCore or Helper changed.
+6. Real-helper canary run (§4.3 manual), in the same app session as the user canaries.
 7. Dry run of every `experimental` rule on John's account; John reviews the list; rules that look right become `verified` in the same PR (006 §6).
 8. Live update check against 5 installed apps; results match what each app's own "Check for updates" says.
 
@@ -131,6 +136,7 @@ Checks 3 and 5 can be run any time with [research/017-mac-checks.sh](../planning
 
 ```
 scripts/check-local.sh  safety-lint.sh  lint-rules.sh  seed-tidytest.sh  verify-tidytest.sh
+scripts/release-gate.sh  user-canary.sh  tidytest-account.sh  canary.sh
 .github/workflows/ci.yml
 docs/release-checklist.md
 Packages/TidyCore/Tests/EndToEndTests/  (+ Fixtures/ manifests, TestHome, TidyTestDummy)

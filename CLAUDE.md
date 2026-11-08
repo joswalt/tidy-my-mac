@@ -43,7 +43,7 @@ Sessions may have Apple's Xcode plugin (`xcode@claude-plugins-official`): build 
 
 ## Rules for agents working here
 
-- Tests never touch the real home folder: use `TestHome` fixtures in the temp dir. Never run a real (non-dry) cleanup on John's account.
+- Tests never touch the real home folder: use `TestHome` fixtures in the temp dir. Never run a real (non-dry) cleanup on John's account. The one exception is the release gate's canary run, which John does himself and which may remove only items `scripts/user-canary.sh` and `canary.sh` made.
 - Reach user folders only through an injected `Home`; `scripts/safety-lint.sh` enforces this.
 - Changes land through pull requests on `main`; rule changes always need John's approval.
 - Work on John's Mac in a git worktree at `~/Dev/tidy-my-mac/.worktrees/<name>` (git-ignored), never in sibling folders under `~/Dev`; keep build output (DerivedData) inside that worktree. Remove the worktree after its PR merges.

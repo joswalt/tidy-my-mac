@@ -389,12 +389,21 @@ final class ScanSession {
             if module == "tidyUp" {
                 app?.status.recordJunk(found: report.candidates.filter { !TrashBins.isTrashItem($0) }.reduce(0) { $0 + $1.allocatedBytes })
             }
-            selection = Selection.defaults(for: report.candidates)
+            selection = Self.canaryRun ? Self.canarySelection(report.candidates) : Selection.defaults(for: report.candidates)
             phase = .results
         }
     }
 
     func stopScan() { scanTask?.cancel() }
+
+    /// Release canary runs (docs/release-checklist.md): launched with `-TidyCanaryRun YES`, a scan
+    /// ticks only items named `TidyCanary…` that scripts/user-canary.sh and canary.sh made, instead
+    /// of the defaults. It only changes what starts ticked; the confirmation still comes first.
+    static let canaryRun = UserDefaults.standard.bool(forKey: "TidyCanaryRun")
+
+    static func canarySelection(_ candidates: [Candidate]) -> Selection {
+        Selection(ids: Set(candidates.filter { $0.name.contains("TidyCanary") }.map(\.id)))
+    }
 
     /// Health's Empty Trash…: only the Trash bins, all ticked, then the standard confirm.
     func loadTrashOnly() async {
