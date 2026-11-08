@@ -2,7 +2,7 @@
 
 The release gate from [spec 017 §6](spec/017-test-plan.md#6-release-gate).
 
-**Run it with `scripts/release-gate.sh`** on `main`, after the release PR (version bump and `docs/releases/vX.Y.Z.md`) is merged. The script picks the short or full form, checks CI on the merge commit, runs `check-local.sh`, installs the build, runs the canary and `tidytest` scripts, and stops only for the steps below that need you in the app. It writes the filled-in checklist to `build/release-gate-vX.Y.Z.md` and prints the commands to tag (the report becomes the annotated tag's message) and to create the Release. A FAIL stops it; there is no override.
+**Run it with `scripts/release-gate.sh`** on `main`, after the release PR (version bump and `docs/releases/vX.Y.Z.md`) is merged. The script picks the short or full form, checks CI on the merge commit, runs `check-local.sh`, installs the build, runs the canary and `tidytest` scripts, and stops only for the steps below that need you in the app. It writes the filled-in checklist to `build/release-gate-vX.Y.Z.md` and then asks once before it tags (the report becomes the annotated tag's message), pushes the tag and creates the Release. Answer N to only print those commands. A FAIL stops it; there is no override.
 
 Bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `Config/Shared.xcconfig` for every release: the app only replaces an installed helper when the build number changes (spec 005 §4.3). The script refuses a build number that isn't higher than the last tag's.
 
