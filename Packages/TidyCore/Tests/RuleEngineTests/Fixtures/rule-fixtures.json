@@ -27,10 +27,13 @@
       "org.example.Running"
     ],
     "mustMatch": [
-      "Library/Caches/com.example.Editor"
+      "Library/Caches/com.example.Editor",
+      "Library/Caches/org.example.Running"
+    ],
+    "mustSkipWhenRemoving": [
+      "Library/Caches/org.example.Running"
     ],
     "mustNotMatch": [
-      "Library/Caches/org.example.Running",
       "Library/Caches/com.apple.Safari",
       "Library/Caches/io.github.joswalt.TidyMyMac",
       "Library/Caches/escape",

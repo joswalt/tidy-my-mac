@@ -36,7 +36,8 @@ struct TidyUpView: View {
         .sheet(isPresented: $showReview) {
             ReviewSheet(session: session, onDryRun: { dryRun() }) { showConfirm = true }
         }
-        .cleanConfirm($showConfirm, summary: session.summary, adminItems: session.selected.filter(\.viaHelper)) { session.run(dryRun: false, flushDNS: flushDNS && app.helper.state.isReady) }
+        .cleanConfirm($showConfirm, summary: session.summary, adminItems: session.selected.filter(\.viaHelper)) { session.clean(flushDNS: flushDNS && app.helper.state.isReady) }
+        .quitAppsPrompt(session)
     }
 
     /// Same items and DNS choice as Clean, nothing changed (build spec §2.5).

@@ -2,6 +2,7 @@ import Foundation
 import Testing
 import TestSupport
 @testable import RuleEngine
+import RunLog
 import SafetyFloor
 
 /// Spec 006 §6 step 2: every rule has a fake tree it must match and one it must not.
@@ -18,6 +19,8 @@ struct RuleFixtureTests {
         let running: [String]?
         let mustMatch: [String]
         let mustNotMatch: [String]
+        /// Listed by the scan but skipped by a dry run, e.g. caches of an app in `running`.
+        let mustSkipWhenRemoving: [String]?
     }
 
     static let specs: [String: Spec] = {
@@ -63,6 +66,15 @@ struct RuleFixtureTests {
         for m in spec.mustNotMatch { #expect(!found.contains(m), "\(id) must not match \(m)") }
         // Only safe, verified rules start ticked; experimental ones never do.
         for c in result.candidates { #expect(c.selectedByDefault == (rule.status == .verified && rule.risk == .safe), "\(id)") }
+        if let skips = spec.mustSkipWhenRemoving {
+            var set = RuleSet(version: 1)
+            set.cleanRules = [rule]
+            let log = try RunLogWriter(directory: t.home.tidyRunLogs, header: RunHeader(module: "cleanup", appVersion: "test", ruleSetVersion: 1, dryRun: true))
+            let out = try Remover(scanner: scanner, trash: HomeTrash(home: t.home)).run(result.candidates, rules: set, log: log, dryRun: true)
+            let skipped = Set(out.skipped.map { relative($0.path, t) })
+            for m in skips { #expect(skipped.contains(m), "\(id) should skip \(m) when removing; skipped \(skipped)") }
+            for m in spec.mustMatch where !skips.contains(m) { #expect(!skipped.contains(m), "\(id) should remove \(m)") }
+        }
     }
 }
 

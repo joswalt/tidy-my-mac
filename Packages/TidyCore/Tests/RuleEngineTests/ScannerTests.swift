@@ -43,11 +43,10 @@ struct ScannerTests {
         if case .blocked = scanner(t, guards: FakeGuards(failing: true)).scan(xcode).state {} else { Issue.record("should block") }
 
         let owner = makeRule(targets: target, guards: RuleGuards(appsNotRunning: nil, processesNotRunning: nil, skipIfOwnerAppRunning: true, onlyIfAppMissing: nil))
+        // Items of open apps are listed; the app offers to quit them and Remover skips any still open.
         let r = scanner(t, guards: FakeGuards(running: ["com.example.a"])).scan(owner)
-        #expect(r.candidates.map(\.name) == ["com.example.B"])
-        #expect(r.skipped.map { ($0.path as NSString).lastPathComponent } == ["com.example.A"])
-        let failing = scanner(t, guards: FakeGuards(failing: true)).scan(owner)
-        #expect(failing.candidates.isEmpty && failing.skipped.count == 2)
+        #expect(r.candidates.map(\.name) == ["com.example.A", "com.example.B"])
+        #expect(r.skipped.isEmpty)
 
         let missing = makeRule(targets: target, guards: RuleGuards(appsNotRunning: nil, processesNotRunning: ["ollama"], skipIfOwnerAppRunning: nil, onlyIfAppMissing: "com.example.Tool"))
         #expect(scanner(t, guards: FakeGuards(processes: ["ollama"])).scan(missing).state == .blocked("ollama is running"))

@@ -119,19 +119,22 @@ struct ItemTable: View {
     @Environment(AppModel.self) private var app
     @State private var highlighted: Set<Candidate.ID> = []
 
+    /// Rows in the order of the clicked column header; scan order until one is clicked.
+    var rows: [Candidate] { session.itemSortOrder.isEmpty ? items : items.sorted(using: session.itemSortOrder) }
+
     var body: some View {
-        Table(items, selection: $highlighted) {
+        Table(rows, selection: $highlighted, sortOrder: $session.itemSortOrder) {
             TableColumn("") { c in
                 Toggle("", isOn: Binding(get: { session.selection.contains(c) }, set: { session.selection.set(c, $0) }))
                     .labelsHidden()
                     .accessibilityLabel("Select \(c.name)")
             }
             .width(24)
-            TableColumn("Name") { c in Text(c.name).lineLimit(1).help(c.name) }.width(min: 140, ideal: 220)
-            TableColumn("Location") { c in PathText(path: (c.path as NSString).deletingLastPathComponent) }
-            TableColumn("Risk") { c in RiskBadge(risk: c.risk) }.width(80)
-            TableColumn("Goes to") { c in DestinationLabel(action: c.action) }.width(70)
-            TableColumn("Size") { c in
+            TableColumn("Name", value: \.name) { c in Text(c.name).lineLimit(1).help(c.name) }.width(min: 140, ideal: 220)
+            TableColumn("Location", value: \.location) { c in PathText(path: c.location) }
+            TableColumn("Risk", value: \.riskOrder) { c in RiskBadge(risk: c.risk) }.width(80)
+            TableColumn("Goes to", value: \.destinationOrder) { c in DestinationLabel(action: c.action) }.width(70)
+            TableColumn("Size", value: \.allocatedBytes) { c in
                 Text(sizeString(c.allocatedBytes)).monospacedDigit().frame(maxWidth: .infinity, alignment: .trailing)
             }
             .width(80)
@@ -158,6 +161,15 @@ struct ItemTable: View {
             return .handled
         }
     }
+}
+
+/// Sort keys for ItemTable's columns.
+extension Candidate {
+    var location: String { (path as NSString).deletingLastPathComponent }
+    /// Safe, then Caution, then Risky.
+    var riskOrder: Int { switch risk { case .safe: 0; case .caution: 1; case .risky: 2 } }
+    /// Delete before Trash, matching the labels' alphabetical order.
+    var destinationOrder: Int { action == .delete ? 0 : 1 }
 }
 
 /// Short-lived confirmation message (spec 007 §4 toasts).

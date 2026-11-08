@@ -3,12 +3,15 @@ import RuleEngine
 /// A scripted system for guard checks.
 public struct FakeGuards: GuardEnvironment {
     public var running: Set<String>
+    /// Open apps with names (for owner matching); their bundle IDs count as running too.
+    public var apps: [RunningApp]
     public var processes: Set<String>
     public var installed: Set<String>
     public var failing: Bool
 
-    public init(running: Set<String> = [], processes: Set<String> = [], installed: Set<String> = [], failing: Bool = false) {
+    public init(running: Set<String> = [], apps: [RunningApp] = [], processes: Set<String> = [], installed: Set<String> = [], failing: Bool = false) {
         self.running = running
+        self.apps = apps
         self.processes = processes
         self.installed = installed
         self.failing = failing
@@ -16,7 +19,12 @@ public struct FakeGuards: GuardEnvironment {
 
     public func runningBundleIDs() throws -> Set<String> {
         if failing { throw GuardUnavailable(what: "running apps") }
-        return running
+        return running.union(apps.map(\.bundleID))
+    }
+
+    public func runningApps() throws -> [RunningApp] {
+        if failing { throw GuardUnavailable(what: "running apps") }
+        return apps + running.sorted().map { RunningApp(bundleID: $0, name: $0) }
     }
 
     public func runningProcessNames() throws -> Set<String> {
