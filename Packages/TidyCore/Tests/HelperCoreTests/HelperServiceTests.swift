@@ -218,4 +218,118 @@ struct HelperServiceTests {
         #expect(!calls.contains { $0.contains("com.apple.pkg.Core") && $0.contains("--forget") })
         #expect(x.w.commands.calls.allSatisfy { $0[0].hasPrefix("/") }, "absolute paths only")
     }
+
+    // MARK: Trash safety (security review findings 4, 5, 7)
+
+    /// Trashes one leftover folder and returns its result.
+    func trashOne(_ x: World, _ name: String = "com.example.Gone") throws -> ItemResult {
+        try x.w.file("/Library/Application Support/\(name)/data", size: 100)
+        let item = try #require(items(send(x.s, .scan(zone: .libraryLeftovers))).first { self.name($0) == name })
+        return try #require(results(try send(x.s, .remove(handles: [item.handle], dryRun: false, jobID: UUID()))).first)
+    }
+
+    var ledgerPathSuffix: String { "/Library/Application Support/TidyMyMac/trash-ledger.json" }
+
+    @Test func ledgerRecordsIdentityAndIsPrivate() throws {
+        let x = try world("ledger-identity")
+        defer { x.t.cleanUp() }
+        let original = x.w.root("/Library/Application Support/com.example.Gone")
+        try x.w.file("/Library/Application Support/com.example.Gone/data")
+        let before = try #require(FileStatus.lstat(original))
+        let item = try #require(items(send(x.s, .scan(zone: .libraryLeftovers))).first)
+        _ = results(try send(x.s, .remove(handles: [item.handle], dryRun: false, jobID: UUID())))
+        guard case .ledger(let entries) = try send(x.s, .listTrashed), let e = entries.first else { Issue.record("no ledger"); return }
+        #expect(e.device == before.device && e.inode == before.inode && e.fileType == UInt16(S_IFDIR))
+        var st = stat()
+        #expect(lstat(x.w.root(ledgerPathSuffix), &st) == 0 && st.st_mode & 0o777 == 0o600)
+    }
+
+    @Test func restoreRefusesASwappedTrashItem() throws {
+        let x = try world("restore-swap")
+        defer { x.t.cleanUp() }
+        let r = try trashOne(x)
+        let trashPath = try #require(r.trashPath)
+        // A same-user process replaces the Trash item with its own plist under the same name.
+        try x.t.remove(absolute: trashPath)
+        try Data("<plist/>".utf8).write(to: URL(fileURLWithPath: trashPath))
+        let out = try #require(results(try send(x.s, .restoreTrashed(ledgerIDs: [r.ledgerID!]))).first)
+        #expect(out.outcome == .skipped && out.reason == "the item in the Trash was replaced since it was moved there")
+        #expect(FileStatus.lstat(r.path) == nil, "nothing moved into the root location")
+        #expect(FileStatus.lstat(trashPath) != nil)
+        // Emptying it is refused too: the entry no longer names that object.
+        let emptied = try #require(results(try send(x.s, .emptyTrashed(ledgerIDs: [r.ledgerID!]))).first)
+        #expect(emptied.outcome == .failed && FileStatus.lstat(trashPath) != nil)
+    }
+
+    @Test func restoreRefusesASymlinkInTheTrash() throws {
+        let x = try world("restore-link")
+        defer { x.t.cleanUp() }
+        let r = try trashOne(x)
+        let trashPath = try #require(r.trashPath)
+        let real = trashPath + "-moved"
+        guard rename(trashPath, real) == 0 else { Issue.record("rename"); return }
+        try FileManager.default.createSymbolicLink(atPath: trashPath, withDestinationPath: real)
+        let out = try #require(results(try send(x.s, .restoreTrashed(ledgerIDs: [r.ledgerID!]))).first)
+        #expect(out.outcome == .skipped)
+        #expect(FileStatus.lstat(r.path) == nil)
+    }
+
+    @Test func restoreRefusesATrashThatIsASymlink() throws {
+        let x = try world("restore-trashlink")
+        defer { x.t.cleanUp() }
+        let r = try trashOne(x)
+        // ~/.Trash itself becomes a link to another folder holding an item of the same name.
+        let elsewhere = try x.t.folder("Elsewhere")
+        let name = (r.trashPath! as NSString).lastPathComponent
+        guard rename(x.t.home.trash.path + "/" + name, elsewhere.path + "/" + name) == 0 else { Issue.record("rename"); return }
+        try x.t.remove(".Trash")
+        try FileManager.default.createSymbolicLink(atPath: x.t.home.trash.path, withDestinationPath: elsewhere.path)
+        let out = try #require(results(try send(x.s, .restoreTrashed(ledgerIDs: [r.ledgerID!]))).first)
+        #expect(out.outcome == .failed || out.outcome == .skipped)
+        #expect(FileStatus.lstat(r.path) == nil)
+    }
+
+    @Test func restoreRefusesLegacyEntriesWithoutIdentity() throws {
+        let x = try world("restore-legacy")
+        defer { x.t.cleanUp() }
+        let r = try trashOne(x)
+        // Rewrite the ledger as a 1.0 helper wrote it: no device, inode or type.
+        let url = URL(fileURLWithPath: x.w.root(ledgerPathSuffix))
+        var json = try #require(try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [[String: Any]])
+        for i in json.indices { json[i]["device"] = nil; json[i]["inode"] = nil; json[i]["fileType"] = nil }
+        try JSONSerialization.data(withJSONObject: json).write(to: url)
+        guard case .ledger(let entries) = try send(x.s, .listTrashed) else { Issue.record("no ledger"); return }
+        #expect(entries.count == 1 && entries[0].inode == nil, "old entries still decode")
+        let out = try #require(results(try send(x.s, .restoreTrashed(ledgerIDs: [r.ledgerID!]))).first)
+        #expect(out.outcome == .skipped && out.reason?.contains("older helper") == true)
+        #expect(FileStatus.lstat(r.path) == nil && FileStatus.lstat(r.trashPath!) != nil)
+    }
+
+    @Test func moveToTrashRefusesATrashThatIsASymlink() throws {
+        let x = try world("trash-link")
+        defer { x.t.cleanUp() }
+        let target = try x.t.folder("Target")
+        try x.t.remove(".Trash")
+        try FileManager.default.createSymbolicLink(atPath: x.t.home.trash.path, withDestinationPath: target.path)
+        let r = try trashOne(x)
+        #expect(r.outcome == .skipped)
+        #expect(FileStatus.lstat(r.path) != nil, "left where it was")
+        #expect(try FileManager.default.contentsOfDirectory(atPath: target.path).isEmpty)
+    }
+
+    @Test func moveToTrashCreatesAPrivateTrashAndNeverOverwrites() throws {
+        let x = try world("trash-create")
+        defer { x.t.cleanUp() }
+        try x.t.remove(".Trash")
+        let first = try trashOne(x)
+        #expect(first.outcome == .done)
+        var st = stat()
+        #expect(lstat(x.t.home.trash.path, &st) == 0 && st.st_mode & S_IFMT == S_IFDIR && st.st_mode & 0o777 == 0o700 && st.st_uid == getuid())
+        // A second item with the same name gets the next free name; the first stays intact.
+        let second = try trashOne(x)
+        #expect(second.outcome == .done)
+        #expect((second.trashPath! as NSString).lastPathComponent == SafeRemoval.numberedName("com.example.Gone", 2))
+        #expect(second.trashPath != first.trashPath)
+        #expect(FileStatus.lstat(first.trashPath! + "/data") != nil)
+    }
 }

@@ -79,16 +79,10 @@ enum SafeRemoval {
         return out
     }
 
-    /// A free name in `trashDir` for `name` ("x 2", "x 3"…).
-    static func freeTrashPath(_ trashDir: String, _ name: String) -> String {
-        var dest = trashDir + "/" + name
-        var n = 2
-        while FileStatus.lstat(dest) != nil {
-            let ns = name as NSString
-            let ext = ns.pathExtension
-            dest = trashDir + "/" + ns.deletingPathExtension + " \(n)" + (ext.isEmpty ? "" : "." + ext)
-            n += 1
-        }
-        return dest
+    /// "x 2.ext", "x 3.ext"… for the nth try at a free name in the Trash.
+    static func numberedName(_ name: String, _ n: Int) -> String {
+        let ns = name as NSString
+        let ext = ns.pathExtension
+        return ns.deletingPathExtension + " \(n)" + (ext.isEmpty ? "" : "." + ext)
     }
 }
