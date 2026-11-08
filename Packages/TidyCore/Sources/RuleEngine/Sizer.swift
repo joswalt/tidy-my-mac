@@ -11,6 +11,8 @@ public final class Sizer: @unchecked Sendable {
         public var newestModification: Date = .distantPast
         public var fileCount: Int = 0
         public var containsLockedItem = false
+        /// A directory inside (or the item itself) is a media library (`.photoslibrary`, …); not descended into.
+        public var containsMediaLibrary = false
         public var crossesVolume = false
     }
 
@@ -45,6 +47,11 @@ public final class Sizer: @unchecked Sendable {
         let bytes = countedBytes(path, st)
         m.allocatedBytes += bytes
         total += bytes
+        if st.isDirectory,
+           ProtectedFloor.libraryExtensions.contains(PathNormalizer.fold((path as NSString).pathExtension)) {
+            m.containsMediaLibrary = true
+            return
+        }
         guard st.isDirectory, let dir = opendir(path) else {
             if !st.isDirectory { m.fileCount += 1 }
             return

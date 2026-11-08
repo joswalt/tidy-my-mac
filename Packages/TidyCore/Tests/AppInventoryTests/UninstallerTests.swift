@@ -89,6 +89,34 @@ enum Dummy {
     }
 }
 
+struct DuplicateCopyTests {
+    @Test func relatedFilesAreKeptWhileAnotherCopyIsInstalled() throws {
+        let t = try TestHome("dup-copy")
+        defer { t.cleanUp() }
+        try Dummy.app(t, "Applications/Dup.app", bundleID: "com.example.Duplicated")
+        try Dummy.app(t, "Applications/Dup Copy.app", bundleID: "com.example.Duplicated")
+        try t.file("Library/Caches/com.example.Duplicated/Cache.db")
+        try t.file("Library/Preferences/com.example.Duplicated.plist")
+        let listing = Dummy.catalog(t).list()
+        let app = try #require(listing.apps.first { $0.path == t.path("Applications/Dup.app") })
+        let other = try #require(listing.apps.first { $0.path != app.path })
+        let ctx = Dummy.context(t)
+
+        let plan = RelatedFileFinder(context: ctx, installedBundleIDs: listing.allBundleIDs, receipts: nil,
+                                     installedApps: listing.apps).plan(for: app)
+        #expect(plan.related.isEmpty)
+        #expect(plan.kept.count == 2)
+        #expect(plan.kept.allSatisfy { $0.reason == "another copy of this app is installed (\(other.path))" })
+
+        // Without the other copy installed, the same files are offered.
+        try t.remove("Applications/Dup Copy.app")
+        let alone = Dummy.catalog(t).list()
+        let single = RelatedFileFinder(context: ctx, installedBundleIDs: alone.allBundleIDs, receipts: nil,
+                                       installedApps: alone.apps).plan(for: try #require(alone.apps.first))
+        #expect(single.related.count == 2)
+    }
+}
+
 struct InventoryTests {
     @Test func listsUserAndVendorAppsButNeverAppleOrTidyMyMac() throws {
         let t = try TestHome("inventory")

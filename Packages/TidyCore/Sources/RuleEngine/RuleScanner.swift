@@ -117,7 +117,10 @@ public struct RuleScanner: Sendable {
 
         var seenPaths: Set<String> = []
         for target in rule.targets {
-            for root in concreteRoots(target.root, resolveLast: target.match != .self, excluding: rule.conditions?.excludeNames ?? []) {
+            let roots = concreteRoots(target.root, resolveLast: target.match != .self, excluding: rule.conditions?.excludeNames ?? []) { link in
+                result.skipped.append(SkippedItem(ruleID: rule.id, path: link, reason: "its folder path goes through a symbolic link"))
+            }
+            for root in roots {
                 for path in items(of: target, under: root) where seenPaths.insert(path.item).inserted {
                     switch evaluate(path.item, root: path.root, target: target, rule: rule, sizer: sizer) {
                     case .candidate(let c): result.candidates.append(c)
@@ -169,7 +172,12 @@ public struct RuleScanner: Sendable {
     /// Wildcard components never pass through a symlink.
     /// `excluding` also applies to the names a wildcard component matches, so a rule can skip
     /// whole containers (for example `com.apple.*`) as well as items.
-    func concreteRoots(_ rulePath: String, resolveLast: Bool = true, excluding: [String] = []) -> [String] {
+    /// A root whose path passes through a symlink (inside the home folder, or anywhere past the
+    /// first component elsewhere) is dropped, not followed: a cache folder linked to ~/Downloads
+    /// must not make Downloads deletable. System links such as /tmp, /var and /etc stay tolerated.
+    /// `onSymlink` is told the path of each dropped link.
+    func concreteRoots(_ rulePath: String, resolveLast: Bool = true, excluding: [String] = [],
+                       onSymlink: ((String) -> Void)? = nil) -> [String] {
         guard let expanded = home.expand(rulePath), let normalized = PathNormalizer.normalize(expanded) else { return [] }
         var prefixes = [""]
         for comp in PathNormalizer.components(normalized) {
@@ -186,6 +194,7 @@ public struct RuleScanner: Sendable {
             }
         }
         return prefixes.compactMap { p in
+            if let link = symlinkedComponent(p, checkLast: resolveLast) { onSymlink?(link); return nil }
             if resolveLast {
                 guard let real = PathNormalizer.realPath(p), FileStatus.lstat(real)?.isDirectory == true else { return nil }
                 return real
@@ -197,6 +206,19 @@ public struct RuleScanner: Sendable {
                   FileStatus.lstat(parent + "/" + ns.lastPathComponent) != nil else { return nil }
             return parent + "/" + ns.lastPathComponent
         }
+    }
+
+    /// The first symlink on `path` that must not be followed, or nil.
+    func symlinkedComponent(_ path: String, checkLast: Bool) -> String? {
+        let comps = PathNormalizer.components(path)
+        let homeCount = PathNormalizer.isInside(path, home.path) ? PathNormalizer.components(home.path).count : 1
+        let last = checkLast ? comps.count : comps.count - 1
+        guard homeCount < last else { return nil }
+        for n in homeCount..<last {
+            let sub = "/" + comps.prefix(n + 1).joined(separator: "/")
+            if FileStatus.lstat(sub)?.isSymlink == true { return sub }
+        }
+        return nil
     }
 
     struct FoundPath: Hashable { let item: String; let root: String }
@@ -287,6 +309,7 @@ public struct RuleScanner: Sendable {
         let m = sizer.measure(path)
         if m.crossesVolume { return .skipped("it contains another volume") }
         if m.containsLockedItem { return .skipped("it contains a locked item") }
+        if m.containsMediaLibrary { return .skipped("it contains a media library") }
         if let days = rule.conditions?.minAgeDays, days > 0,
            now.timeIntervalSince(m.newestModification) < Double(days) * 86_400 { return .ignored }
         if let min = rule.conditions?.minSizeBytes, m.allocatedBytes < min { return .ignored }

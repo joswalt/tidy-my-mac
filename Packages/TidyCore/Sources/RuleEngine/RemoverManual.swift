@@ -67,6 +67,7 @@ public struct ManualRemover: Sendable {
         let m = Sizer().measure(p.path)
         if m.crossesVolume { return skip(p, "it contains another volume") }
         if m.containsLockedItem { return skip(p, "it contains a locked item") }
+        if m.containsMediaLibrary { return skip(p, "it contains a media library") }
         if dryRun { return RunItem(ruleID: Self.ruleID, path: p.path, allocatedBytes: p.allocatedBytes, action: .trash, result: .done) }
         do {
             let dest = try context.trash.moveToTrash(p.path)

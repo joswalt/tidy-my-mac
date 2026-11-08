@@ -41,6 +41,9 @@ enum SafeRemoval {
         if st.st_dev != device { throw Failure(message: "it contains another volume") }
         if st.st_flags & FileStatus.lockedFlags != 0 { throw Failure(message: "it contains a locked item") }
         guard st.st_mode & S_IFMT == S_IFDIR else { return }
+        if ProtectedFloor.libraryExtensions.contains(PathNormalizer.fold((name as NSString).pathExtension)) {
+            throw Failure(message: "it contains a media library")
+        }
         let fd = openDir(dirfd, name)
         guard fd >= 0 else { throw Failure.errno("open \(name)") }
         defer { close(fd) }

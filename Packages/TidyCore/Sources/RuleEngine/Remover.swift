@@ -86,6 +86,7 @@ public struct Remover: Sendable {
         let m = Sizer().measure(c.path)
         if m.crossesVolume { return skip("it contains another volume") }
         if m.containsLockedItem { return skip("it contains a locked item") }
+        if m.containsMediaLibrary { return skip("it contains a media library") }
 
         if dryRun {
             return RunItem(ruleID: c.ruleID, path: c.path, allocatedBytes: c.allocatedBytes, action: action, result: .done)
@@ -155,6 +156,7 @@ public enum TrashEmptier {
             if st.userID != home.userID { return item(.skipped, "Empty in Finder (needs your password)") }
             let m = Sizer().measure(c.path)
             if m.containsLockedItem { return item(.skipped, "it contains a locked item") }
+            if m.containsMediaLibrary { return item(.skipped, "it contains a media library") }
             if m.crossesVolume { return item(.skipped, "it contains another volume") }
             if dryRun { return item(.done) }
             do {

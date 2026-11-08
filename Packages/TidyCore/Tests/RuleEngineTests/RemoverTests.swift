@@ -61,6 +61,26 @@ struct RemoverTests {
         #expect(PathNormalizer.isInside(trashed, s.t.home.trash.path))
     }
 
+    @Test func foldersContainingAMediaLibraryAreSkipped() throws {
+        let s = try setUp("media-library")
+        defer { s.t.cleanUp() }
+        try s.t.file("Library/Caches/holder/a")
+        try s.t.file("Library/Caches/plain/a")
+        let c = s.scanner.scan(s.rule).candidates
+        #expect(c.count == 2)
+        // After the scan, a media library appears inside one of them.
+        try s.t.file("Library/Caches/holder/Photos Library.photoslibrary/database/db")
+        let out = try s.remover.run(c, rules: s.set, log: s.log, dryRun: false)
+        #expect(out.done.map(\.path) == [s.t.path("Library/Caches/plain")])
+        #expect(out.skipped.first?.reason == "it contains a media library")
+        #expect(FileStatus.lstat(s.t.path("Library/Caches/holder/Photos Library.photoslibrary/database/db")) != nil)
+
+        // And a scan offers nothing that contains one.
+        let again = s.scanner.scan(s.rule)
+        #expect(again.candidates.isEmpty)
+        #expect(again.skipped.contains { $0.reason == "it contains a media library" })
+    }
+
     @Test func midRunChangesAreSkipped() throws {
         var guards = FakeGuards()
         let s = try setUp("midrun", guards: guards)
