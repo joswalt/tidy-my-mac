@@ -250,15 +250,58 @@ public final class HelperService: @unchecked Sendable {
 
     func moveToTrash(_ parentFD: Int32, _ name: String, st: stat, originalPath: String, jobID: UUID) throws -> (String, UUID) {
         guard let home = callerHome else { throw SafeRemoval.Failure(message: "unknown caller") }
+        let trashFD = try openCallerTrash(home, create: true)
+        defer { close(trashFD) }
         let trashDir = home.trash.path
-        try FileManager.default.createDirectory(atPath: trashDir, withIntermediateDirectories: true)
-        let dest = SafeRemoval.freeTrashPath(trashDir, name)
-        try TestFence.check(dest)
-        guard renameat(parentFD, name, AT_FDCWD, dest) == 0 else { throw SafeRemoval.Failure.errno("move to Trash") }
+        var n = 1
+        var freeName = name
+        while true {
+            if n > 1 { freeName = SafeRemoval.numberedName(name, n) }
+            try TestFence.check(trashDir + "/" + freeName)
+            if renameatx_np(parentFD, name, trashFD, freeName, UInt32(RENAME_EXCL)) == 0 { break }
+            guard errno == EEXIST, n < 10_000 else { throw SafeRemoval.Failure.errno("move to Trash") }
+            n += 1
+        }
+        let dest = trashDir + "/" + freeName
+        // Identity from the stat taken in the root-owned zone before the move, not from the
+        // user-owned Trash afterwards (which a same-user process could already have swapped).
         let entry = LedgerEntry(originalPath: originalPath, trashPath: dest, ownerUID: st.st_uid, ownerGID: st.st_gid,
-                                mode: st.st_mode & 0o7777, time: env.now(), jobID: jobID, callerUID: callerUID)
+                                mode: st.st_mode & 0o7777, time: env.now(), jobID: jobID, callerUID: callerUID,
+                                device: st.st_dev, inode: st.st_ino, fileType: st.st_mode & S_IFMT)
         try ledger.append(entry)
         return (dest, entry.id)
+    }
+
+    /// Opens the caller's ~/.Trash by descriptor, never following a symlink, and checks that it
+    /// is a real folder owned by the caller. With `create`, a missing Trash is made relative to the
+    /// home folder's descriptor, owned by the caller, mode 0700.
+    func openCallerTrash(_ home: Home, create: Bool) throws -> Int32 {
+        let homeFD = SafeRemoval.openPath(home.root.path)
+        guard homeFD >= 0 else { throw SafeRemoval.Failure(message: "the home folder can't be opened") }
+        defer { close(homeFD) }
+        var fd = SafeRemoval.openDir(homeFD, ".Trash")
+        if fd < 0, errno == ENOENT, create {
+            guard mkdirat(homeFD, ".Trash", 0o700) == 0 || errno == EEXIST else { throw SafeRemoval.Failure.errno("create the Trash") }
+            fd = SafeRemoval.openDir(homeFD, ".Trash")
+            if fd >= 0, env.effectiveUID == 0 {
+                var hs = stat()
+                let gid = fstat(homeFD, &hs) == 0 ? hs.st_gid : gid_t.max
+                _ = fchown(fd, callerUID, gid)
+            }
+        }
+        guard fd >= 0 else { throw SafeRemoval.Failure(message: "the Trash can't be opened (missing or a symbolic link)") }
+        var ts = stat()
+        guard fstat(fd, &ts) == 0, ts.st_mode & S_IFMT == S_IFDIR, ts.st_uid == callerUID else {
+            close(fd)
+            throw SafeRemoval.Failure(message: "the Trash is not a folder owned by you")
+        }
+        return fd
+    }
+
+    /// Whether the Trash item `name` is still the object the ledger recorded.
+    static func matches(_ e: LedgerEntry, _ st: stat) -> Bool {
+        guard let dev = e.device, let ino = e.inode, let type = e.fileType else { return false }
+        return st.st_dev == dev && st.st_ino == ino && st.st_mode & S_IFMT == type && type != S_IFLNK
     }
 
     // MARK: Ledger operations
@@ -273,6 +316,11 @@ public final class HelperService: @unchecked Sendable {
         return comps.count == trash.count + 1 && Array(comps.prefix(trash.count)) == trash
     }
 
+    /// Moves a ledger item back as root (005 §8). Everything is done by descriptor: the Trash is
+    /// opened no-follow and must be the caller's own folder, the item must still be the recorded
+    /// object (device, inode, type), the destination parent is opened no-follow, the rename never
+    /// replaces anything, and owner and mode are set without following a symlink. Entries without
+    /// a recorded identity (helpers before 1.0.1) are refused rather than restored blind.
     func restore(_ ids: [UUID]) -> [ItemResult] {
         let entries = ledgerEntries(ids)
         var done: Set<UUID> = []
@@ -285,16 +333,37 @@ public final class HelperService: @unchecked Sendable {
             func r(_ o: ItemResult.Outcome, _ why: String? = nil) -> ItemResult {
                 ItemResult(handle: nil, path: e.originalPath, allocatedBytes: 0, action: "restore", outcome: o, reason: why, trashPath: e.trashPath, ledgerID: id)
             }
-            guard inCallerTrash(e.trashPath), FileStatus.lstat(e.trashPath) != nil else { out.append(r(.skipped, "it is no longer in the Trash")); continue }
-            guard FileStatus.lstat(e.originalPath) == nil else { out.append(r(.skipped, "something else is at its original location")); continue }
-            let parent = (e.originalPath as NSString).deletingLastPathComponent
-            guard FileStatus.lstat(parent)?.isDirectory == true else { out.append(r(.skipped, "the folder it came from no longer exists")); continue }
+            guard e.inode != nil, e.device != nil, e.fileType != nil else {
+                out.append(r(.skipped, "it was moved by an older helper that didn't record its identity; move it back from the Trash yourself"))
+                continue
+            }
+            guard let home = callerHome, inCallerTrash(e.trashPath) else { out.append(r(.skipped, "it is no longer in the Trash")); continue }
             do {
                 try TestFence.check(e.trashPath)
                 try TestFence.check(e.originalPath)
-                guard Darwin.rename(e.trashPath, e.originalPath) == 0 else { throw SafeRemoval.Failure.errno("restore") }
-                if env.effectiveUID == 0 { _ = lchown(e.originalPath, e.ownerUID, e.ownerGID) }
-                _ = chmod(e.originalPath, mode_t(e.mode))
+                let trashFD = try openCallerTrash(home, create: false)
+                defer { close(trashFD) }
+                let name = (e.trashPath as NSString).lastPathComponent
+                guard let st = SafeRemoval.lstatAt(trashFD, name) else { out.append(r(.skipped, "it is no longer in the Trash")); continue }
+                guard Self.matches(e, st) else { out.append(r(.skipped, "the item in the Trash was replaced since it was moved there")); continue }
+                let parentFD = SafeRemoval.openPath((e.originalPath as NSString).deletingLastPathComponent)
+                guard parentFD >= 0 else { out.append(r(.skipped, "the folder it came from no longer exists")); continue }
+                defer { close(parentFD) }
+                let dest = (e.originalPath as NSString).lastPathComponent
+                guard SafeRemoval.lstatAt(parentFD, dest) == nil else { out.append(r(.skipped, "something else is at its original location")); continue }
+                guard renameatx_np(trashFD, name, parentFD, dest, UInt32(RENAME_EXCL)) == 0 else {
+                    if errno == EEXIST { out.append(r(.skipped, "something else is at its original location")); continue }
+                    throw SafeRemoval.Failure.errno("restore")
+                }
+                // The Trash entry could have been swapped between the check and the rename: check
+                // again where it landed (a root-owned folder now) and send it straight back if so.
+                guard let landed = SafeRemoval.lstatAt(parentFD, dest), Self.matches(e, landed) else {
+                    _ = renameatx_np(parentFD, dest, trashFD, name + " (replaced) \(UUID().uuidString.prefix(8))", UInt32(RENAME_EXCL))
+                    out.append(r(.skipped, "the item in the Trash was replaced since it was moved there"))
+                    continue
+                }
+                if env.effectiveUID == 0 { _ = fchownat(parentFD, dest, e.ownerUID, e.ownerGID, AT_SYMLINK_NOFOLLOW) }
+                _ = fchmodat(parentFD, dest, mode_t(e.mode), AT_SYMLINK_NOFOLLOW)
                 done.insert(id)
                 out.append(r(.done))
             } catch {
@@ -316,12 +385,16 @@ public final class HelperService: @unchecked Sendable {
             }
             let bytes = Self.measure(e.trashPath).bytes
             do {
-                let parent = (e.trashPath as NSString).deletingLastPathComponent
-                let fd = SafeRemoval.openPath(parent)
-                guard fd >= 0 else { throw SafeRemoval.Failure(message: "the Trash can't be opened") }
+                guard let home = callerHome else { throw SafeRemoval.Failure(message: "unknown caller") }
+                let fd = try openCallerTrash(home, create: false)
                 defer { close(fd) }
                 let name = (e.trashPath as NSString).lastPathComponent
                 guard let st = SafeRemoval.lstatAt(fd, name) else { throw SafeRemoval.Failure(message: "it is no longer in the Trash") }
+                // Entries from older helpers have no identity; removal stays inside the caller's own
+                // Trash by descriptor, so those may still be emptied.
+                if e.inode != nil, !Self.matches(e, st) {
+                    throw SafeRemoval.Failure(message: "the item in the Trash was replaced since it was moved there")
+                }
                 try TestFence.check(e.trashPath)
                 try SafeRemoval.precheck(fd, name, device: st.st_dev)
                 try SafeRemoval.removeTree(fd, name, device: st.st_dev)

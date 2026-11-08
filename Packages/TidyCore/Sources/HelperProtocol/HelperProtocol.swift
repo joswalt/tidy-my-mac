@@ -126,11 +126,19 @@ public struct LedgerEntry: Codable, Hashable, Sendable, Identifiable {
     public let time: Date
     public let jobID: UUID
     public let callerUID: UInt32
+    /// Identity of the object the helper moved (st_dev, st_ino, st_mode & S_IFMT), read before the
+    /// move. Restore and empty act only when the Trash item still matches. Nil in entries written
+    /// by helpers before 1.0.1; the helper refuses to restore those.
+    public let device: Int32?
+    public let inode: UInt64?
+    public let fileType: UInt16?
 
     public init(id: UUID = UUID(), originalPath: String, trashPath: String, ownerUID: UInt32, ownerGID: UInt32,
-                mode: UInt16, time: Date, jobID: UUID, callerUID: UInt32) {
+                mode: UInt16, time: Date, jobID: UUID, callerUID: UInt32,
+                device: Int32? = nil, inode: UInt64? = nil, fileType: UInt16? = nil) {
         self.id = id; self.originalPath = originalPath; self.trashPath = trashPath; self.ownerUID = ownerUID
         self.ownerGID = ownerGID; self.mode = mode; self.time = time; self.jobID = jobID; self.callerUID = callerUID
+        self.device = device; self.inode = inode; self.fileType = fileType
     }
 }
 
