@@ -371,3 +371,35 @@ struct MacOSUpdatesTests {
         }
     }
 }
+
+/// Security review finding 8: feeds are capped, not buffered whole.
+struct FeedSizeCapTests {
+    func stream(_ count: Int) -> AsyncStream<UInt8> {
+        AsyncStream { c in
+            for _ in 0..<count { c.yield(1) }
+            c.finish()
+        }
+    }
+
+    @Test func acceptsAFeedUpToTheLimit() async throws {
+        let d = try await URLSessionFeedFetcher.collect(stream(1000), expectedLength: 1000, limit: 1000)
+        #expect(d.count == 1000)
+        let unknownLength = try await URLSessionFeedFetcher.collect(stream(10), expectedLength: -1, limit: 1000)
+        #expect(unknownLength.count == 10)
+    }
+
+    @Test func stopsOnceTheBodyPassesTheLimit() async throws {
+        await #expect(throws: FetchError.self) {
+            _ = try await URLSessionFeedFetcher.collect(stream(1001), expectedLength: -1, limit: 1000)
+        }
+    }
+
+    @Test func refusesAnOversizedContentLengthBeforeReading() async throws {
+        // A 10-byte body is under the limit, so only the Content-Length check can refuse it.
+        await #expect(throws: FetchError.self) {
+            _ = try await URLSessionFeedFetcher.collect(stream(10), expectedLength: 6_000_000, limit: 5_000_000)
+        }
+        #expect(URLSessionFeedFetcher(appVersion: "1.0").maxBytes == 5 * 1024 * 1024)
+    }
+}
+

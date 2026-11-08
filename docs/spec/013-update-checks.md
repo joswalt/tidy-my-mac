@@ -47,7 +47,7 @@ Homebrew catalogue: `https://formulae.brew.sh/api/cask.json`, cached in `~/Libra
 
 - HTTPS only. `http://` feeds are not fetched; the row shows "Insecure feed, not checked". No ATS exceptions.
 - User-Agent `TidyMyMac/<version> (update check)`. Never impersonate the app.
-- At most 4 feeds at once, 15 s timeout each. Results cached in `Cache/updates.json`.
+- At most 4 feeds at once, 15 s timeout each, 5 MB per feed: a larger Content-Length is refused before reading, and the download stops once the body passes the cap. Results cached in `Cache/updates.json`.
 - Automatic check at most once per 24 h, when Applications › Updates or Tidy Up opens; **Check Now** button forces it. Setting "Check for app updates automatically" (on by default).
 - Never write into another app's preferences, never use `SPUUpdater` or `sparkle-cli` on other bundles.
 

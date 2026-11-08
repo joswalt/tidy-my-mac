@@ -58,8 +58,12 @@ For v1.0 there is no previous release, so the full form applies.
 - [ ] Note whether the helper answered `tidytest`: ____
 
 ### 6. Real-helper canary run (spec 017 §4.3)
-- [ ] `sudo scripts/canary.sh setup` created the canaries.
-- [ ] Only the ticked canaries were removed; `sudo scripts/canary.sh check` reports every other canary and zone listing unchanged.
+In this order (`check` must run before anything is restored, or it reports the restored Dummy as never removed):
+- [ ] `sudo scripts/canary.sh setup` created the canaries (right before the run).
+- [ ] Cleanup run ticking only `TidyCanary-<date>-A`, the `TidyCanary-<date>` log folder and the `TidyTest.Dummy` agent.
+- [ ] `sudo scripts/canary.sh check`: `RESULT: PASS` (only the ticked canaries removed, every other canary and zone listing unchanged).
+- [ ] Then restore the Dummy agent from Health › that run › Restore.
+- [ ] `sudo scripts/canary.sh check-restored`: `RESULT: PASS` (same file back, `root wheel`, `-rw-r--r--`; `ls -l /Library/LaunchAgents/io.github.joswalt.TidyTest.Dummy.plist` shows the same).
 
 ### 7. Experimental rules
 - [ ] Dry run of every `experimental` rule on John's account; John reviewed the list.
