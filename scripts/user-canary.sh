@@ -68,8 +68,8 @@ def report(ok, msg):
     fails += 0 if ok else 1
     print(("PASS " if ok else "FAIL ") + msg)
 
-# Canary names; the root Dummy agent from canary.sh is ticked by hand in the same run.
-def is_canary(p): return "TidyCanary" in os.path.basename(p.rstrip("/")) or os.path.basename(p) == "io.github.joswalt.TidyTest.Dummy.plist"
+# Canary names (canary.sh's root canaries in the same run are named TidyCanary too).
+def is_canary(p): return "TidyCanary" in os.path.basename(p.rstrip("/"))
 
 runs = []
 for f in sorted((home / "Library/Application Support/TidyMyMac/RunLog").glob("*.jsonl")):

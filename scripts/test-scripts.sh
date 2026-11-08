@@ -27,9 +27,9 @@ run_case() { # name, expected exit, expected RESULT, mutation
   rm -rf "$root"
   if [ "$code" = "$want" ] && echo "$out" | grep -qx "RESULT: $result"; then ok "canary: $name"; else bad "canary: $name (exit $code)"; echo "$out" | sed 's/^/     /'; fi
 }
-TICKED='rm -rf "Library/Caches/TidyCanary-$D-A" "Library/Logs/TidyCanary-$D" Library/LaunchAgents/io.github.joswalt.TidyTest.Dummy.plist'
+TICKED='rm -rf "Library/Caches/TidyCanary-$D-A" "Library/Logs/TidyCanary-$D" Library/LaunchAgents/io.github.joswalt.TidyCanary.Agent.plist'
 run_case "only ticked canaries removed passes" 0 PASS "$TICKED"
-run_case "ticked canary still there fails" 1 FAIL 'rm -rf "Library/Logs/TidyCanary-$D" Library/LaunchAgents/io.github.joswalt.TidyTest.Dummy.plist'
+run_case "ticked canary still there fails" 1 FAIL 'rm -rf "Library/Logs/TidyCanary-$D" Library/LaunchAgents/io.github.joswalt.TidyCanary.Agent.plist'
 run_case "unticked canary removed fails" 1 FAIL "$TICKED; rm -rf \"Library/Caches/TidyKeep-\$D-B\""
 run_case "other zone entry gone fails" 1 FAIL "$TICKED; rm -rf Library/Caches/Other"
 
@@ -39,8 +39,8 @@ restored_case() { # name, expected exit, mutation (run in the fake root, D = sta
   root=$(mktemp -d)
   mkdir -p "$root/var/root" "$root/Library/Caches" "$root/Library/Logs" "$root/Library/LaunchAgents"
   CANARY_ROOT=$root scripts/canary.sh setup >/dev/null
-  chmod 644 "$root/Library/LaunchAgents/io.github.joswalt.TidyTest.Dummy.plist"
-  (cd "$root" && P=Library/LaunchAgents/io.github.joswalt.TidyTest.Dummy.plist eval "$mutate")
+  chmod 644 "$root/Library/LaunchAgents/io.github.joswalt.TidyCanary.Agent.plist"
+  (cd "$root" && P=Library/LaunchAgents/io.github.joswalt.TidyCanary.Agent.plist eval "$mutate")
   out=$(CANARY_ROOT=$root scripts/canary.sh check-restored 2>&1); code=$?
   rm -rf "$root"
   if [ "$code" = "$want" ]; then ok "canary restored: $name"; else bad "canary restored: $name (exit $code)"; echo "$out" | sed 's/^/     /'; fi
