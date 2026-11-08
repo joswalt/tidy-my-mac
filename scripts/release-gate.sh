@@ -2,6 +2,9 @@
 # The release gate (docs/release-checklist.md, spec 017 §6) as one script. Run it on `main` after the
 # release PR (version bump + docs/releases/vX.Y.Z.md) is merged:
 #   scripts/release-gate.sh
+#   scripts/release-gate.sh --from canaries   after a stop in the canary steps: keeps the report of
+#                                             steps 1–4 and starts again at the canaries (allowed
+#                                             only when nothing but scripts/ or docs/ changed since)
 # It runs every check it can, stops only for the steps that need you in the app, writes the
 # filled-in checklist to build/release-gate-vX.Y.Z.md and prints the tag and Release commands.
 # It never pushes a tag or creates a Release itself. Any FAIL stops the gate.
@@ -19,7 +22,7 @@ mkdir -p build
 say()  { printf '\n\033[1m== %s\033[0m\n' "$1"; }
 line() { echo "$1" >> "$REPORT"; }
 pass() { echo "PASS $1"; line "- [x] $1"; }
-fail() { echo "FAIL $1"; line "- [ ] FAIL: $1"; echo; echo "Gate stopped. Report so far: $REPORT"; exit 1; }
+fail() { echo "FAIL $1"; line "- [ ] FAIL: $1"; echo; echo "Gate stopped. Report so far: $REPORT"; [ "${full:-}" = yes ] && echo "After a fix to the canary steps: scripts/release-gate.sh --from canaries"; exit 1; }
 pause() { echo; echo "$1"; read -r -p "Press Return when done… " _; }
 # yes/no/skip question for a manual step; a skip needs a reason and is recorded.
 ask() {
@@ -39,6 +42,10 @@ relaunch() { # extra app arguments
   open -a "$APP" --args "$@"
 }
 
+FROM=all
+if [ "${1:-}" = --from ] && [ "${2:-}" = canaries ]; then FROM=canaries
+elif [ -n "${1:-}" ]; then echo "usage: $0 [--from canaries]" >&2; exit 2; fi
+
 say "Release $tag (build $build)"
 git fetch -q origin main --tags
 [ "$(git rev-parse --abbrev-ref HEAD)" = main ] || { echo "Check out main first."; exit 1; }
@@ -49,10 +56,21 @@ git rev-parse -q --verify "refs/tags/$tag" >/dev/null && { echo "Tag $tag alread
 last=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
 commit=$(git rev-parse --short HEAD)
 
+if [ $FROM = canaries ]; then
+  [ -f "$REPORT" ] || { echo "No earlier report ($REPORT) to resume from."; exit 1; }
+  # The earlier run's report must say steps 1-4 passed: copy it up to the canary section.
+  grep -q "check-local.sh: tests" "$REPORT" || { echo "The earlier report doesn't show check-local.sh passing; run the whole gate."; exit 1; }
+  was=$(sed -n 's/^| Commit | `\(.*\)` |$/\1/p' "$REPORT")
+  changed=$(git diff --name-only "$was..HEAD" | grep -vE '^(scripts|docs)/' || true)
+  [ -z "$changed" ] || { echo "Files besides scripts/ and docs/ changed since $was; run the whole gate:"; echo "$changed"; exit 1; }
+  sed -i '' '/^## Full form/,$d' "$REPORT"
+  sed -i '' "s/^| Commit | .*/| Commit | \`$commit\` (steps 1–4 on \`$was\`; only scripts and docs changed since) |/" "$REPORT"
+else
 { echo "# Release gate: $tag"; echo
   echo "| | |"; echo "|---|---|"
   echo "| Version | $version (build $build) |"; echo "| Commit | \`$commit\` |"
   echo "| Date | $(date +%Y-%m-%d) |"; echo "| Previous | ${last:-none} |"; echo; } > "$REPORT"
+fi
 
 if [ -n "$last" ]; then
   last_build=$(git show "$last:Config/Shared.xcconfig" | sed -n 's/^CURRENT_PROJECT_VERSION *= *//p')
@@ -66,7 +84,10 @@ else
 fi
 echo "Full form: $full (SafetyFloor, HelperCore, Helper, RuleEngine or Rules changed since ${last:-the start})"
 echo "Temporary tidytest account: $account (SafetyFloor, HelperCore or Helper changed)"
-line "Form: $([ $full = yes ] && echo full || echo short). Temporary tidytest account: $account."; line ""
+[ $FROM = canaries ] || { line "Form: $([ $full = yes ] && echo full || echo short). Temporary tidytest account: $account."; line ""; }
+[ $FROM = canaries ] && [ $full = no ] && { echo "This release uses the short form; there are no canary steps."; exit 1; }
+
+if [ $FROM = all ]; then
 
 line "## Short form"
 say "1. CI on $commit"
@@ -100,6 +121,7 @@ ask "The helper restarted with no new approval prompt, and Health › Run Histor
 say "3. Click-through and 3a. accessibility (see docs/release-checklist.md)"
 ask "Click-through: first-run sheet, every module, My Tools, Tidy Up dry run, menu bar, Settings, keyboard"
 ask "Accessibility: VoiceOver, Reduce Motion, Increase Contrast, Full Keyboard Access"
+fi
 
 if [ $full = yes ]; then
   line ""; line "## Full form"
@@ -107,16 +129,16 @@ if [ $full = yes ]; then
   scripts/user-canary.sh setup
   sudo scripts/canary.sh setup
   relaunch -TidyCanaryRun YES
-  pause "In TidyMyMac (opened in canary mode): Cleanup › Scan. Only TidyCanary items start ticked.
-Also tick 'io.github.joswalt.TidyTest.Dummy' under Broken system login items. Leave TidyKeep items alone.
+  pause "In TidyMyMac (opened in canary mode): Cleanup › Scan. Only TidyCanary items start ticked
+(in your Library and, with the helper, in /Library). Leave TidyKeep items alone.
 Then Clean (enter your password for the helper)."
   sudo scripts/canary.sh check && pass "Helper canaries: only the ticked ones removed" || fail "sudo scripts/canary.sh check"
-  pause "Health › Run History › that run › Restore the 'io.github.joswalt.TidyTest.Dummy' agent."
+  pause "Health › Run History › that run › Restore the 'io.github.joswalt.TidyCanary.Agent.plist' item (not Restore All)."
   sudo scripts/canary.sh check-restored && pass "Helper restore: same file, root:wheel, 644" || fail "sudo scripts/canary.sh check-restored"
+  sudo scripts/canary.sh cleanup
   pause "Applications › Uninstaller: uninstall 'TidyCanary Dummy'.
 Then Cleanup › Scan Again: only the TidyCanary items in the Trash are ticked. Clean."
   scripts/user-canary.sh check && pass "User canaries: only canaries removed, Trash emptied, TidyKeep items unchanged" || fail "scripts/user-canary.sh check"
-  sudo scripts/canary.sh cleanup
   scripts/user-canary.sh cleanup
   relaunch
 

@@ -66,11 +66,11 @@ For v1.0 there is no previous release, so the full form applies.
 ### 6. Real-helper canary run (spec 017 §4.3)
 In this order (`check` must run before anything is restored, or it reports the restored Dummy as never removed):
 - [ ] `sudo scripts/canary.sh setup` created the canaries (right before the run).
-- [ ] The same Cleanup run as step 5: the `TidyCanary` items start ticked; also tick the `TidyTest.Dummy` agent. `TidyKeep-<date>-B` stays unticked.
+- [ ] The same Cleanup run as step 5: every `TidyCanary` item starts ticked, including the `io.github.joswalt.TidyCanary.Agent` broken system login item. `TidyKeep-<date>-B` stays unticked.
 - [ ] `sudo scripts/canary.sh check`: `RESULT: PASS` (only the ticked canaries removed, every other canary and zone listing unchanged).
-- [ ] Then restore the Dummy agent from Health › that run › Restore.
-- [ ] `sudo scripts/canary.sh check-restored`: `RESULT: PASS` (same file back, `root wheel`, `-rw-r--r--`; `ls -l /Library/LaunchAgents/io.github.joswalt.TidyTest.Dummy.plist` shows the same).
-- [ ] At the end, `sudo scripts/canary.sh cleanup` and `scripts/user-canary.sh cleanup`.
+- [ ] Then restore the `TidyCanary.Agent` item from Health › that run › Restore (that item only).
+- [ ] `sudo scripts/canary.sh check-restored`: `RESULT: PASS` (same file back, `root wheel`, `-rw-r--r--`; `ls -l /Library/LaunchAgents/io.github.joswalt.TidyCanary.Agent.plist` shows the same).
+- [ ] `sudo scripts/canary.sh cleanup` right after, so the second scan doesn't pick up the restored agent; `scripts/user-canary.sh cleanup` at the end.
 
 ### 7. Experimental rules
 - [ ] Dry run of every `experimental` rule on John's account; John reviewed the list.
