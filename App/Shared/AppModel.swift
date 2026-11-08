@@ -293,7 +293,17 @@ final class ScanSession {
     var progress: [String: Bool] = [:]
     var currentArea: String?
     var error: String?
+    /// Open apps that own ticked items, asked about before a real clean (QuitAppsSheet).
+    var quitRequest: QuitRequest?
+    /// The item table's column sort, shared by every category (empty = scan order).
+    var itemSortOrder: [KeyPathComparator<Candidate>] = []
     private var scanTask: Task<Void, Never>?
+
+    struct QuitRequest: Identifiable {
+        let id = UUID()
+        let apps: [RunningApp]
+        let proceed: @MainActor () -> Void
+    }
 
     init(module: String) { self.module = module }
 
@@ -404,6 +414,29 @@ final class ScanSession {
             return r
         })
         selection.keepOnly(candidates)
+    }
+
+    /// Open apps that own a ticked item under a `skipIfOwnerAppRunning` rule, such as Google
+    /// Chrome for ~/Library/Caches/Google. TidyMyMac itself is never listed.
+    func appsToQuit() -> [RunningApp] {
+        guard let ctx = app?.context, let running = try? ctx.guards.runningApps() else { return [] }
+        let others = running.filter { $0.bundleID != Bundle.main.bundleIdentifier && $0.pid != ProcessInfo.processInfo.processIdentifier }
+        var out: [RunningApp] = []
+        for c in selected where !c.viaHelper && ctx.rules.cleanRule(c.ruleID)?.guards?.skipIfOwnerAppRunning == true {
+            for a in OwnerApps.owners(of: c.name, among: others) where !out.contains(a) { out.append(a) }
+        }
+        return out.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    /// A real clean, after the one confirmation: first offers to quit open apps that own ticked
+    /// items (Quit, Quit All, Ignore). Items of apps left open are skipped by the remover.
+    func clean(flushDNS: Bool = false) {
+        let apps = appsToQuit()
+        if apps.isEmpty {
+            run(dryRun: false, flushDNS: flushDNS)
+        } else {
+            quitRequest = QuitRequest(apps: apps) { [weak self] in self?.run(dryRun: false, flushDNS: flushDNS) }
+        }
     }
 
     /// Every action in one run log: helper items, Trash bins and user-level items (spec 005 §8).

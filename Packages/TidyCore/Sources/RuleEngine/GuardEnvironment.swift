@@ -5,8 +5,17 @@ import Darwin
 /// answered the method throws, and the scanner skips the item rather than guess.
 public protocol GuardEnvironment: Sendable {
     func runningBundleIDs() throws -> Set<String>
+    /// Open apps with their names, for matching items to the app that owns them (`OwnerApps`).
+    func runningApps() throws -> [RunningApp]
     func runningProcessNames() throws -> Set<String>
     func isAppInstalled(bundleID: String) throws -> Bool
+}
+
+extension GuardEnvironment {
+    /// Bundle IDs only, for environments that don't know app names.
+    public func runningApps() throws -> [RunningApp] {
+        try runningBundleIDs().sorted().map { RunningApp(bundleID: $0, name: $0) }
+    }
 }
 
 public struct GuardUnavailable: Error, CustomStringConvertible {
@@ -21,6 +30,14 @@ public struct SystemGuardEnvironment: GuardEnvironment {
 
     public func runningBundleIDs() throws -> Set<String> {
         Set(NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier))
+    }
+
+    public func runningApps() throws -> [RunningApp] {
+        NSWorkspace.shared.runningApplications.compactMap { r in
+            guard let id = r.bundleIdentifier, !r.isTerminated else { return nil }
+            return RunningApp(bundleID: id, name: r.localizedName ?? id, executableName: r.executableURL?.lastPathComponent,
+                              isRegular: r.activationPolicy == .regular, pid: r.processIdentifier)
+        }
     }
 
     public func runningProcessNames() throws -> Set<String> {

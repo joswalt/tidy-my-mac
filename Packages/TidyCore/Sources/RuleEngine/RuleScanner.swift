@@ -297,14 +297,8 @@ public struct RuleScanner: Sendable {
             case .some(false): break
             }
         }
-        if rule.guards?.skipIfOwnerAppRunning == true, name.contains(".") {
-            do {
-                let running = try guards.runningBundleIDs().map(PathNormalizer.fold)
-                if running.contains(PathNormalizer.fold(name)) { return .skipped("\(name) is running") }
-            } catch {
-                return .skipped("\(error)")
-            }
-        }
+        // `skipIfOwnerAppRunning` is checked when removing, not here: items of open apps are listed,
+        // and the app offers to quit them before a clean (Remover skips any still open).
 
         let m = sizer.measure(path)
         if m.crossesVolume { return .skipped("it contains another volume") }

@@ -76,8 +76,8 @@ public struct Remover: Sendable {
         if let blocked = scanner.ruleLevelGuard(rule) { return skip(blocked) }
         if rule.guards?.skipIfOwnerAppRunning == true {
             do {
-                if try scanner.guards.runningBundleIDs().map(PathNormalizer.fold).contains(PathNormalizer.fold(c.name)) {
-                    return skip("\(c.name) is running")
+                if let owner = OwnerApps.owners(of: c.name, among: try scanner.guards.runningApps()).first {
+                    return skip("\(owner.name) is running")
                 }
             } catch {
                 return skip("\(error)")  // A guard that can't be checked skips (spec 006 §3.1).

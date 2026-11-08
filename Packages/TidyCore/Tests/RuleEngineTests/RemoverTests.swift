@@ -140,4 +140,25 @@ struct RemoverTests {
         #expect(out2.skipped.first?.reason == "com.example.Guarded is running")
         #expect(FileStatus.lstat(s.t.path("Library/Caches/later/a")) != nil)
     }
+
+    @Test func cachesOfOpenAppsAreSkippedWithTheAppsName() throws {
+        let s = try setUp("owner")
+        defer { s.t.cleanUp() }
+        try s.t.file("Library/Caches/Google/Chrome/a")
+        try s.t.file("Library/Caches/Other/a")
+        let rule = makeRule("test.owner", targets: [RuleTarget(root: ruleRoot("Library/Caches"), match: .children)],
+                            guards: RuleGuards(appsNotRunning: nil, processesNotRunning: nil, skipIfOwnerAppRunning: true, onlyIfAppMissing: nil))
+        var set = RuleSet(version: 1)
+        set.cleanRules = [rule]
+        let c = s.scanner.scan(rule).candidates
+        #expect(c.map(\.name) == ["Google", "Other"])
+
+        let chrome = RunningApp(bundleID: "com.google.Chrome", name: "Google Chrome", executableName: "Google Chrome", isRegular: true, pid: 42)
+        let remover = Remover(scanner: RuleScanner(home: s.t.home, floor: s.scanner.floor, guards: FakeGuards(apps: [chrome]), hasFullDiskAccess: true),
+                              trash: HomeTrash(home: s.t.home))
+        let out = try remover.run(c, rules: set, log: s.log, dryRun: false)
+        #expect(out.skipped.map(\.reason) == ["Google Chrome is running"])
+        #expect(out.done.map { ($0.path as NSString).lastPathComponent } == ["Other"])
+        #expect(FileStatus.lstat(s.t.path("Library/Caches/Google/Chrome/a")) != nil)
+    }
 }
