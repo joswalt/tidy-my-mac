@@ -94,7 +94,7 @@ public struct Remover: Sendable {
         do {
             switch c.action {
             case .delete:
-                try Self.removeTree(c.path, device: status.device)
+                try SafeRemoval.removeVerified(c.path, identity: c.identity)
                 return RunItem(ruleID: c.ruleID, path: c.path, allocatedBytes: c.allocatedBytes, action: .delete, result: .done)
             case .trash:
                 try TestFence.check(c.path)
@@ -116,21 +116,6 @@ public struct Remover: Sendable {
         public let path: String
         public let message: String
         public var description: String { "\(message): \(path)" }
-    }
-
-    /// Permanently deletes a file or folder tree without following symlinks or leaving the volume.
-    static func removeTree(_ path: String, device: Int32) throws {
-        try TestFence.check(path)
-        guard let st = FileStatus.lstat(path) else { throw RemoveError(path: path, message: "missing") }
-        if st.device != device { throw RemoveError(path: path, message: "on another volume") }
-        if st.isDirectory {
-            for name in try FileManager.default.contentsOfDirectory(atPath: path) {
-                try removeTree(path + "/" + name, device: device)
-            }
-            if Darwin.rmdir(path) != 0 { throw RemoveError(path: path, message: String(cString: strerror(errno))) }
-        } else {
-            if Darwin.unlink(path) != 0 { throw RemoveError(path: path, message: String(cString: strerror(errno))) }
-        }
     }
 }
 
@@ -160,7 +145,7 @@ public enum TrashEmptier {
             if m.crossesVolume { return item(.skipped, "it contains another volume") }
             if dryRun { return item(.done) }
             do {
-                try Remover.removeTree(c.path, device: st.device)
+                try SafeRemoval.removeVerified(c.path, identity: c.identity, allowSymlink: st.isSymlink)
                 return item(.done)
             } catch {
                 return item(.failed, "\(error)")

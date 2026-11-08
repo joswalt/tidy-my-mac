@@ -40,6 +40,32 @@ struct RemoverTests {
         #expect(Snapshot(of: s.t.home.root.appendingPathComponent("Library/Caches").path).entries == before.entries)
     }
 
+    @Test func aFolderSwappedForASymlinkAfterReviewIsNeverFollowed() throws {
+        // Security review finding 1: the delete walks by descriptor, bound to the reviewed item.
+        let s = try setUp("swap-after-review")
+        defer { s.t.cleanUp() }
+        try s.t.file("Library/Caches/app/sub/a")
+        try s.t.file("Documents/precious/keep.txt")
+        let c = s.scanner.scan(s.rule).candidates
+        #expect(c.count == 1)
+        // Between review and removal a folder inside the item becomes a link to Documents.
+        try s.t.remove("Library/Caches/app/sub")
+        try s.t.symlink("Library/Caches/app/sub", to: s.t.path("Documents/precious"))
+        let out = try s.remover.run(c, rules: s.set, log: s.log, dryRun: false)
+        #expect(out.done.count == 1)
+        #expect(FileStatus.lstat(s.t.path("Library/Caches/app")) == nil)
+        #expect(FileStatus.lstat(s.t.path("Documents/precious/keep.txt")) != nil)
+
+        // And an item that was replaced is skipped, its replacement untouched.
+        try s.t.file("Library/Caches/app2/x")
+        let c2 = s.scanner.scan(s.rule).candidates
+        try s.t.remove("Library/Caches/app2")
+        try s.t.file("Library/Caches/app2/unreviewed")
+        let out2 = try s.remover.run(c2, rules: s.set, log: s.log, dryRun: false)
+        #expect(out2.done.isEmpty)
+        #expect(FileStatus.lstat(s.t.path("Library/Caches/app2/unreviewed")) != nil)
+    }
+
     @Test func deleteAndTrash() throws {
         let s = try setUp("act")
         defer { s.t.cleanUp() }

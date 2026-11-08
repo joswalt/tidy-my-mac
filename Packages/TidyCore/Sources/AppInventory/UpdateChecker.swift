@@ -78,9 +78,14 @@ public struct URLSessionFeedFetcher: FeedFetcher {
     public let timeout: TimeInterval
 
     /// `appVersion` like "1.0": the User-Agent is `TidyMyMac/1.0 (update check)` (spec 013 §6).
-    public init(appVersion: String, timeout: TimeInterval = 15) {
+    /// Largest feed accepted. Appcasts and release JSON are a few hundred KB at most.
+    public static let defaultMaxBytes = 5 * 1024 * 1024
+    public let maxBytes: Int
+
+    public init(appVersion: String, timeout: TimeInterval = 15, maxBytes: Int = Self.defaultMaxBytes) {
         userAgent = "TidyMyMac/\(appVersion) (update check)"
         self.timeout = timeout
+        self.maxBytes = maxBytes
     }
 
     public func fetch(_ url: URL) async throws -> Data {
@@ -89,9 +94,31 @@ public struct URLSessionFeedFetcher: FeedFetcher {
         req.setValue(userAgent, forHTTPHeaderField: "User-Agent")
         let config = URLSessionConfiguration.ephemeral
         config.timeoutIntervalForResource = timeout * 4
-        let (data, response) = try await URLSession(configuration: config).data(for: req)
+        let session = URLSession(configuration: config)
+        defer { session.finishTasksAndInvalidate() }
+        let (bytes, response) = try await session.bytes(for: req)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            bytes.task.cancel()
             throw FetchError("the server answered \(http.statusCode)")
+        }
+        do {
+            return try await Self.collect(bytes, expectedLength: response.expectedContentLength, limit: maxBytes)
+        } catch {
+            bytes.task.cancel()
+            throw error
+        }
+    }
+
+    /// Reads a response body, refusing it up front when Content-Length is over `limit` and
+    /// stopping as soon as more than `limit` bytes arrive (security review finding 8).
+    static func collect<S: AsyncSequence>(_ bytes: S, expectedLength: Int64, limit: Int) async throws -> Data where S.Element == UInt8 {
+        let tooBig = FetchError("the feed is larger than \(limit / 1024 / 1024) MB")
+        if expectedLength > Int64(limit) { throw tooBig }
+        var data = Data()
+        data.reserveCapacity(expectedLength > 0 ? Int(expectedLength) : 64 * 1024)
+        for try await b in bytes {
+            if data.count >= limit { throw tooBig }
+            data.append(b)
         }
         return data
     }
