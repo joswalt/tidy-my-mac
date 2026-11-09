@@ -23,6 +23,12 @@ struct ReviewSheet: View {
             HStack {
                 Text("Review").font(.title2)
                 Spacer()
+                let all = groups.flatMap(\.candidates)
+                CheckAllButtons(canCheckAll: !all.filter { $0.risk != .risky }.allSatisfy(session.selection.contains),
+                                canCheckNone: all.contains(where: session.selection.contains),
+                                allNote: all.contains { $0.risk == .risky } ? "Check every item except risky ones, which you check one by one" : nil,
+                                checkAll: { session.selection.setGroup(all, true) },
+                                checkNone: { session.selection.setGroup(all, false) })
                 Picker("Show", selection: $filter) {
                     ForEach(Filter.allCases) { Text($0.rawValue).tag($0) }
                 }

@@ -44,6 +44,8 @@ final class ApplicationsModel {
     var planning: Set<String> = []
     /// Related items the user unticked (candidate ids). The app bundle itself can't be unticked.
     var unticked: Set<String> = []
+    /// Column sort for the related-files table, shared by every app (empty = the app first, then as found).
+    var planSortOrder: [KeyPathComparator<Candidate>] = []
     var running: Set<String> = []
     var phase: Phase = .browsing
     var lastRun: CleanupEngine.Run?

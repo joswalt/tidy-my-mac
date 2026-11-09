@@ -194,13 +194,23 @@ struct LargeOldTab: View {
             }
             .fixedSize()
             Spacer()
+            let shown = model.visibleLarge.map(\.path)
+            CheckAllButtons(canCheckAll: !shown.allSatisfy(model.largeSelection.contains),
+                            canCheckNone: shown.contains(where: model.largeSelection.contains),
+                            checkAll: { model.largeSelection.formUnion(shown) },
+                            checkNone: { model.largeSelection.subtract(shown) })
         }
         .controlSize(.small)
         .padding(.horizontal, 16).padding(.vertical, 8)
     }
 
+    /// Rows in the order of the clicked column header; largest first until one is clicked.
+    var rows: [FileEntry] {
+        model.largeSortOrder.isEmpty ? model.visibleLarge : model.visibleLarge.sorted(using: model.largeSortOrder)
+    }
+
     var table: some View {
-        Table(model.visibleLarge, selection: $tableSelection) {
+        Table(rows, selection: $tableSelection, sortOrder: $model.largeSortOrder) {
             TableColumn("") { f in
                 Toggle("", isOn: Binding(get: { model.largeSelection.contains(f.path) },
                                          set: { if $0 { model.largeSelection.insert(f.path) } else { model.largeSelection.remove(f.path) } }))
@@ -208,17 +218,17 @@ struct LargeOldTab: View {
                     .accessibilityLabel("Select \(f.name)")
             }
             .width(24)
-            TableColumn("Name") { f in
+            TableColumn("Name", value: \.name) { f in
                 HStack(spacing: 6) {
                     AppIcon(path: f.path, size: 16)
                     Text(f.name).lineLimit(1).help(f.name)
                 }
             }
             .width(min: 160, ideal: 240)
-            TableColumn("Location") { f in PathText(path: f.folder) }
-            TableColumn("Kind") { f in Text(FileKind.of(f.path).title).foregroundStyle(.secondary) }.width(80)
-            TableColumn("Modified") { f in Text(f.modified, format: .dateTime.year().month().day()).foregroundStyle(.secondary) }.width(90)
-            TableColumn("Size") { f in
+            TableColumn("Location", value: \.folder) { f in PathText(path: f.folder) }
+            TableColumn("Kind", value: \.kindTitle) { f in Text(f.kindTitle).foregroundStyle(.secondary) }.width(80)
+            TableColumn("Modified", value: \.modified) { f in Text(f.modified, format: .dateTime.year().month().day()).foregroundStyle(.secondary) }.width(90)
+            TableColumn("Size", value: \.allocatedBytes) { f in
                 Text(sizeString(f.allocatedBytes)).monospacedDigit().frame(maxWidth: .infinity, alignment: .trailing)
             }
             .width(80)
@@ -341,6 +351,11 @@ struct DownloadsTab: View {
                     Spacer()
                     let dupes = model.visibleDownloads.filter { !$0.alsoElsewhere.isEmpty }.count
                     if dupes > 0 { Label("\(dupes) also elsewhere", systemImage: "doc.on.doc").font(.caption).foregroundStyle(.secondary) }
+                    let shown = model.visibleDownloads.map(\.path)
+                    CheckAllButtons(canCheckAll: !shown.allSatisfy(model.downloadsSelection.contains),
+                                    canCheckNone: shown.contains(where: model.downloadsSelection.contains),
+                                    checkAll: { model.downloadsSelection.formUnion(shown) },
+                                    checkNone: { model.downloadsSelection.subtract(shown) })
                 }
                 .controlSize(.small)
                 .padding(.horizontal, 16).padding(.vertical, 8)
@@ -354,8 +369,13 @@ struct DownloadsTab: View {
         }
     }
 
+    /// Rows in the order of the clicked column header; oldest first until one is clicked.
+    var rows: [DownloadItem] {
+        model.downloadsSortOrder.isEmpty ? model.visibleDownloads : model.visibleDownloads.sorted(using: model.downloadsSortOrder)
+    }
+
     var table: some View {
-        Table(model.visibleDownloads, selection: $tableSelection) {
+        Table(rows, selection: $tableSelection, sortOrder: $model.downloadsSortOrder) {
             TableColumn("") { d in
                 Toggle("", isOn: Binding(get: { model.downloadsSelection.contains(d.path) },
                                          set: { if $0 { model.downloadsSelection.insert(d.path) } else { model.downloadsSelection.remove(d.path) } }))
@@ -363,7 +383,7 @@ struct DownloadsTab: View {
                     .accessibilityLabel("Select \(d.name)")
             }
             .width(24)
-            TableColumn("Name") { d in
+            TableColumn("Name", value: \.name) { d in
                 HStack(spacing: 6) {
                     AppIcon(path: d.path, size: 16)
                     Text(d.name).lineLimit(1).help(d.name)
@@ -375,9 +395,9 @@ struct DownloadsTab: View {
                 }
             }
             .width(min: 200, ideal: 320)
-            TableColumn("From") { d in Text(d.sourceHost ?? "—").foregroundStyle(.secondary).lineLimit(1) }.width(min: 80, ideal: 140)
-            TableColumn("Added") { d in Text(d.dateAdded, format: .dateTime.year().month().day()).foregroundStyle(.secondary) }.width(90)
-            TableColumn("Size") { d in
+            TableColumn("From", value: \.sourceSortKey) { d in Text(d.sourceHost ?? "—").foregroundStyle(.secondary).lineLimit(1) }.width(min: 80, ideal: 140)
+            TableColumn("Added", value: \.dateAdded) { d in Text(d.dateAdded, format: .dateTime.year().month().day()).foregroundStyle(.secondary) }.width(90)
+            TableColumn("Size", value: \.allocatedBytes) { d in
                 Text(sizeString(d.allocatedBytes)).monospacedDigit().frame(maxWidth: .infinity, alignment: .trailing)
             }
             .width(80)
@@ -396,4 +416,14 @@ struct DownloadsTab: View {
             return .handled
         }
     }
+}
+
+/// Sort keys for the Large & Old and Downloads tables.
+extension FileEntry {
+    var kindTitle: String { FileKind.of(path).title }
+}
+
+extension DownloadItem {
+    /// Unknown sources sort last.
+    var sourceSortKey: String { sourceHost ?? "\u{10FFFF}" }
 }

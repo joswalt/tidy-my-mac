@@ -46,6 +46,8 @@ final class ClutterModel {
     var scanningLarge = false
     var largeFilter = LargeOldFilter.default
     var largeSelection: Set<String> = []
+    /// Column sort for the table (empty = largest first, as scanned).
+    var largeSortOrder: [KeyPathComparator<FileEntry>] = []
 
     // Duplicates
     var groups: [DuplicateGroup]?
@@ -61,6 +63,8 @@ final class ClutterModel {
     var scanningDownloads = false
     var downloadsOlderThan: Int? = DownloadsReview.defaultOlderThanDays
     var downloadsSelection: Set<String> = []
+    /// Column sort for the table (empty = oldest first).
+    var downloadsSortOrder: [KeyPathComparator<DownloadItem>] = []
 
     private var cancel = CancelFlag()
     private var hashCache: HashCache?

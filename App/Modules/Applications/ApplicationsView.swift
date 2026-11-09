@@ -221,10 +221,27 @@ struct PlanTable: View {
     let plan: UninstallPlan
     @Environment(AppModel.self) private var appModel
 
-    var rows: [Candidate] { [plan.appItem] + plan.related }
+    /// The app first, then related files in the order of the clicked column header.
+    var rows: [Candidate] {
+        [plan.appItem] + (model.planSortOrder.isEmpty ? plan.related : plan.related.sorted(using: model.planSortOrder))
+    }
+
+    var relatedIDs: [String] { plan.related.map(\.id) }
 
     var body: some View {
-        Table(rows) {
+        if !plan.related.isEmpty {
+            HStack {
+                Text("The app itself is always included.").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                CheckAllButtons(canCheckAll: relatedIDs.contains(where: model.unticked.contains),
+                                canCheckNone: !relatedIDs.allSatisfy(model.unticked.contains),
+                                checkAll: { model.unticked.subtract(relatedIDs) },
+                                checkNone: { model.unticked.formUnion(relatedIDs) })
+            }
+            .padding(.horizontal, 16).padding(.vertical, 6)
+            Divider()
+        }
+        Table(rows, sortOrder: $model.planSortOrder) {
             TableColumn("") { c in
                 if c.ruleID == RelatedFileFinder.appRuleID {
                     Image(systemName: "checkmark.square.fill").foregroundStyle(.secondary).help("The app itself is always included")
@@ -237,16 +254,16 @@ struct PlanTable: View {
                 }
             }
             .width(24)
-            TableColumn("Name") { c in
+            TableColumn("Name", value: \.name) { c in
                 HStack(spacing: 4) {
                     Text(c.name).lineLimit(1).help(c.name)
                     if c.viaHelper { AdminBadge(font: .caption2) }
                 }
             }
             .width(min: 160, ideal: 240)
-            TableColumn("Location") { c in PathText(path: (c.path as NSString).deletingLastPathComponent) }
+            TableColumn("Location", value: \.location) { c in PathText(path: c.location) }
             TableColumn("Goes to") { _ in DestinationLabel(action: .trash) }.width(70)
-            TableColumn("Size") { c in
+            TableColumn("Size", value: \.allocatedBytes) { c in
                 Text(sizeString(c.allocatedBytes)).monospacedDigit().frame(maxWidth: .infinity, alignment: .trailing)
             }
             .width(80)

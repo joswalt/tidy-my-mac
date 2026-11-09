@@ -67,6 +67,29 @@ struct TriStateBox: View {
     }
 }
 
+/// Check All / Check None for a table of checkboxes. Both act only on the rows shown, so a
+/// filter narrows what they touch. `allNote` explains rows Check All leaves alone (risky ones).
+struct CheckAllButtons: View {
+    let canCheckAll: Bool
+    let canCheckNone: Bool
+    var allNote: String? = nil
+    let checkAll: () -> Void
+    let checkNone: () -> Void
+
+    var body: some View {
+        ControlGroup {
+            Button("Check All", action: checkAll)
+                .disabled(!canCheckAll)
+                .help(allNote ?? "Check every item shown")
+            Button("Check None", action: checkNone)
+                .disabled(!canCheckNone)
+                .help("Uncheck every item shown")
+        }
+        .controlSize(.small)
+        .fixedSize()
+    }
+}
+
 /// The admin badge (spec 007 §4): a lock on anything that goes through the helper, with words for
 /// VoiceOver and the tooltip, since the symbol alone says nothing.
 struct AdminBadge: View {
@@ -122,7 +145,26 @@ struct ItemTable: View {
     /// Rows in the order of the clicked column header; scan order until one is clicked.
     var rows: [Candidate] { session.itemSortOrder.isEmpty ? items : items.sorted(using: session.itemSortOrder) }
 
+    /// Check All skips risky items: those are ticked one by one (spec 007 §3).
+    var checkable: [Candidate] { items.filter { $0.risk != .risky } }
+
     var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                CheckAllButtons(canCheckAll: !checkable.allSatisfy(session.selection.contains),
+                                canCheckNone: items.contains(where: session.selection.contains),
+                                allNote: checkable.count < items.count ? "Check every item shown except risky ones, which you check one by one" : nil,
+                                checkAll: { session.selection.setGroup(items, true) },
+                                checkNone: { session.selection.setGroup(items, false) })
+            }
+            .padding(.horizontal, 16).padding(.vertical, 6)
+            Divider()
+            table
+        }
+    }
+
+    var table: some View {
         Table(rows, selection: $highlighted, sortOrder: $session.itemSortOrder) {
             TableColumn("") { c in
                 Toggle("", isOn: Binding(get: { session.selection.contains(c) }, set: { session.selection.set(c, $0) }))
