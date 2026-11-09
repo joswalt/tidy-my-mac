@@ -91,6 +91,15 @@ struct RunDetail: View {
     let run: RunRecord
     @Environment(AppModel.self) private var app
     @State private var refresh = 0
+    /// Column sort (empty = the order the run removed things in).
+    @State private var sortOrder: [KeyPathComparator<IndexedRunItem>] = []
+
+    var rows: [IndexedRunItem] {
+        let all = run.items.enumerated().map { i, item in
+            IndexedRunItem(id: i, item: item, ruleTitle: app.context?.rules.cleanRule(item.ruleID)?.title ?? item.ruleID)
+        }
+        return sortOrder.isEmpty ? all : all.sorted(using: sortOrder)
+    }
 
     var body: some View {
         let restorable = run.items.filter { app.restoreState($0) == .restored }
@@ -108,21 +117,21 @@ struct RunDetail: View {
                 }
             }
             .padding(20)
-            Table(run.items.enumerated().map { IndexedRunItem(id: $0.offset, item: $0.element) }, columns: {
-                TableColumn("Item") { (row: IndexedRunItem) in let i = row.item;
+            Table(rows, sortOrder: $sortOrder, columns: {
+                TableColumn("Item", value: \IndexedRunItem.name) { (row: IndexedRunItem) in let i = row.item;
                     VStack(alignment: .leading) {
                         Text((i.path as NSString).lastPathComponent).lineLimit(1)
                         PathText(path: i.path)
                     }
                 }
-                TableColumn("Rule") { (row: IndexedRunItem) in let i = row.item; Text(app.context?.rules.cleanRule(i.ruleID)?.title ?? i.ruleID).lineLimit(1) }
-                TableColumn("Action") { (row: IndexedRunItem) in let i = row.item; Text(i.action.description) }.width(70)
-                TableColumn("Result") { (row: IndexedRunItem) in let i = row.item;
+                TableColumn("Rule", value: \IndexedRunItem.ruleTitle) { (row: IndexedRunItem) in Text(row.ruleTitle).lineLimit(1) }
+                TableColumn("Action", value: \IndexedRunItem.actionText) { (row: IndexedRunItem) in Text(row.actionText) }.width(70)
+                TableColumn("Result", value: \IndexedRunItem.resultText) { (row: IndexedRunItem) in let i = row.item;
                     Text(i.result.rawValue.capitalized).foregroundStyle(i.result == .done ? Color.primary : Color.orange)
                         .help(i.reason ?? "")
                 }
                 .width(70)
-                TableColumn("Size") { (row: IndexedRunItem) in let i = row.item; Text(sizeString(i.allocatedBytes)).monospacedDigit() }.width(80)
+                TableColumn("Size", value: \IndexedRunItem.bytes) { (row: IndexedRunItem) in Text(sizeString(row.bytes)).monospacedDigit() }.width(80)
                 TableColumn("") { (row: IndexedRunItem) in let i = row.item;
                     if !run.header.dryRun, i.action == .trash, i.result == .done {
                         let state = app.restoreState(i)
@@ -144,4 +153,11 @@ struct RunDetail: View {
 struct IndexedRunItem: Identifiable {
     let id: Int
     let item: RunItem
+    let ruleTitle: String
+
+    /// Sort keys for the run's table.
+    var name: String { (item.path as NSString).lastPathComponent }
+    var actionText: String { item.action.description }
+    var resultText: String { item.result.rawValue }
+    var bytes: Int64 { item.allocatedBytes }
 }

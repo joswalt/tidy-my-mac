@@ -49,6 +49,7 @@ Risk handling follows spec 006: safe ticked, caution unticked, risky (iOS backup
 - **Destination column:** `trash` (secondary) or `Delete` with a flame symbol (red), from each rule's action.
 - **Admin badge** on categories/tasks that go through the helper.
 - **Empty state:** 48 pt symbol, one line, one action (e.g. "Nothing left to remove in User Caches." + Scan Again).
+- **Item tables** (Cleanup, Declutter's Large & Old and Downloads, the Uninstaller's related files, Run History) sort by any column with a value; until a header is clicked they keep their natural order. Tables with ticks have **Check All / Check None** above them, plus the Tidy Up review sheet. Both act only on the rows shown (after filters), and Check All never ticks risky items: those are ticked one by one.
 - **Toasts** for completed one-off actions ("Moved 3 files to the Trash").
 - Duplicates: auto-select picker (Keep Newest / Oldest / Choose myself); the app refuses to tick the last copy in a set.
 - Uninstaller: detail pane lists every related file; Uninstall… opens a sheet with ticks (the .app itself always included) and "Move to Trash".
