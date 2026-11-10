@@ -20,11 +20,30 @@ OLD_DUMMY=$R/Library/LaunchAgents/io.github.joswalt.TidyTest.Dummy.plist  # its 
 DUMMY_INODE=$R/var/root/.tidy-canary-dummy-inode
 LIST=$R/var/root/.tidy-canary-zones.txt
 ZONES=("$R/Library/Caches" "$R/Library/Logs" "$R/Library/LaunchAgents")
+WANT_UID=0
+[ -n "$R" ] && WANT_UID=$(id -u)  # tests: the fake root belongs to the user
+
+# /Library/Caches is world-writable (1777) and the canary names are predictable, so another
+# process could plant a folder or symlink there first and have root write through it. Make each
+# canary folder fresh: refuse anything already there that isn't our own root-owned folder, remove
+# an old one of ours, then mkdir without -p (fails if something appeared meanwhile) and check it.
+fresh_dir() {
+  local p=$1
+  if [ -L "$p" ] || { [ -e "$p" ] && { [ ! -d "$p" ] || [ "$(stat -f %u "$p")" != "$WANT_UID" ]; }; }; then
+    echo "Refusing: $p already exists and isn't a canary folder made by this script. Remove it, then run setup again." >&2
+    exit 1
+  fi
+  rm -rf "$p"
+  mkdir -m 755 "$p"
+  [ ! -L "$p" ] && [ -d "$p" ] && [ "$(stat -f %u "$p")" = "$WANT_UID" ] \
+    || { echo "Refusing: $p changed while it was being made." >&2; exit 1; }
+}
 case "${1:-}" in
 setup)
   d=$(date +%Y%m%d)
   echo "$d" > "$STAMP_FILE"
-  mkdir -p "$R/Library/Caches/TidyCanary-$d-A" "$R/Library/Caches/TidyKeep-$d-B" "$R/Library/Logs/TidyCanary-$d" "$R/Library/LaunchAgents"
+  for p in "$R/Library/Caches/TidyCanary-$d-A" "$R/Library/Caches/TidyKeep-$d-B" "$R/Library/Logs/TidyCanary-$d"; do fresh_dir "$p"; done
+  mkdir -p "$R/Library/LaunchAgents"
   head -c 65536 /dev/urandom > "$R/Library/Caches/TidyCanary-$d-A/data"
   head -c 65536 /dev/urandom > "$R/Library/Caches/TidyKeep-$d-B/data"
   echo "canary log" > "$R/Library/Logs/TidyCanary-$d/canary.log"

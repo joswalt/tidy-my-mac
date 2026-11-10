@@ -34,6 +34,10 @@ for bin in "$APP" "$APP/Contents/MacOS/TidyMyMacHelper"; do
   grep -q "TeamIdentifier=26TUUFN7M2" <<<"$info" || { echo "$bin: wrong team"; exit 1; }
   grep -q "(runtime)" <<<"$info" || { echo "$bin: hardened runtime off"; exit 1; }
   grep -q "Signature=adhoc" <<<"$info" && { echo "$bin: ad hoc signed"; exit 1; }
+  # A debuggable build lets any process running as you attach to it (security review, finding 6).
+  gta=$(codesign -d --entitlements - --xml "$bin" 2>/dev/null \
+        | plutil -extract com.apple.security.get-task-allow raw -o - - 2>/dev/null || true)
+  [ "$gta" = true ] && { echo "$bin: get-task-allow is on (debuggable); a Release build must not have it"; exit 1; }
   grep -E '^Identifier=' <<<"$info"
 done
 helper_info=$(codesign -dvv "$APP/Contents/MacOS/TidyMyMacHelper" 2>&1)

@@ -33,6 +33,23 @@ run_case "ticked canary still there fails" 1 FAIL 'rm -rf "Library/Logs/TidyCana
 run_case "unticked canary removed fails" 1 FAIL "$TICKED; rm -rf \"Library/Caches/TidyKeep-\$D-B\""
 run_case "other zone entry gone fails" 1 FAIL "$TICKED; rm -rf Library/Caches/Other"
 
+# canary.sh setup refuses a canary path planted in advance (world-writable /Library/Caches).
+planted_case() { # name, mutation run in the fake root before setup (D = today's stamp)
+  local name=$1 mutate=$2 root code
+  root=$(mktemp -d)
+  mkdir -p "$root/var/root" "$root/Library/Caches" "$root/Library/Logs" "$root/Library/LaunchAgents" "$root/elsewhere"
+  (cd "$root" && D=$(date +%Y%m%d) eval "$mutate")
+  CANARY_ROOT=$root scripts/canary.sh setup >/dev/null 2>&1; code=$?
+  if [ "$code" != 0 ] && [ -z "$(ls -A "$root/elsewhere")" ]; then ok "canary setup: $name"; else bad "canary setup: $name (exit $code)"; ls -A "$root/elsewhere" | sed 's/^/     wrote: /'; fi
+  rm -rf "$root"
+}
+planted_case "refuses a planted symlink" 'ln -s "$PWD/elsewhere" "Library/Caches/TidyCanary-$D-A"'
+planted_case "refuses a planted file" 'touch "Library/Logs/TidyCanary-$D"'
+# A second setup after an unfinished run reuses its own folders.
+root=$(mktemp -d); mkdir -p "$root/var/root" "$root/Library/Caches" "$root/Library/Logs" "$root/Library/LaunchAgents"
+if CANARY_ROOT=$root scripts/canary.sh setup >/dev/null && CANARY_ROOT=$root scripts/canary.sh setup >/dev/null; then ok "canary setup: runs twice"; else bad "canary setup: runs twice"; fi
+rm -rf "$root"
+
 # canary.sh check-restored: the Dummy agent back as the same file, owner and mode.
 restored_case() { # name, expected exit, mutation (run in the fake root, D = stamp)
   local name=$1 want=$2 mutate=$3 root code out
