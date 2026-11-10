@@ -57,6 +57,7 @@ struct ShippedRuleSetTests {
         for root in HelperZone.libraryLeftovers.roots {
             #expect(floor.verdict(for: root + "/Apple/x").isProtected)
             #expect(floor.verdict(for: root + "/Input Methods").isProtected)
+            for n in ["SystemConfiguration", "OpenDirectory", "Logging"] { #expect(floor.verdict(for: root + "/" + n).isProtected) }
             #expect(floor.verdict(for: root + "/com.example.Leftover") == .allowed)
         }
     }

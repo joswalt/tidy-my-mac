@@ -110,6 +110,39 @@
         "origin": "own",
         "license": "own"
       }
+    },
+    {
+      "id": "protect.deny.systemconfiguration",
+      "root": "/Library",
+      "match": "glob",
+      "pattern": "*/SystemConfiguration",
+      "reason": "SystemConfiguration folders in /Library belong to macOS (network, directory and logging settings; spec 005 \u00a75.1)",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    },
+    {
+      "id": "protect.deny.opendirectory",
+      "root": "/Library",
+      "match": "glob",
+      "pattern": "*/OpenDirectory",
+      "reason": "OpenDirectory folders in /Library belong to macOS (network, directory and logging settings; spec 005 \u00a75.1)",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
+    },
+    {
+      "id": "protect.deny.logging",
+      "root": "/Library",
+      "match": "glob",
+      "pattern": "*/Logging",
+      "reason": "Logging folders in /Library belong to macOS (network, directory and logging settings; spec 005 \u00a75.1)",
+      "source": {
+        "origin": "own",
+        "license": "own"
+      }
     }
   ]
 }
