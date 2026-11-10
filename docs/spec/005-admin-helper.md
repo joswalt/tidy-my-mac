@@ -137,7 +137,7 @@ Checked at scan time and again at action time, in `HelperCore`, independent of t
 
 - Anything whose name starts with `com.apple.` in `libraryLeftovers`, `launchItems` and `rootApps`.
 - In `rootApps`: Apple-signed apps (`anchor apple` requirement), and TidyMyMac itself.
-- In `libraryLeftovers`: `Apple`, `Developer`, `CrashReporter`, `iPod`, `Script Editor`, `Audio`, `ColorSync`, `Fonts`, `Keyboard Layouts`, `Input Methods` (the list from spec 006 §5), plus anything the rule gap check against Mole adds. The list is compiled into `HelperCore`; `protected.json` in the app carries the same names, and a unit test fails if the two differ.
+- In `libraryLeftovers`: `Apple`, `Developer`, `CrashReporter`, `iPod`, `Script Editor`, `Audio`, `ColorSync`, `Fonts`, `Keyboard Layouts`, `Input Methods`, `SystemConfiguration`, `OpenDirectory`, `Logging` (the list from spec 006 §5), plus anything the rule gap check against Mole adds. The list is compiled into `HelperCore`; `protected.json` in the app carries the same names, and a unit test fails if the two differ.
 - Our own files: `/Library/Logs/TidyMyMac`, `/Library/Application Support/TidyMyMac`.
 - Any item with the `SF_RESTRICTED` (SIP), `SF_NOUNLINK`, `SF_IMMUTABLE` or `UF_IMMUTABLE` flag.
 - Never anything under `/System`, `/usr` (except `/usr/local`, which is not a zone anyway), `/bin`, `/sbin`, `/private/var/db`, `/Library/Apple`, `/Library/Extensions`, or the unified log store. These match the protected floor in spec 006 §5, and `HelperCore` and the app share that floor as one Swift module so they cannot drift.

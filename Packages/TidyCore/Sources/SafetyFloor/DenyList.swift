@@ -5,6 +5,9 @@ public enum DenyList {
     public static let libraryLeftoverNames: Set<String> = [
         "Apple", "Developer", "CrashReporter", "iPod", "Script Editor", "Audio", "ColorSync",
         "Fonts", "Keyboard Layouts", "Input Methods",
+        // macOS settings in /Library/Preferences without a com.apple. prefix: network
+        // configuration, directory services and unified logging.
+        "SystemConfiguration", "OpenDirectory", "Logging",
     ]
 
     /// Leftover matching never offers an item whose name starts with this (spec 006 §5.2).

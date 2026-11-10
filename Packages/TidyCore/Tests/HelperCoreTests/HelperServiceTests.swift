@@ -52,6 +52,7 @@ struct HelperServiceTests {
         try FileManager.default.createDirectory(atPath: w.root("/private/var/log/asl"), withIntermediateDirectories: true)
         try w.file("/Library/Application Support/com.example.Gone/x")
         for n in ["Apple", "Fonts", "com.apple.TCC", "TidyMyMac", "Input Methods"] { try w.file("/Library/Application Support/\(n)/x") }
+        for n in ["SystemConfiguration", "OpenDirectory", "Logging"] { try w.file("/Library/Preferences/\(n)/x") }
         try w.file("/Library/LaunchDaemons/com.apple.thing.plist")
         try w.file("/Library/LaunchDaemons/com.example.helper.plist",
                    contents: try PropertyListSerialization.data(fromPropertyList: ["Label": "com.example.helper", "Program": "/nonexistent/helper"], format: .xml, options: 0))
