@@ -31,7 +31,7 @@ For v1.0 there is no previous release, so the full form applies.
 
 ### 2. `scripts/check-local.sh` green
 - [ ] All package tests, rule lint and safety lint pass.
-- [ ] Signed Release build; `codesign --verify --deep --strict` passes.
+- [ ] Signed Release build; `codesign --verify --deep --strict` passes; no `get-task-allow` entitlement.
 - [ ] Hardened runtime on; team `26TUUFN7M2`; not ad hoc.
 - [ ] Helper plist label and `BundleProgram` correct.
 

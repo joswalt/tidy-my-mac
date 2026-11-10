@@ -233,7 +233,7 @@ Approving the helper in Login Items is a one-time "this app may have a root help
 
 ## 9. Signing and caller checks
 
-**Signing.** Both targets: Personal Team "Apple Development" identity (team `26TUUFN7M2`), **Hardened Runtime on**, App Sandbox off, no extra entitlements (none of the operations need one). Same identity for Debug and Release. Never "Sign to Run Locally": in spike 009 an ad hoc build made launchd refuse to start the helper (`EX_CONFIG`).
+**Signing.** Both targets: Personal Team "Apple Development" identity (team `26TUUFN7M2`), **Hardened Runtime on**, App Sandbox off, no extra entitlements (none of the operations need one). Same identity for Debug and Release. Release builds carry no `get-task-allow` (`CODE_SIGN_INJECT_BASE_ENTITLEMENTS[config=Release] = NO`; `check-local.sh` fails if it is there), so no other process can attach to the shipped app. Never "Sign to Run Locally": in spike 009 an ad hoc build made launchd refuse to start the helper (`EX_CONFIG`).
 
 **Builder setup check (from spike 009).** A fresh Personal Team certificate shows as "not valid" and `codesign` fails with `errSecInternalComponent` unless the keychain has Apple's **WWDR G3** intermediate. The setup docs must say: import `AppleWWDRCAG3.cer` from https://www.apple.com/certificateauthority/ into the login keychain, then check with `security find-identity -v -p codesigning`.
 

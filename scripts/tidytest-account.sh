@@ -18,9 +18,15 @@ create)
   sysadminctl -addUser "$USER_NAME" -fullName "TidyMyMac Test" -password "$pw" -home "/Users/$USER_NAME" 2>&1 | grep -v '^$' || true
   id "$USER_NAME" >/dev/null 2>&1 || { echo "Couldn't create $USER_NAME." >&2; exit 1; }
   createhomedir -c -u "$USER_NAME" >/dev/null
-  mkdir -p "$SHARED"
-  cp scripts/seed-tidytest.sh scripts/verify-tidytest.sh "$SHARED/"
-  chmod 755 "$SHARED" "$SHARED"/*.sh
+  # /Users/Shared is world-writable (1777): a folder or symlink planted there first would get
+  # root's copies and chmod. Only reuse our own root-owned folder; refuse anything else.
+  if [ -L "$SHARED" ] || { [ -e "$SHARED" ] && { [ ! -d "$SHARED" ] || [ "$(stat -f %u "$SHARED")" != 0 ]; }; }; then
+    echo "Refusing: $SHARED exists and isn't a folder owned by root. Remove it, then try again." >&2
+    exit 1
+  fi
+  rm -rf "$SHARED"
+  mkdir -m 755 "$SHARED"
+  install -m 755 scripts/seed-tidytest.sh scripts/verify-tidytest.sh "$SHARED/"
   echo
   echo "Created standard user '$USER_NAME'. Password: $pw"
   echo "Log in as $USER_NAME (Fast User Switching), skip the setup screens, then in Terminal:"
